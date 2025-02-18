@@ -10,7 +10,6 @@ SciSubmit is a project management system for conference submissions and reviews.
 - [Development Workflow](#development-workflow)
 - [Environment Setup](#environment-setup)
 - [Branches](#branches)
-- [Contributing](#contributing)
 
 ## Project Overview
 
@@ -94,19 +93,15 @@ We are following the Git Flow methodology, so contributions should be made in fe
 ```bash
 #backend .env file
 MONGO_URI=mongodb://mongo:27017/scisubmit
-PORT=3000
+PORT=5000
 ```
 
 ```bash
 #frontend .env file
-VITE_API_URL=http://localhost:3000/api
+VITE_API_URL=http://localhost:5000/api
 VITE_APP_TITLE=SciSubmit
 ```
 
-## Contributing
+## License
 
-1. Fork the repository.
-2. Create your feature branch: git checkout -b feature/YourFeatureName.
-3. Commit your changes: git commit -m 'Add some feature'.
-4. Push to the branch: git push origin feature/YourFeatureName.
-5. Open a pull request to develop.
+This project is licensed under the [MIT License](./LICENSE).
