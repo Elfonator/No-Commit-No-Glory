@@ -1,11 +1,23 @@
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from 'vue'
+import {defineComponent, ref, computed, onMounted, inject, reactive} from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { UserStatus } from '@/types/user'
 
 export default defineComponent({
   name: 'UserTable',
   setup() {
+    const showSnackbar = inject('showSnackbar') as ({
+                                                      message,
+                                                      color,
+                                                    }: {
+      message: string
+      color?: string
+    }) => void
+
+    if (!showSnackbar) {
+      console.error('showSnackbar is not provided')
+    }
+
     const userStore = useUserStore()
 
     // Filters for table
@@ -16,11 +28,15 @@ export default defineComponent({
       selectedStatus: [] as string[],
       selectedRole: [] as string[],
     })
+
     const currentPage = ref(1)
     const perPage = ref(10)
     const isDialogOpen = ref(false)
+    const isDeleteDialogOpen = ref(false);
+    const userToDelete = ref(null);
     const dialogMode = ref<'edit'>('edit')
     const selectedUser = ref<any>({})
+
 
     // University and status options
     const universityOptions = [
@@ -45,6 +61,39 @@ export default defineComponent({
       participant: 'black',
       reviewer: 'primary',
     }
+
+    //user deletion handling
+
+    const confirmDelete = (user: {
+      _id: string
+      first_name: string
+      last_name: string
+    }) => {
+      Object.assign(selectedUser.value, user)
+      isDeleteDialogOpen.value = true
+    }
+
+    const closeDeleteDialog = () => {
+      isDeleteDialogOpen.value = false
+    }
+
+    const deleteUser = async () => {
+      try {
+        await userStore.deleteUser(selectedUser.value._id);
+        showSnackbar?.({
+          message: 'Používateľ bol úspešne odstránený.',
+          color: 'success',
+        });
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        showSnackbar?.({
+          message: 'Nepodarilo sa odstrániť používateľa.',
+          color: 'error',
+        });
+      } finally {
+        closeDeleteDialog();
+      }
+    };
 
     // Table headers
     const tableHeaders = [
@@ -151,10 +200,15 @@ export default defineComponent({
       filteredUsers,
       roleColors,
       userStore,
+      userToDelete,
+      isDeleteDialogOpen,
       resetFilters,
       openDialog,
       closeDialog,
       saveUser,
+      deleteUser,
+      confirmDelete,
+      closeDeleteDialog,
     }
   },
 })
@@ -260,6 +314,9 @@ export default defineComponent({
             <v-btn @click="openDialog('edit', user)" color="#FFCD16">
               <v-icon size="24">mdi-pencil</v-icon>
             </v-btn>
+            <v-btn color="#BC463A" @click="confirmDelete(user)">
+              <v-icon size="24" color="white">mdi-delete</v-icon>
+            </v-btn>
           </td>
         </tr>
       </template>
@@ -304,6 +361,23 @@ export default defineComponent({
       <v-card-actions>
         <v-btn color="secondary" @click="closeDialog">Zrušiť</v-btn>
         <v-btn color="primary" @click="saveUser">Uložiť</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Dialog for deleting Users -->
+  <v-dialog v-model="isDeleteDialogOpen" max-width="500px">
+    <v-card>
+      <v-card-title>Potvrdenie odstránenia</v-card-title>
+      <v-card-text>
+        <p>
+          Ste si istí, že chcete odstrániť používateľa
+          <strong>{{ selectedUser.first_name }} {{ selectedUser.last_name }}</strong>?
+        </p>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn color="secondary" @click="closeDeleteDialog">Zrušiť</v-btn>
+        <v-btn color="red" @click="deleteUser">Odstrániť</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

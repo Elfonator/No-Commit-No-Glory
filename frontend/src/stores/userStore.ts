@@ -154,6 +154,16 @@ export const useUserStore = defineStore('users', () => {
     userProfile.value = profile
   }
 
+  const deleteUser = async (id: string) => {
+    try {
+      await axiosInstance.delete(`/auth/admin/users/${id}`);
+      adminUsers.value = adminUsers.value.filter(user => user._id !== id);
+    } catch (err) {
+      console.error('Failed to delete user:', err);
+      throw err;
+    }
+  };
+
   return {
     // State
     adminUsers,
@@ -172,5 +182,6 @@ export const useUserStore = defineStore('users', () => {
     updateUser,
     fetchUserProfile,
     updateUserProfile,
+    deleteUser,
   }
 })

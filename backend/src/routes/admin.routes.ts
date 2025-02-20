@@ -24,6 +24,7 @@ import {
   deleteQuestion,
   getUserById,
   getCategoryById,
+  deleteUser,
 } from "../controllers/admin.controller";
 import { authenticateToken } from "../middleware/authenticateToken";
 
@@ -36,6 +37,7 @@ router.get("/users", getAllUsers);
 router.get("/users/:id", getUserById);
 router.patch("/users/:userId", editUserDetails);
 router.get("/reviewers", getReviewers);
+router.delete("/users/:userId", deleteUser);
 
 //Categories
 router.get("/categories", getAllCategories);
