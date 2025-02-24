@@ -16,7 +16,9 @@ backend/dist
 
 # dotenv environment variables file
 .env
-.env.dev
+.env.local
+.env.*
+!.env.example
 
 # TypeScript cache
 .tsbuildinfo

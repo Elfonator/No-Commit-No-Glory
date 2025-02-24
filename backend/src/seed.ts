@@ -13,8 +13,16 @@ import Database from "./config/db";
 dotenv.config();
 
 const SEED_LOG_COLLECTION = "seeding_log";
-const ADMIN_EMAIL = "admin@email.com";
-const ADMIN_PASSWORD = "pwd123";
+
+// Environment variable validation
+const validateEnvVariables = () => {
+  const requiredVars = ['ADMIN_EMAIL', 'ADMIN_PASSWORD'];
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+
+  if (missingVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  }
+};
 
 // Function to check if seeding has already been performed
 const hasAlreadySeeded = async (): Promise<boolean> => {
@@ -30,11 +38,18 @@ const markAsSeeded = async (): Promise<void> => {
   const connection = Database.getInstance().getConnection();
   await connection
     .collection(SEED_LOG_COLLECTION)
-    .insertOne({ seedName: "initialSeed", date: new Date() });
+    .insertOne({
+      seedName: "initialSeed",
+      date: new Date(),
+      environment: process.env.NODE_ENV || 'development'
+    });
 };
 
 const prepareDatabase = async () => {
   try {
+    // Validate environment variables before proceeding
+    validateEnvVariables();
+
     const db = Database.getInstance();
     await db.connect();
     console.log("Connected to MongoDB.");
@@ -114,21 +129,21 @@ const prepareDatabase = async () => {
     // Initialize empty collections without data and ensure they exist
     await User.createCollection();
 
-    // Insert Super Admin user if not already created
-    const existingAdmin = await User.findOne({ email: ADMIN_EMAIL });
+    // Insert Default Admin user if not already created
+    const existingAdmin = await User.findOne({ email: process.env.ADMIN_EMAIL });
     if (!existingAdmin) {
       const adminRole = await Role.findOne({ name: "admin" });
       if (!adminRole) {
-        console.error("Admin role does not exist. Cannot create Super Admin.");
+        console.error("Admin role does not exist. Cannot create Default Admin.");
         process.exit(1);
       }
 
-      const hashedPassword = await argon2.hash(ADMIN_PASSWORD);
+      const hashedPassword = await argon2.hash(process.env.ADMIN_PASSWORD!);
 
       await User.create({
         first_name: "Super",
         last_name: "Admin",
-        email: ADMIN_EMAIL,
+        email: process.env.ADMIN_EMAIL,
         password: hashedPassword,
         university: "UKF",
         role: adminRole.name,
@@ -139,9 +154,9 @@ const prepareDatabase = async () => {
         refreshToken: null,
       });
 
-      console.log("Super Admin user created successfully.");
+      console.log("Default Admin user created successfully.");
     } else {
-      console.log("Super Admin already exists. Skipping user creation...");
+      console.log("Default Admin already exists. Skipping user creation...");
     }
 
     await Conference.createCollection();
@@ -280,6 +295,9 @@ const prepareDatabase = async () => {
     process.exit(1);
   }
 };
+
+// Add environment information to the startup log
+console.log(`Starting database seeding in ${process.env.NODE_ENV || 'development'} environment`);
 
 // IIFE to handle the async prepareDatabase function
 (async () => {

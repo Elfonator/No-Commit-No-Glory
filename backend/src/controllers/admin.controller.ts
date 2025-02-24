@@ -1,14 +1,16 @@
 import { Request, Response } from "express";
 import AdmZip from "adm-zip";
-import User, { IUser } from '../models/User'
+import User, { IUser, UserStatus } from '../models/User'
 import Conference, { ConferenceStatus } from "../models/Conference";
 import { AuthRequest } from "../middleware/authenticateToken";
 import Category from "../models/Category";
-import Paper from "../models/Paper";
+import Paper, { PaperStatus } from '../models/Paper'
 import Question from "../models/Question";
 import path from "path";
 import { promises as fs } from "fs";
 import { sendEmail } from '../utils/emailService'
+import argon2 from 'argon2'
+import Review from '../models/Review'
 
 /** USERS**/
 //Get all users
@@ -33,7 +35,7 @@ export const getUserById = async (
 ): Promise<void> => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).populate("role");
+    const user = await User.findById(userId);
     if (!user) {
       res.status(404).json({ message: "Používateľ nebol nájdený" });
       return;
@@ -41,47 +43,112 @@ export const getUserById = async (
     res.status(200).json(user);
   } catch (error) {
     console.error("Error fetching user by ID:", error);
-    res
-        .status(500)
-        .json({ message: "Nepodarilo sa načítať používateľa", error });
+    res.status(500).json({ message: "Nepodarilo sa načítať používateľa", error });
   }
 };
 
-//Manage user roles, status and email
+// Create a new user (Admin only)
+export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { first_name, last_name, email, password, university, role, status } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.status(400).json({ message: "Email je už registrovaný." });
+      return;
+    }
+
+    // Hash password
+    const hashedPassword = await argon2.hash(password);
+
+    // Create new user
+    const newUser = new User({
+      first_name,
+      last_name,
+      email,
+      password: hashedPassword,
+      university,
+      role,
+      isVerified: true, // Admin manually creates verified users
+      status: status || UserStatus.Active,
+    });
+
+    await newUser.save();
+    res.status(201).json({ message: "Používateľ bol úspešne vytvorený.", user: newUser });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({ message: "Chyba pri vytváraní používateľa", error });
+  }
+};
+
+// Edit user details (Admin can modify everything)
 export const editUserDetails = async (
-    req: AuthRequest,
-    res: Response,
+  req: AuthRequest,
+  res: Response
 ): Promise<void> => {
   try {
     const { userId } = req.params;
     const updates = req.body;
 
+    // If updating password, hash it before saving
+    if (updates.password) {
+      updates.password = await argon2.hash(updates.password);
+    }
+
     const updatedUser = await User.findByIdAndUpdate(userId, updates, {
       new: true,
       runValidators: true,
-    }).populate("role");
+    });
 
     if (!updatedUser) {
-      res
-          .status(404)
-          .json({
-            message: "Používateľ nebol nájdený alebo sa nepodarilo aktualizovať",
-          });
+      res.status(404).json({ message: "Používateľ nebol nájdený alebo sa nepodarilo aktualizovať." });
       return;
     }
 
-    res.status(200).json({
-      message: "Používateľské údaje boli úspešne aktualizované",
-      user: updatedUser,
-    });
+    res.status(200).json({ message: "Používateľ bol úspešne aktualizovaný.", user: updatedUser });
   } catch (error) {
     console.error("Error updating user details:", error);
-    res
-        .status(500)
-        .json({ message: "Chyba pri aktualizácii údajov používateľa", error });
+    res.status(500).json({ message: "Chyba pri aktualizácii používateľa", error });
   }
 };
 
+// Delete user and clean up related data
+export const deleteUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      res.status(404).json({ message: "Používateľ nebol nájdený" });
+      return;
+    }
+
+    // If user is a reviewer, remove assigned reviews and unassign papers
+    if (user.role === "reviewer") {
+      await Review.deleteMany({ reviewer: userId });
+      await Paper.updateMany(
+        { reviewer: userId },
+        { $unset: { reviewer: "" }, $set: { status: PaperStatus.Submitted } }
+      );
+    }
+
+    // If user is a participant, delete all their papers
+    if (user.role === "participant") {
+      await Paper.deleteMany({ user: userId });
+    }
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({ message: "Používateľ bol úspešne vymazaný." });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ message: "Nepodarilo sa vymazať používateľa", error });
+  }
+};
+
+/*
 export const deleteUser = async (
     req: Request,
     res: Response
@@ -111,6 +178,7 @@ export const deleteUser = async (
     res.status(500).json({ message: "Nepodarilo sa vymazať používateľa", error });
   }
 };
+ */
 
 /** CATEGORIES **/
 //Get all categories

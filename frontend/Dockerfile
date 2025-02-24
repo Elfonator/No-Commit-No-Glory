@@ -10,7 +10,7 @@ WORKDIR /app
 COPY --chown=node:node package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy the rest of the application files
 COPY --chown=node:node . .
@@ -30,7 +30,7 @@ COPY --chown=node:node --from=build-stage /app/node_modules node_modules
 COPY --chown=node:node --from=build-stage /app/dist dist
 
 # Expose the port for Vite
-EXPOSE 5174
+EXPOSE 8080
 
-# Start the production server
-CMD ["npm", "run", "preview"]
+# Start the development server
+CMD ["npm", "run", "dev"]

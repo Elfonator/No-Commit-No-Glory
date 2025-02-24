@@ -18,7 +18,7 @@ app.use(express.json());
 
 // CORS configuration
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://frontend:80", "http://localhost:5174"],
+  origin: ["http://localhost:8080", "http://frontend:8080"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

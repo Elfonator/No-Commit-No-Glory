@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host --port 8080 --node dev",
+    "dev": "vite --host --port 8080",
     "build": "npm run type-check && npm run build-only",
     "preview": "vite preview",
     "build-only": "vite build",

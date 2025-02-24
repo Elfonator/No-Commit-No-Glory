@@ -6,11 +6,16 @@ export default defineConfig({
   plugins: [vue()],
 
   server: {
+    host: '0.0.0.0', // Allow access from outside the container
+    port: 8080,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+    },
+    watch: {
+      usePolling: true, // Enable polling for detecting file changes
     },
   },
   resolve: {

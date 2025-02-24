@@ -71,30 +71,67 @@ export const useUserStore = defineStore('users', () => {
     }
   }
 
-  const updateUser = async (
-    id: string,
-    updates: { email?: string; role?: string; status?: string },
-  ) => {
+  // Create new user (Admin only)
+  const createUser = async (userData: {
+    first_name: string
+    last_name: string
+    email: string
+    password: string
+    university: string
+    faculty: string,
+    role: string
+    status?: string
+  }) => {
     try {
-      //Map Slovak role to English before sending to the API
-      const mappedUpdates = {
-        ...updates,
-        role: updates.role
-          ? roleMapping[updates.role] || updates.role
-          : undefined,
+      const mappedUserData = {
+        ...userData,
+        role: roleMapping[userData.role] || userData.role,
       }
 
-      const response = await axiosInstance.patch(
-        `/auth/admin/users/${id}`,
-        mappedUpdates,
-      )
+      const response = await axiosInstance.post('/auth/admin/users', mappedUserData)
 
-      //Find and update the user in the local store
-      const index = adminUsers.value.findIndex(u => u._id === id)
+      // Add new user to state
+      adminUsers.value.push({
+        ...response.data,
+        role: reverseRoleMapping[response.data.role] || response.data.role,
+      })
+
+      return response.data
+    } catch (err) {
+      console.error('Failed to create user:', err)
+      throw err
+    }
+  }
+
+  // Update user details (Admin only)
+  const updateUser = async (
+    id: string,
+    updates: {
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+      password?: string;
+      university?: string;
+      faculty?: string;
+      role?: string;
+      status?: string;
+    }
+  ) => {
+    try {
+      // Map Slovak role to English before sending to the API
+      const mappedUpdates = {
+        ...updates,
+        role: updates.role ? roleMapping[updates.role] || updates.role : undefined,
+      }
+
+      const response = await axiosInstance.patch(`/auth/admin/users/${id}`, mappedUpdates)
+
+      // Find and update the user in the local store
+      const index = adminUsers.value.findIndex((u) => u._id === id)
       if (index !== -1) {
         adminUsers.value[index] = {
           ...adminUsers.value[index],
-          ...updates, //Use the original updates (Slovak role) to update UI
+          ...updates,
         }
       }
 
@@ -104,6 +141,17 @@ export const useUserStore = defineStore('users', () => {
       throw err
     }
   }
+
+  // Delete user (Admin only)
+  const deleteUser = async (id: string) => {
+    try {
+      await axiosInstance.delete(`/auth/admin/users/${id}`);
+      adminUsers.value = adminUsers.value.filter(user => user._id !== id);
+    } catch (err) {
+      console.error('Failed to delete user:', err);
+      throw err;
+    }
+  };
 
   // Profile-specific actions
   const fetchUserProfile = async () => {
@@ -154,16 +202,6 @@ export const useUserStore = defineStore('users', () => {
     userProfile.value = profile
   }
 
-  const deleteUser = async (id: string) => {
-    try {
-      await axiosInstance.delete(`/auth/admin/users/${id}`);
-      adminUsers.value = adminUsers.value.filter(user => user._id !== id);
-    } catch (err) {
-      console.error('Failed to delete user:', err);
-      throw err;
-    }
-  };
-
   return {
     // State
     adminUsers,
@@ -179,9 +217,10 @@ export const useUserStore = defineStore('users', () => {
     fetchAllUsers,
     fetchUserById,
     fetchReviewers,
+    createUser,
     updateUser,
+    deleteUser,
     fetchUserProfile,
     updateUserProfile,
-    deleteUser,
   }
 })

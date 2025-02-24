@@ -34,9 +34,24 @@ export default defineComponent({
     const isDialogOpen = ref(false)
     const isDeleteDialogOpen = ref(false);
     const userToDelete = ref(null);
-    const dialogMode = ref<'edit'>('edit')
+    const dialogMode = ref<'add' | 'edit'>('add')
     const selectedUser = ref<any>({})
+    const password = ref('')
+    const confirmPassword = ref('')
+    const showPassword = ref(false)
+    const showConfirmPassword = ref(false)
 
+    // Form for new/edit users
+    const userForm = reactive({
+      first_name: '',
+      last_name: '',
+      email: '',
+      password: '',
+      university: '',
+      faculty:'',
+      role: '',
+      status: UserStatus.Active,
+    })
 
     // University and status options
     const universityOptions = [
@@ -61,39 +76,6 @@ export default defineComponent({
       participant: 'black',
       reviewer: 'primary',
     }
-
-    //user deletion handling
-
-    const confirmDelete = (user: {
-      _id: string
-      first_name: string
-      last_name: string
-    }) => {
-      Object.assign(selectedUser.value, user)
-      isDeleteDialogOpen.value = true
-    }
-
-    const closeDeleteDialog = () => {
-      isDeleteDialogOpen.value = false
-    }
-
-    const deleteUser = async () => {
-      try {
-        await userStore.deleteUser(selectedUser.value._id);
-        showSnackbar?.({
-          message: 'Používateľ bol úspešne odstránený.',
-          color: 'success',
-        });
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        showSnackbar?.({
-          message: 'Nepodarilo sa odstrániť používateľa.',
-          color: 'error',
-        });
-      } finally {
-        closeDeleteDialog();
-      }
-    };
 
     // Table headers
     const tableHeaders = [
@@ -144,19 +126,48 @@ export default defineComponent({
       }
     }
 
-    // Open dialog for edit
-    const openDialog = (mode: 'edit', user?: any) => {
+    //Password mismatch check
+    const passwordError = ref<string | null>(null)
+    const passwordMismatch = computed(() => {
+      const mismatch =
+        password.value !== confirmPassword.value &&
+        confirmPassword.value !== ''
+      passwordError.value = mismatch ? 'Heslá sa nezhodujú.' : null
+      return mismatch
+    })
+
+    const togglePasswordVisibility = () => {
+      showPassword.value = !showPassword.value
+    }
+
+    const toggleConfirmPasswordVisibility = () => {
+      showConfirmPassword.value = !showConfirmPassword.value
+    }
+
+    // Open dialog for add/edit user
+    const openDialog = (mode: 'add' | 'edit', user?: any) => {
       dialogMode.value = mode
       if (mode === 'edit' && user) {
-        // Populate selected user with Slovak role for UI
-        selectedUser.value = {
-          ...user,
-          role:
-            userStore.reverseRoleMapping[user.role.name || user.role] ||
-            user.role,
-        }
+        selectedUser.value = { ...user }
+        Object.assign(userForm, {
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          university: user.university,
+          faculty: user.faculty,
+          role: userStore.reverseRoleMapping[user.role] || user.role,
+          status: user.status,
+        })
       } else {
-        selectedUser.value = {}
+        Object.assign(userForm, {
+          first_name: '',
+          last_name: '',
+          email: '',
+          password: '',
+          university: '',
+          faculty: '',
+          role: '',
+          status: UserStatus.Active })
       }
       isDialogOpen.value = true
     }
@@ -167,20 +178,70 @@ export default defineComponent({
       selectedUser.value = {}
     }
 
-    // Save user changes
+    // Save user (create or update)
     const saveUser = async () => {
-      if (dialogMode.value === 'edit') {
-        //Map Slovak role back to English before sending to the API
-        const updates = {
-          ...selectedUser.value,
-          role:
-            userStore.roleMapping[selectedUser.value.role] ||
-            selectedUser.value.role,
+      try {
+        if (dialogMode.value === 'add') {
+          await userStore.createUser({
+            first_name: userForm.first_name,
+            last_name: userForm.last_name,
+            email: userForm.email,
+            password: userForm.password,
+            university: userForm.university,
+            faculty: userForm.faculty,
+            role: userStore.roleMapping[userForm.role] || userForm.role,
+            status: userForm.status,
+          })
+          showSnackbar?.({ message: 'Používateľ bol úspešne pridaný.', color: 'success' })
+        } else {
+          await userStore.updateUser(selectedUser.value._id, {
+            first_name: userForm.first_name,
+            last_name: userForm.last_name,
+            email: userForm.email,
+            university: userForm.university,
+            faculty: userForm.faculty,
+            role: userStore.roleMapping[userForm.role] || userForm.role,
+            status: userForm.status,
+          })
+          showSnackbar?.({ message: 'Údaje používateľa boli aktualizované.', color: 'success' })
         }
-        await userStore.updateUser(selectedUser.value._id, updates)
+        closeDialog()
+      } catch (error) {
+        showSnackbar?.({ message: 'Nepodarilo sa uložiť používateľa.', color: 'error' })
       }
-      closeDialog()
     }
+
+    //user deletion handling
+    const confirmDelete = (user: {
+      _id: string
+      first_name: string
+      last_name: string
+    }) => {
+      Object.assign(selectedUser.value, user)
+      isDeleteDialogOpen.value = true
+    }
+
+    const closeDeleteDialog = () => {
+      isDeleteDialogOpen.value = false
+    }
+
+    const deleteUser = async () => {
+      try {
+        await userStore.deleteUser(selectedUser.value._id);
+        showSnackbar?.({
+          message: 'Používateľ bol úspešne odstránený.',
+          color: 'success',
+        });
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        showSnackbar?.({
+          message: 'Nepodarilo sa odstrániť používateľa.',
+          color: 'error',
+        });
+      } finally {
+        closeDeleteDialog();
+      }
+    };
 
     // Fetch users on component mount
     onMounted(userStore.fetchAllUsers)
@@ -202,6 +263,12 @@ export default defineComponent({
       userStore,
       userToDelete,
       isDeleteDialogOpen,
+      passwordError,
+      passwordMismatch,
+      password,
+      showPassword,
+      confirmPassword,
+      showConfirmPassword,
       resetFilters,
       openDialog,
       closeDialog,
@@ -209,16 +276,22 @@ export default defineComponent({
       deleteUser,
       confirmDelete,
       closeDeleteDialog,
+      togglePasswordVisibility,
+      toggleConfirmPasswordVisibility,
     }
   },
 })
 </script>
 
 <template>
-  <v-card class="table-card">
+  <v-card>
     <!-- Card Header -->
     <v-card-title>
-      <h3>Správa používateľov</h3>
+      <div class="d-flex justify-space-between align-center w-100">
+        <h3>Správa používateľov</h3>
+        <v-btn color="primary" class="add_new" @click="openDialog('add')">
+          <v-icon left class="add_icon">mdi-plus-circle-outline</v-icon>Pridať používateľa</v-btn>
+      </div>
     </v-card-title>
 
     <!-- Filters Section -->
@@ -326,7 +399,7 @@ export default defineComponent({
   <!-- Dialog for Editing Users -->
   <v-dialog v-model="isDialogOpen" max-width="800px">
     <v-card>
-      <v-card-title>Úprava používateľa</v-card-title>
+      <v-card-title>{{ dialogMode === 'edit' ? 'Úprava používateľa' : 'Pridať nového používateľa' }}</v-card-title>
       <v-card-text>
         <v-form ref="userForm">
           <v-select
@@ -344,15 +417,58 @@ export default defineComponent({
             dense
           />
           <v-text-field
-            v-model="selectedUser.email"
-            label="Email"
+            v-model="selectedUser.first_name"
+            label="Meno"
+            :rules="[v => !!v || 'Meno je povinné']"
             outlined
             dense
           />
+          <v-text-field
+            v-model="selectedUser.last_name"
+            label="Priezvisko"
+            :rules="[v => !!v || 'Priezvisko je povinné']"
+            outlined
+            dense
+          />
+          <v-text-field
+            v-model="selectedUser.email"
+            label="Email"
+            :rules="[v => !!v || 'Email je povinný', v => /.+@.+\..+/.test(v) || 'Neplatný email']"
+            outlined
+            dense
+          />
+          <!-- Password only required when adding a new user -->
+          <v-text-field
+            v-if="dialogMode === 'add'"
+            v-model="selectedUser.password"
+            label="Heslo"
+            :type="showPassword ? 'text' : 'password'"
+            :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+            @click:append-inner="togglePasswordVisibility"
+            :rules="[v => !!v || 'Heslo je povinné', v => v.length >= 6 || 'Heslo musí mať aspoň 6 znakov']"
+          />
+          <!-- Confirm Password Field -->
+          <v-text-field
+            v-if="dialogMode === 'add'"
+            v-model="selectedUser.confirmPassword"
+            label="Zopakujte heslo"
+            :type="showConfirmPassword ? 'text' : 'password'"
+            :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
+            @click:append-inner="toggleConfirmPasswordVisibility"
+            :rules="[v => !!v || 'Potvrdenie hesla je povinné', v => v === selectedUser.password || 'Heslá sa nezhodujú']"
+          />
+
           <v-select
             v-model="selectedUser.university"
             :items="universityOptions"
             label="Univerzita"
+            :rules="[v => !!v || 'Univerzita je povinná']"
+            outlined
+            dense
+          />
+          <v-text-field
+            v-model="selectedUser.faculty"
+            label="Fakulta"
             outlined
             dense
           />

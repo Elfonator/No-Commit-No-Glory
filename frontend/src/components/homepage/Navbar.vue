@@ -28,7 +28,7 @@ export default defineComponent({
       'Univerzita Mateja Bela',
       'Univerzita sv. Cyrila a Metoda',
     ])
-    const roles = ref(['Účastník', 'Recenzent', 'Admin'])
+    const roles = ref(['Účastník', 'Recenzent'])
 
     const router = useRouter()
     const authStore = useAuthStore()
@@ -125,9 +125,7 @@ export default defineComponent({
             ? 'participant'
             : registerRole.value === 'Recenzent'
               ? 'reviewer'
-              : registerRole.value === 'Admin'
-                ? 'admin'
-                : ''
+              : ''
 
         const payload = {
           first_name: registerFirstName.value,

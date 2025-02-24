@@ -17,6 +17,15 @@ export const registerUser = async (
     const { first_name, last_name, email, password, university, role } =
       req.body;
 
+    // Prevent registration as admin
+    if (role === "admin") {
+      res.status(403).json({ message: "You are not allowed to register as an admin." });
+      return;
+    }
+
+    // Default role to participant if none is provided
+    const userRole = role === "reviewer" ? "reviewer" : "participant";
+
     // Check if the user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -24,11 +33,8 @@ export const registerUser = async (
       return;
     }
 
-    //Hash password
+    // Hash password
     const hashedPassword = await argon2.hash(password);
-
-    //Determine initial status
-    const status = role === "admin" ? UserStatus.Pending : UserStatus.Inactive;
 
     //Create new user
     const newUser = new User({
@@ -37,9 +43,9 @@ export const registerUser = async (
       email,
       password: hashedPassword,
       university,
-      role,
+      role: userRole,
       isVerified: false,
-      status,
+      status: UserStatus.Inactive,
     });
 
     // Generate JWT for email verification
@@ -98,8 +104,7 @@ export const verifyEmail = async (
 
     // Update user verification status
     user.isVerified = true;
-    user.status =
-      user.role !== "admin" ? UserStatus.Active : UserStatus.Pending;
+    user.status = UserStatus.Active;
     user.verificationToken = null; // Clear the token
     await user.save();
 
@@ -119,6 +124,7 @@ export const verifyEmail = async (
     res.redirect(`${config.baseFrontendUrl}/email-verified-failure`);
   }
 };
+
 /*
 export const resendVerificationEmail = async (req: Request, res: Response) => {
     try {
