@@ -1,17 +1,20 @@
 import dotenv from "dotenv";
+import mongoose from "mongoose";
+import argon2 from "argon2";
 import Role from "./models/Role";
 import Category from "./models/Category";
-import User from "./models/User";
+import User, { UserStatus } from './models/User'
 import Conference from "./models/Conference";
 import Paper from "./models/Paper";
 import Review from "./models/Review";
 import Question from "./models/Question";
 import Database from "./config/db";
-import mongoose from "mongoose";
 
 dotenv.config();
 
 const SEED_LOG_COLLECTION = "seeding_log";
+const ADMIN_EMAIL = "admin@email.com";
+const ADMIN_PASSWORD = "pwd123";
 
 // Function to check if seeding has already been performed
 const hasAlreadySeeded = async (): Promise<boolean> => {
@@ -50,30 +53,35 @@ const prepareDatabase = async () => {
         name: "admin",
         permissions: [
           "manage_users",
-          "create_conferences",
-          "create_categories",
-          "assign_reviewers",
-          "view_all_papers",
+          "manage_conferences",
+          "manage_categories",
+          "manage_questions",
+          "manage_papers",
           "view_reports",
         ],
         ui_components: [
-          "/admin_dashboard",
-          "/users",
-          "/categories",
-          "/conferences",
-          "/reports",
-          "/profile",
+          "/admin/CategoryTable",
+          "/admin/ConferencePapers",
+          "/admin/ConferenceTable",
+          "/admin/QuestionTable",
+          "/admin/UserTable",
+          "/common/SideBar",
+          "/profile"
         ],
       },
       {
         name: "participant",
         permissions: [
-          "manage_papers",
           "submit_paper",
           "edit_paper",
+          "delete_paper",
           "view_reviews",
         ],
-        ui_components: ["/participant_dashboard", "/upload_paper", "/profile"],
+        ui_components: [
+          "/participant/MyWorksTable",
+          "/common/SideBar",
+          "/profile"
+        ],
       },
       {
         name: "reviewer",
@@ -82,7 +90,12 @@ const prepareDatabase = async () => {
           "submit_reviews",
           "download_papers",
         ],
-        ui_components: ["/reviewer_dashboard", "/paper_reviews", "/profile"],
+        ui_components: [
+          "/reviewer/AssignedPapersTable",
+          "/reviewer/ReviewTable",
+          "/common/SideBar",
+          "/profile"
+        ],
       },
     ]);
 
@@ -100,6 +113,37 @@ const prepareDatabase = async () => {
 
     // Initialize empty collections without data and ensure they exist
     await User.createCollection();
+
+    // Insert Super Admin user if not already created
+    const existingAdmin = await User.findOne({ email: ADMIN_EMAIL });
+    if (!existingAdmin) {
+      const adminRole = await Role.findOne({ name: "admin" });
+      if (!adminRole) {
+        console.error("Admin role does not exist. Cannot create Super Admin.");
+        process.exit(1);
+      }
+
+      const hashedPassword = await argon2.hash(ADMIN_PASSWORD);
+
+      await User.create({
+        first_name: "Super",
+        last_name: "Admin",
+        email: ADMIN_EMAIL,
+        password: hashedPassword,
+        university: "UKF",
+        role: adminRole.name,
+        isVerified: true,
+        status: UserStatus.Active,
+        created_at: new Date(),
+        verificationToken: null,
+        refreshToken: null,
+      });
+
+      console.log("Super Admin user created successfully.");
+    } else {
+      console.log("Super Admin already exists. Skipping user creation...");
+    }
+
     await Conference.createCollection();
     await Paper.createCollection();
     await Review.createCollection();

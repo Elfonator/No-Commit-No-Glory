@@ -17,4 +17,8 @@ COPY . .
 EXPOSE 5000
 
 # Start the backend server
-CMD ["npx", "ts-node", "src/server.ts"]
+# Development
+CMD ["npx", "ts-node-dev", "src/server.ts"]
+
+# Production
+# CMD ["npx", "ts-node", "src/server.ts"]
