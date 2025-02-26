@@ -6,7 +6,7 @@ import {
   getAssignedPapers,
   contactAdmin,
   getQuestions,
-  notifyReviewer, appendReview, getSubmittedReviews, getAllReviews
+  notifyReviewer, appendReview, getSubmittedReviews, getAllReviews, getAdmins
 } from '../controllers/reviewer.controller'
 import { authenticateToken } from "../middleware/authenticateToken";
 import path from 'path'
@@ -34,6 +34,7 @@ router.post("/reviews", submitReview);
 router.patch("/reviews/:reviewId", submitReview);
 
 router.get("/questions", getQuestions);
+router.get("/admins", getAdmins);
 router.post("/contact-admin", contactAdmin);
 router.post("/notify-reviewer", notifyReviewer);
 

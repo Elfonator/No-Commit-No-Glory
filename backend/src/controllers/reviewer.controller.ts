@@ -152,6 +152,7 @@ export const submitReview = async (req: AuthRequest, res: Response): Promise<voi
   }
 };
 
+// Set status on paper based on recommendation
 const getPaperStatusFromRecommendation = (
   recommendation: string,
 ): PaperStatus => {
@@ -363,5 +364,15 @@ export const contactAdmin = async (
     res
       .status(500)
       .json({ error: "Nepodarilo sa kontaktovať administrátorov." });
+  }
+};
+
+// Get all admins in the system except default one
+export const getAdmins = async (_req: AuthRequest, res: Response) => {
+  try {
+    const admins = await User.find({role: "admin"}).select("_id email");
+    res.status(200).json(admins);
+  } catch (error) {
+    res.status(500).json({message: "Nepodarilo sa načítať adminov."});
   }
 };
