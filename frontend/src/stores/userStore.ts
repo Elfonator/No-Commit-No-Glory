@@ -7,6 +7,7 @@ export const useUserStore = defineStore('users', () => {
   // Reactive state
   const adminUsers = ref<Array<any>>([])
   const reviewers = ref<Array<any>>([])
+  const admins = ref([]);
   const userProfile = ref<any>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -56,6 +57,7 @@ export const useUserStore = defineStore('users', () => {
     }
   }
 
+  // Fetch all reviewers for dropdown
   const fetchReviewers = async () => {
     loading.value = true
     error.value = null

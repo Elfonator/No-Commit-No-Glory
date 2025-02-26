@@ -191,8 +191,8 @@ export default defineComponent({
             <v-text-field
               v-model="currentCategory.name"
               label="Názov kategórie"
-              required
               outlined
+              :rules="[v => !!v || 'Názov kategórie je povinný']"
             />
             <v-select
               v-model="currentCategory.isActive"

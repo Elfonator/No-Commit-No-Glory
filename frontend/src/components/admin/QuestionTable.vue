@@ -330,7 +330,7 @@ export default defineComponent({
               label="Text otázky"
               outlined
               dense
-              required
+              :rules="[v => !!v || 'Text otázky je povinný']"
             />
             <v-select
               v-model="dialogForm.type"
@@ -339,7 +339,7 @@ export default defineComponent({
               item-title="text"
               outlined
               dense
-              required
+              :rules="[v => !!v || 'Vyberte typ otázky']"
             />
             <v-select
               v-model="dialogForm.category"
@@ -348,7 +348,7 @@ export default defineComponent({
               item-title="text"
               outlined
               dense
-              required
+              :rules="[v => !!v || 'Vyberte kategóriu']"
             />
           </v-form>
         </v-card-text>

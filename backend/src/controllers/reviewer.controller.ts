@@ -326,46 +326,67 @@ export const downloadPaper = async (
 };
 
 //Contact admin
-export const contactAdmin = async (
-  req: AuthRequest,
-  res: Response,
-): Promise<void> => {
+export const contactAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { subject, message } = req.body;
+    const { subject, message, adminId } = req.body;
+
+    // Ensure the user is authenticated (req.user should contain logged-in user data)
+    const reviewerId = req.user?.userId;
+    if (!reviewerId) {
+      res.status(401).json({ message: "Neautorizovaný prístup." });
+      return;
+    }
+
+    // Fetch the reviewer's details
+    const reviewer = await User.findById(reviewerId).select("first_name last_name email");
+    if (!reviewer) {
+      res.status(404).json({ message: "Recenzent nebol nájdený." });
+      return;
+    }
 
     if (!subject || !message) {
       res.status(400).json({ message: "Predmet a správa sú povinné." });
       return;
     }
 
-    const admins = await User.find({ role: "admin" }).select("email");
+    // Fetch the target admin (or all admins if no adminId is specified)
+    let admins;
+    if (adminId) {
+      admins = await User.find({ _id: adminId, role: "admin" }).select("email");
+    } else {
+      admins = await User.find({ role: "admin" }).select("email");
+    }
+
     if (!admins.length) {
-      res
-        .status(404)
-        .json({ message: "Neboli nájdení žiadni administrátori." });
+      res.status(404).json({ message: "Neboli nájdení žiadni administrátori." });
       return;
     }
 
+    // Construct the email content
+    const emailContent = `
+      <p><strong>Od recenzenta:</strong> ${reviewer.first_name} ${reviewer.last_name} (${reviewer.email})</p>
+      <p><strong>Predmet:</strong> ${subject}</p>
+      <p><strong>Správa:</strong></p>
+      <p>${message}</p>
+    `;
+
+    // Send email to selected admins
     for (const admin of admins) {
       await sendEmail({
         to: admin.email,
         subject: `Dotaz recenzenta: ${subject}`,
-        html: `<p>${message}</p>`,
+        html: emailContent,
       });
     }
 
-    res
-      .status(200)
-      .json({
-        message: "Správa bola úspešne odoslaná všetkým administrátorom.",
-      });
+    res.status(200).json({ message: "Správa bola úspešne odoslaná." });
+
   } catch (error) {
     console.error("Error contacting admins:", error);
-    res
-      .status(500)
-      .json({ error: "Nepodarilo sa kontaktovať administrátorov." });
+    res.status(500).json({ error: "Nepodarilo sa kontaktovať administrátorov." });
   }
 };
+
 
 // Get all admins in the system except default one
 export const getAdmins = async (_req: AuthRequest, res: Response) => {

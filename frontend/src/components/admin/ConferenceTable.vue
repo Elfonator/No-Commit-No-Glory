@@ -390,8 +390,8 @@ export default defineComponent({
                   label="Stav"
                   outlined
                   dense
-                  required
                   class="large-text-field"
+                  :rules="[v => !!v || 'Stav je povinný']"
                 />
               </v-col>
               <v-col cols="12" md="6">
@@ -403,6 +403,10 @@ export default defineComponent({
                   type="number"
                   required
                   class="large-text-field"
+                  :rules="[
+                v => !!v || 'Rok je povinný',
+                v => v > 0 || 'Rok musí byť kladné číslo',
+              ]"
                 />
               </v-col>
               <v-col cols="12" md="6">
@@ -440,9 +444,9 @@ export default defineComponent({
                   label="Univerzita"
                   outlined
                   dense
-                  required
                   class="large-text-field"
                   :disabled="dialogMode === 'view'"
+                  :rules="[v => !!v || 'Univerzita je povinná']"
                 />
               </v-col>
               <v-col cols="12" md="6">
@@ -451,9 +455,9 @@ export default defineComponent({
                   label="Miesto"
                   outlined
                   dense
-                  required
                   class="large-text-field"
                   :disabled="dialogMode === 'view'"
+                  :rules="[v => !!v || 'Miesto konania je povinné']"
                 />
               </v-col>
 

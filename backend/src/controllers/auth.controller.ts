@@ -4,6 +4,8 @@ import * as argon2 from "argon2";
 import { config } from "../config";
 import User, { UserStatus } from "../models/User";
 import { AuthRequest } from "../middleware/authenticateToken";
+import { sendEmail } from '../utils/emailService'
+import { randomBytes } from 'node:crypto'
 
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -137,5 +139,79 @@ export const refreshToken = async (
     res
       .status(401)
       .json({ message: "Invalid or expired refresh token", error: error });
+  }
+};
+
+// Request for password reset
+export const forgotPassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ message: "Email je povinný." });
+      return;
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(404).json({ message: "Používateľ s týmto emailom neexistuje." });
+      return;
+    }
+
+    // Generate reset token
+    const resetToken = randomBytes(32).toString('hex');
+
+    // Store token in verificationToken field
+    user.verificationToken = resetToken;
+    await user.save();
+    // Construct password reset URL
+    const resetUrl = `${config.baseFrontendUrl}/reset-password?token=${resetToken}`;
+
+    // Send reset email
+    await sendEmail({
+      to: user.email,
+      subject: "Obnova hesla",
+      html: `<p>Kliknite na odkaz nižšie na resetovanie hesla:</p>
+             <a href="${resetUrl}">Obnoviť heslo</a>
+             <p>Ak ste túto žiadosť neodoslali, ignorujte tento e-mail.</p>`,
+    });
+
+    res.status(200).json({ message: "Odkaz na obnovu hesla bol odoslaný na váš email." });
+
+  } catch (error) {
+    console.error("Error sending password reset email:", error);
+    res.status(500).json({ message: "Nepodarilo sa odoslať odkaz na resetovanie hesla." });
+  }
+};
+
+// Password reset
+export const resetPassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      res.status(400).json({ message: "Token a nové heslo sú povinné." });
+      return;
+    }
+
+    // Find user by token
+    const user = await User.findOne({ verificationToken: token });
+
+    if (!user) {
+      res.status(400).json({ message: "Neplatný alebo expirovaný token." });
+      return;
+    }
+
+    // Hash the new password
+    user.password = await argon2.hash(newPassword);
+
+    // Clear the `verificationToken` after successful password reset
+    user.verificationToken = null;
+    await user.save();
+
+    res.status(200).json({ message: "Vaše heslo bolo úspešne zmenené." });
+
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    res.status(500).json({ message: "Nepodarilo sa obnoviť heslo." });
   }
 };

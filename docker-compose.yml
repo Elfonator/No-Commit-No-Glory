@@ -6,7 +6,6 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-    # ensures data is persisted across container restarts
     environment:
       MONGO_INITDB_DATABASE: scisubmit
       MONGO_INITDB_ROOT_USERNAME: root
@@ -32,7 +31,7 @@ services:
     depends_on:
       - backend
 
-# Database seeding using
+  # Database seeding
   seeder:
     build:
       context: ./backend

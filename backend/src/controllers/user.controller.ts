@@ -9,6 +9,8 @@ import { generateVerificationEmail, sendEmail } from "../utils/emailService";
 import fs from "fs";
 import path from "path";
 
+const BASE_UPLOAD_DIR = process.env.UPLOADS_DIR || "/app/uploads";
+
 export const registerUser = async (
   req: Request,
   res: Response,
@@ -178,35 +180,39 @@ export const getUserProfile = async (
   }
 };
 
-//Set up Multer for avatar uploads
-const storage = multer.diskStorage({
+// Set up Multer for avatar uploads
+const avatarStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.resolve(__dirname, '../../../uploads/avatars'); // Resolve relative to the current file
-    console.log("Resolved Upload Directory:", uploadPath);
+    // e.g., /app/uploads/avatars
+    const avatarPath = path.join(BASE_UPLOAD_DIR, "avatars");
 
-    //Create the directory if it doesn't exist
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
+    // Make sure the directory exists
+    if (!fs.existsSync(avatarPath)) {
+      fs.mkdirSync(avatarPath, { recursive: true });
     }
 
-    cb(null, uploadPath); // Pass the resolved path to Multer
+    cb(null, avatarPath);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`); // Generate a unique filename
+    // Generate a unique filename
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
   },
 });
 
 export const upload = multer({
-  storage,
+  storage: avatarStorage,
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif/;
-    const isAllowed =
-      allowedTypes.test(file.mimetype) &&
-      allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    if (isAllowed) {
+    const mimeMatches = allowedTypes.test(file.mimetype);
+    const extMatches = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase(),
+    );
+
+    if (mimeMatches && extMatches) {
       cb(null, true);
     } else {
-      cb(new Error("Only JPEG, JPG, GIF and PNG files are allowed."));
+      cb(new Error("Only JPEG, JPG, GIF, and PNG files are allowed."));
     }
   },
 });
@@ -216,8 +222,6 @@ export const updateUserProfile = async (
   req: AuthRequest,
   res: Response,
 ): Promise<void> => {
-  console.log("Request body:", req.body);
-  console.log("Uploaded file:", req.file);
   try {
     const userId = req.user?.userId;
 
@@ -232,10 +236,7 @@ export const updateUserProfile = async (
 
     // Handle password change
     if (updates.currentPassword && updates.newPassword) {
-      const isMatch = await argon2.verify(
-        user.password,
-        updates.currentPassword,
-      );
+      const isMatch = await argon2.verify(user.password, updates.currentPassword);
       if (!isMatch) {
         res.status(400).json({ message: "Incorrect current password." });
         return;
@@ -246,32 +247,39 @@ export const updateUserProfile = async (
       delete updates.newPassword;
     }
 
-    //Handle avatar upload only if a file is provided
+    // Handle avatar upload only if a file is provided
     if (req.file) {
-      updates.avatar = `/uploads/avatars/${req.file.filename}`;
+      // We'll store a relative path in DB
+      const relativePath = path.join("avatars", req.file.filename);
+      updates.avatar = `/${relativePath}`;
 
-      //Optionally delete the old avatar if it exists
+      // Optionally delete the old avatar if it exists
       if (user.avatar) {
         try {
-          fs.unlink(path.resolve(user.avatar), () => {
-            console.log("Old avatar deleted successfully.");
-          });
+          // Convert it to an absolute path inside our upload directory
+          const oldAvatarAbsolutePath = path.join(
+            BASE_UPLOAD_DIR,
+            user.avatar.replace(/^\/+/, ""),
+          );
+          if (fs.existsSync(oldAvatarAbsolutePath)) {
+            fs.unlinkSync(oldAvatarAbsolutePath);
+            console.log("Old avatar deleted successfully:", oldAvatarAbsolutePath);
+          }
         } catch (error) {
           console.warn("Failed to delete old avatar:", error);
         }
-      } else {
-        console.log("No old avatar to delete.");
       }
     }
 
-    //Prevent certain fields from being updated
+    // Prevent certain fields from being updated
     delete updates.email;
     delete updates.role;
 
-    //Update the user
+    // Update the user
     const updatedUser = await User.findByIdAndUpdate(userId, updates, {
       new: true,
     }).select("-password -refreshToken");
+
     res.status(200).json({
       message: "Profil bol úspešne aktualizovaný.",
       user: updatedUser,
