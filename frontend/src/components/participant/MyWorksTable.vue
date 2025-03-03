@@ -37,6 +37,9 @@ export default defineComponent({
         'Snackbar injection failed. Please ensure it is provided in the AuthenticatedLayout.',
       )
     }
+
+    const valid = ref(false)
+
     const paperStore = usePaperStore()
     const conferenceStore = useConferenceStore()
     const userStore = useUserStore()
@@ -130,8 +133,6 @@ export default defineComponent({
       { title: 'Vytvorenie', key: 'submission_date' },
       { title: '', key: 'actions', sortable: false },
     ]
-
-    const required = (v: string | null) => !!v || 'Field is required'
 
     const filteredPapers = computed(() =>
       paperStore.participantPapers.filter(
@@ -387,6 +388,7 @@ export default defineComponent({
     })
 
     return {
+      valid,
       filters,
       paperStore,
       conferenceStore,
@@ -412,7 +414,6 @@ export default defineComponent({
       removeAuthor,
       selectCategory,
       selectConference,
-      required,
       openDialog,
       closeDialog,
       savePaper,
@@ -546,11 +547,11 @@ export default defineComponent({
           }}
         </v-card-title>
         <v-card-text>
-          <v-form ref="form">
+          <v-form ref="form" v-model="valid">
             <v-text-field
               v-model="currentPaper.title"
               label="Title"
-              :rules="[required]"
+              :rules="[v => !!v || 'Názov práce je povinný']"
               outlined
               dense
               class="large-text-field"
@@ -571,6 +572,7 @@ export default defineComponent({
                   readonly
                   append-inner-icon="mdi-chevron-down"
                   class="large-text-field"
+                  :rules="[() => currentPaper.category?.name || 'Vyberte kategóriu']"
                 />
               </template>
               <v-list>
@@ -601,6 +603,7 @@ export default defineComponent({
                   readonly
                   append-inner-icon="mdi-chevron-down"
                   class="large-text-field"
+                  :rules="[() => currentPaper.conference?._id || 'Vyberte konferenciu']"
                 />
               </template>
               <v-list>

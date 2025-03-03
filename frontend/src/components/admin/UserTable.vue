@@ -18,6 +18,7 @@ export default defineComponent({
       console.error('showSnackbar is not provided')
     }
 
+    const valid = ref(false)
     const userStore = useUserStore()
 
     // Filters for table
@@ -32,7 +33,7 @@ export default defineComponent({
     const currentPage = ref(1)
     const perPage = ref(10)
     const isDialogOpen = ref(false)
-    const isDeleteDialogOpen = ref(false);
+    const isDeleteDialogOpen = ref(false)
     const userToDelete = ref(null);
     const dialogMode = ref<'add' | 'edit'>('add')
     const selectedUser = ref<any>({})
@@ -247,6 +248,7 @@ export default defineComponent({
     onMounted(userStore.fetchAllUsers)
 
     return {
+      valid,
       filters,
       currentPage,
       perPage,
@@ -401,7 +403,7 @@ export default defineComponent({
     <v-card>
       <v-card-title>{{ dialogMode === 'edit' ? 'Úprava používateľa' : 'Pridať nového používateľa' }}</v-card-title>
       <v-card-text>
-        <v-form ref="userForm">
+        <v-form ref="userForm" v-model="valid">
           <v-select
             v-model="selectedUser.status"
             :items="statusOptions"
@@ -476,7 +478,7 @@ export default defineComponent({
       </v-card-text>
       <v-card-actions>
         <v-btn color="secondary" @click="closeDialog">Zrušiť</v-btn>
-        <v-btn color="primary" @click="saveUser">Uložiť</v-btn>
+        <v-btn :disabled="!valid" color="primary" @click="saveUser">Uložiť</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

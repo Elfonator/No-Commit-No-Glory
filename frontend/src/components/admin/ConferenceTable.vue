@@ -28,6 +28,8 @@ export default defineComponent({
       console.error('showSnackbar is not provided')
     }
 
+    const valid = ref(false)
+
     // Initialize the conference store and router
     const conferenceStore = useConferenceStore()
     const router = useRouter()
@@ -242,6 +244,7 @@ export default defineComponent({
       tableHeaders,
       formattedDialogForm,
       menu,
+      valid,
       openDialog,
       closeDialog,
       saveConference,
@@ -260,8 +263,8 @@ export default defineComponent({
     <v-card-title>
       <div class="d-flex justify-space-between align-center w-100">
         <h3>Konferencie</h3>
-        <v-btn color="primary" class="add_new" @click="openDialog('add')"
-          ><v-icon left class="add_icon">mdi-plus-circle-outline</v-icon>Pridať
+        <v-btn color="primary" class="add_new" @click="openDialog('add')">
+          <v-icon left class="add_icon">mdi-plus-circle-outline</v-icon>Pridať
           konferenciu</v-btn
         >
       </div>
@@ -381,7 +384,7 @@ export default defineComponent({
           }}
         </v-card-title>
         <v-card-text>
-          <v-form ref="formRef">
+          <v-form ref="formRef" v-model="valid">
             <v-row>
               <v-col cols="12" md="6">
                 <v-select
@@ -555,6 +558,7 @@ export default defineComponent({
         <v-card-actions>
           <v-btn color="secondary" @click="closeDialog">Zrušiť</v-btn>
           <v-btn
+            :disabled="!valid"
             v-if="dialogMode !== 'view'"
             color="primary"
             @click="saveConference"

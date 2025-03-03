@@ -26,6 +26,8 @@ export default defineComponent({
       console.error('showSnackbar is not provided')
     }
 
+    const valid = ref(false)
+
     const questionStore = useQuestionStore()
     const currentQuestion = reactive({
       _id: '',
@@ -197,6 +199,7 @@ export default defineComponent({
     })
 
     return {
+      valid,
       filters,
       currentPage,
       perPage,
@@ -324,7 +327,7 @@ export default defineComponent({
           {{ dialogMode === 'add' ? 'Pridať Otázku' : 'Upraviť Otázku' }}
         </v-card-title>
         <v-card-text>
-          <v-form>
+          <v-form v-model="valid">
             <v-text-field
               v-model="dialogForm.text"
               label="Text otázky"
@@ -354,7 +357,7 @@ export default defineComponent({
         </v-card-text>
         <v-card-actions>
           <v-btn color="secondary" @click="closeDialog">Zrušiť</v-btn>
-          <v-btn color="primary" @click="submitDialogForm">Uložiť</v-btn>
+          <v-btn :disabled="!valid" color="primary" @click="submitDialogForm">Uložiť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
