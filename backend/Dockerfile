@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5000
 
 # For development
-CMD ["npx", "ts-node-dev", "src/server.ts"]
+CMD ["npx", "ts-node-dev", "--respawn", "--watch", "src", "src/server.ts"]

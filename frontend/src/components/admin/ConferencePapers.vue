@@ -56,7 +56,7 @@ export default defineComponent({
       console.error('showSnackbar is not provided')
     }
 
-    /** Filters for conferences and pagination **/
+    //Filters for conferences and pagination
     const itemsPerPage = 5 // Maximum conferences per page
     const currentPage = ref(1)
 

@@ -7,7 +7,6 @@ export const useUserStore = defineStore('users', () => {
   // Reactive state
   const adminUsers = ref<Array<any>>([])
   const reviewers = ref<Array<any>>([])
-  const admins = ref([]);
   const userProfile = ref<any>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -92,11 +91,7 @@ export const useUserStore = defineStore('users', () => {
 
       const response = await axiosInstance.post('/auth/admin/users', mappedUserData)
 
-      // Add new user to state
-      adminUsers.value.push({
-        ...response.data,
-        role: reverseRoleMapping[response.data.role] || response.data.role,
-      })
+      await fetchAllUsers();
 
       return response.data
     } catch (err) {
@@ -148,7 +143,7 @@ export const useUserStore = defineStore('users', () => {
   const deleteUser = async (id: string) => {
     try {
       await axiosInstance.delete(`/auth/admin/users/${id}`);
-      adminUsers.value = adminUsers.value.filter(user => user._id !== id);
+      await fetchAllUsers();
     } catch (err) {
       console.error('Failed to delete user:', err);
       throw err;

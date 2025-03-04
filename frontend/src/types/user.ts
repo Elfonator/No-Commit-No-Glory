@@ -14,22 +14,10 @@ export interface User {
   university: string
   status: UserStatus
   role: { name: string }
-  isVerified: boolean
-  verificationToken: string | null
-  refreshToken: string | null
+  isVerified?: boolean
+  verificationToken?: string | null
+  refreshToken?: string | null
   faculty?: string
   about?: string
   avatar?: File
-}
-
-export interface AdminUser {
-  _id?: string
-  first_name: string
-  last_name: string
-  email: string
-  university: string
-  faculty?: string
-  status: UserStatus
-  role: { name: string }
-  isVerified: boolean
 }
