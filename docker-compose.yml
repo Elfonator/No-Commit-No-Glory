@@ -15,6 +15,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+      - /usr/src/app/node_modules
+      # Named volume for persistent storage of uploaded files
+      - project_storage:/app/uploads
+    env_file:
+      - ./backend/.env.dev  #Inject .env.dev dynamically
     ports:
       - "5000:5000"
     depends_on:
@@ -24,6 +31,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    env_file:
+      - ./frontend/.env.dev
     ports:
       - "8080:8080"
       - "9000:9000"
@@ -31,5 +43,17 @@ services:
     depends_on:
       - backend
 
+  # Database seeding
+  seeder:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    entrypoint: [ "npx", "ts-node", "src/seed.ts" ]
+    env_file:
+      - ./backend/.env.dev
+    depends_on:
+      - mongo
+
 volumes:
   mongo_data:
+  project_storage:

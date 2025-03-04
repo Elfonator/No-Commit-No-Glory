@@ -44,12 +44,14 @@ export default defineComponent({
 
     // Form for new/edit users
     const userForm = reactive({
+      _id: '',
       first_name: '',
       last_name: '',
       email: '',
       password: '',
+      confirmPassword: '',
       university: '',
-      faculty:'',
+      faculty: '',
       role: '',
       status: UserStatus.Active,
     })
@@ -127,14 +129,9 @@ export default defineComponent({
       }
     }
 
-    //Password mismatch check
-    const passwordError = ref<string | null>(null)
+    // Check if passwords match
     const passwordMismatch = computed(() => {
-      const mismatch =
-        password.value !== confirmPassword.value &&
-        confirmPassword.value !== ''
-      passwordError.value = mismatch ? 'Heslá sa nezhodujú.' : null
-      return mismatch
+      return userForm.password !== userForm.confirmPassword && userForm.confirmPassword !== ''
     })
 
     const togglePasswordVisibility = () => {
@@ -146,9 +143,11 @@ export default defineComponent({
     }
 
     // Open dialog for add/edit user
-    const openDialog = (mode: 'add' | 'edit', user?: any) => {
+    const openDialog = async (mode: 'add' | 'edit', userId?: string) => {
       dialogMode.value = mode
-      if (mode === 'edit' && user) {
+      if (mode === 'edit' && userId) {
+        const user = await userStore.fetchUserById(userId);
+
         selectedUser.value = { ...user }
         Object.assign(userForm, {
           first_name: user.first_name,
@@ -168,7 +167,8 @@ export default defineComponent({
           university: '',
           faculty: '',
           role: '',
-          status: UserStatus.Active })
+          status: UserStatus.Active
+        })
       }
       isDialogOpen.value = true
     }
@@ -265,7 +265,6 @@ export default defineComponent({
       userStore,
       userToDelete,
       isDeleteDialogOpen,
-      passwordError,
       passwordMismatch,
       password,
       showPassword,

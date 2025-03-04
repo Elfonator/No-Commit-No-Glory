@@ -16,13 +16,6 @@ backend/dist
 
 # dotenv environment variables file
 .env
-<<<<<<< Updated upstream
-.env.local
-.env.*
-!.env.example
-=======
-.env.dev
->>>>>>> Stashed changes
 
 # TypeScript cache
 .tsbuildinfo
