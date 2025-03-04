@@ -142,20 +142,36 @@ export default defineComponent({
     }
 
     // Open dialog for add/edit user
-    const openDialog = (mode: 'add' | 'edit', user?: any) => {
-      dialogMode.value = mode
-      if (mode === 'edit' && user) {
-        selectedUser.value = { ...user }
-        Object.assign(userForm, {
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email: user.email,
-          university: user.university,
-          faculty: user.faculty,
-          role: userStore.reverseRoleMapping[user.role] || user.role,
-          status: user.status,
-        })
+    const openDialog = async (mode: 'add' | 'edit', userId?: string) => {
+      dialogMode.value = mode;
+
+      if (mode === 'edit' && userId) {
+        try {
+          // Fetch user data by ID
+          const user = await userStore.fetchUserById(userId); // Fetch the user details from the backend
+
+          // Log the user data to check
+          console.log('User data for edit:', user);
+
+          // Populate the form with the user data
+          Object.assign(userForm, {
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            university: user.university,
+            faculty: user.faculty,
+            role: userStore.reverseRoleMapping[user.role] || user.role,
+            status: user.status,
+          });
+
+          selectedUser.value = { ...user }; // Optionally store the user in selectedUser for further reference
+
+        } catch (error) {
+          console.error('Error fetching user by ID:', error);
+          showSnackbar?.({ message: 'Nepodarilo sa načítať údaje používateľa.', color: 'error' });
+        }
       } else {
+        // Reset the form for adding a new user
         Object.assign(userForm, {
           first_name: '',
           last_name: '',
@@ -165,9 +181,11 @@ export default defineComponent({
           university: '',
           faculty: '',
           role: '',
-          status: UserStatus.Active })
+          status: UserStatus.Active,
+        });
       }
-      isDialogOpen.value = true
+
+      isDialogOpen.value = true;
     }
 
     // Close dialog
@@ -179,33 +197,28 @@ export default defineComponent({
     // Save user (create or update)
     const saveUser = async () => {
       try {
+        const userData = {
+          first_name: userForm.first_name,
+          last_name: userForm.last_name,
+          email: userForm.email,
+          password: userForm.password,
+          university: userForm.university,
+          faculty: userForm.faculty,
+          role: userStore.roleMapping[userForm.role] || userForm.role,
+          status: userForm.status,
+        };
+
         if (dialogMode.value === 'add') {
-          await userStore.createUser({
-            first_name: userForm.first_name ,
-            last_name: userForm.last_name,
-            email: userForm.email,
-            password: userForm.password,
-            university: userForm.university,
-            faculty: userForm.faculty,
-            role: userStore.roleMapping[userForm.role] || userForm.role,
-            status: userForm.status,
-          })
-          showSnackbar?.({ message: 'Používateľ bol úspešne pridaný.', color: 'success' })
+          await userStore.createUser(userData);
+          showSnackbar?.({ message: 'Používateľ bol úspešne pridaný.', color: 'success' });
         } else {
-          await userStore.updateUser(selectedUser.value._id, {
-            first_name: userForm.first_name,
-            last_name: userForm.last_name,
-            email: userForm.email,
-            university: userForm.university,
-            faculty: userForm.faculty,
-            role: userStore.roleMapping[userForm.role] || userForm.role,
-            status: userForm.status,
-          })
-          showSnackbar?.({ message: 'Údaje používateľa boli aktualizované.', color: 'success' })
+          await userStore.updateUser(selectedUser.value._id, userData);
+          showSnackbar?.({ message: 'Údaje používateľa boli aktualizované.', color: 'success' });
         }
-        closeDialog()
+
+        closeDialog();
       } catch (error) {
-        showSnackbar?.({ message: 'Nepodarilo sa uložiť používateľa.', color: 'error' })
+        showSnackbar?.({ message: 'Nepodarilo sa uložiť používateľa.', color: 'error' });
       }
     }
 
@@ -383,7 +396,7 @@ export default defineComponent({
             </v-chip>
           </td>
           <td class="d-flex justify-center align-center">
-            <v-btn @click="openDialog('edit', user)" color="#FFCD16">
+            <v-btn @click="openDialog('edit', user._id)" color="#FFCD16">
               <v-icon size="24">mdi-pencil</v-icon>
             </v-btn>
             <v-btn color="#BC463A" @click="confirmDelete(user)">
