@@ -1,8 +1,7 @@
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
-
-const BASE_UPLOAD_DIR = process.env.UPLOADS_DIR || "/app/uploads";
+import {config} from "../config";
 
 //Multer storage configuration
 const storage = multer.diskStorage({
@@ -14,7 +13,7 @@ const storage = multer.diskStorage({
         return;
       }
 
-      const uploadPath = path.join(BASE_UPLOAD_DIR, "docs", conferenceId);
+      const uploadPath = path.join(config.uploads, "docs", conferenceId);
 
       // Ensure the directory exists
       await fs.mkdir(uploadPath, { recursive: true });

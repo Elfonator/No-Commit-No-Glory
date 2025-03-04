@@ -31,14 +31,5 @@ services:
     depends_on:
       - backend
 
-  # Database seeding
-  seeder:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    entrypoint: [ "npx", "ts-node", "src/seed.ts" ]
-    depends_on:
-      - mongo
-
 volumes:
   mongo_data:

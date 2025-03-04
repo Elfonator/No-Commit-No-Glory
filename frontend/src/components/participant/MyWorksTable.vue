@@ -551,7 +551,7 @@ export default defineComponent({
             <v-text-field
               v-model="currentPaper.title"
               label="Title"
-              :rules="[v => !!v || 'Názov práce je povinný']"
+              :rules="[() => !currentPaper.isFinal || 'Názov práce je povinný']"
               outlined
               dense
               class="large-text-field"
@@ -572,7 +572,7 @@ export default defineComponent({
                   readonly
                   append-inner-icon="mdi-chevron-down"
                   class="large-text-field"
-                  :rules="[() => currentPaper.category?.name || 'Vyberte kategóriu']"
+                  :rules="[() => (!currentPaper.isFinal || currentPaper.category?.name) || 'Vyberte kategóriu']"
                 />
               </template>
               <v-list>
@@ -676,17 +676,17 @@ export default defineComponent({
               label="Abstrakt"
               outlined
               dense
-              required
+              :rules="[() => !currentPaper.isFinal || 'Abstrakt je povinný']"
               class="large-text-field"
             />
             <v-file-input
               v-model="currentPaper.file_link"
               label="Nahrajte súbor"
-              :rules="[required]"
               outlined
               dense
               :disabled="dialogMode === 'view'"
               class="large-text-field"
+              :rules="[() => !currentPaper.isFinal || 'Súbor je povinný']"
             ></v-file-input>
             <v-checkbox
               v-model="currentPaper.isFinal"

@@ -7,6 +7,7 @@ import { sendEmail } from "../utils/emailService";
 import User from "../models/User";
 import path from "path";
 import fs from "fs";
+import {config} from "../config";
 
 // Submit a new paper
 export const createPaper = async (
@@ -59,7 +60,7 @@ export const createPaper = async (
     }
 
     //Build file path
-    const filePath = `/uploads/docs/${conference}/${req.file.filename}`;
+    const filePath = path.join(config.uploads, "docs", conference.toString(), req.file.filename);
 
     // Create a new paper record
     const paper = new Paper({
@@ -168,16 +169,17 @@ export const editPaper = async (
 
     //Handle file upload if a new file is provided
     if (req.file) {
-      const newFilePath = `/uploads/docs/${paper.conference}/${req.file.filename}`;
+      const newFilePath = path.join(config.uploads, "docs", paper.conference.toString(), req.file.filename);
 
       //Delete the old file if it exists
       if (paper.file_link) {
         try {
-          fs.unlink(path.resolve(paper.file_link), () => {
-            console.log("Old document deleted successfully.");
-          });
+          const oldFilePath = path.join(config.uploads, paper.file_link);
+          await fs.promises.access(oldFilePath, fs.constants.F_OK);
+          await fs.promises.unlink(oldFilePath);
+          console.log(`Old document deleted: ${oldFilePath}`);
         } catch (err) {
-          console.warn("Failed to delete old file:", err);
+          console.warn("Failed to delete old file!", err);
         }
       }
       paper.file_link = newFilePath;

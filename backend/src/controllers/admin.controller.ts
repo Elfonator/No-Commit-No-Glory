@@ -11,6 +11,7 @@ import { promises as fs } from "fs";
 import { sendEmail } from '../utils/emailService'
 import argon2 from 'argon2'
 import Review from '../models/Review'
+import {config} from "../config";
 
 /** USERS**/
 //Get all users
@@ -761,23 +762,17 @@ export const downloadPapersByConference = async (
     }
 
     //Path where papers are stored
-    const conferenceUploadPath = path.resolve(
-        __dirname,
-        "../uploads/docs",
-        conferenceId,
-    );
+    // Construct the correct path
+    const conferenceUploadPath = path.join(config.uploads, "docs", conferenceId);
 
-    //Check if the conference folder exists
+    // Check if the conference folder exists
     try {
-      await fs.access(conferenceUploadPath);
+      await fs.access(conferenceUploadPath, fs.constants.F_OK);
     } catch (err) {
+      console.warn("Conference folder does not exist, attempting to create...");
       try {
-        const uploadPath = path.resolve(
-            __dirname,
-            `./../uploads/docs/${conferenceId}`,
-        );
-        await fs.mkdir(uploadPath, { recursive: true });
-        console.log(`Folder created: ${uploadPath}`);
+        await fs.mkdir(conferenceUploadPath, { recursive: true });
+        console.log(`Folder created: ${conferenceUploadPath}`);
         res
             .status(404)
             .json({ message: "No files available for this conference yet." });
@@ -794,7 +789,7 @@ export const downloadPapersByConference = async (
       }
     }
 
-    //Read all files in the directory
+    // Read all files in the directory
     const files = await fs.readdir(conferenceUploadPath);
     if (!files || files.length === 0) {
       res
@@ -805,18 +800,19 @@ export const downloadPapersByConference = async (
       return;
     }
 
-    //Create ZIP archive
+    // Create ZIP archive
     const zip = new AdmZip();
-    files.forEach((file) => {
+    for (const file of files) {
       const filePath = path.join(conferenceUploadPath, file);
-      zip.addLocalFile(filePath, "", file); //Add files to ZIP
-    });
+      zip.addLocalFile(filePath, "", file);
+    }
 
-    //Headers for downloading the ZIP file
+    // Headers for downloading the ZIP file
     const zipFileName = `conference-${conferenceId}-papers.zip`;
     res.setHeader("Content-Disposition", `attachment; filename=${zipFileName}`);
     res.setHeader("Content-Type", "application/zip");
 
+    // Send the ZIP buffer
     const data = zip.toBuffer();
     res.status(200).end(data);
   } catch (error) {

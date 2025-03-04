@@ -7,6 +7,7 @@ import User from "../models/User";
 import Question from "../models/Question";
 import path from "path";
 import fs from "fs/promises";
+import {config} from "../config";
 
 //Assigned papers
 export const getAssignedPapers = async (
@@ -298,17 +299,17 @@ export const downloadPaper = async (
       return;
     }
 
-    //Resolve the file path to ensure it is absolute
-    const filePath = path.resolve(paper.file_link);
+    // Construct the absolute file path
+    const filePath = path.join(config.uploads, paper.file_link);
 
-    //Check if the file exists and is accessible
+    // Check if the file exists before sending
     try {
-      await fs.access(filePath);
+      await fs.access(filePath, fs.constants.F_OK);
     } catch (err) {
       console.error("File not found or inaccessible:", err);
       res
-        .status(404)
-        .json({ message: "Súbor neexistuje alebo nie je dostupný." });
+          .status(404)
+          .json({ message: "Súbor neexistuje alebo nie je dostupný." });
       return;
     }
 
