@@ -30,7 +30,7 @@ SciSubmit is **containerized using Docker**, making setup straightforward. Follo
 ### Prerequisites
 
 - **Docker & Docker Compose** (Ensure Docker is installed)
-- **Node.js** (Only required for running locally without Docker, otherwise not needed)
+- **Node.js** (Only required for running locally without Docker)
 
 ### Clone the Repository
 
@@ -71,39 +71,70 @@ VITE_API_URL=http://localhost:5000
 VITE_APP_TITLE=SciSubmit
 ```
 
-3. **Docker-compose Override File (docker-compose.override.yml)**
+3. **Docker-compose File (docker-compose.yml)**
 
-We use Docker Compose to run the application in a development environment. The docker-compose.override.yml file is configured to mount local volumes for live reloading and inject environment variables.
+We use Docker Compose to run the application in a development environment.
 
 ```yaml
 services:
+  mongo:
+    image: mongo:latest
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: scisubmit
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: secret
+
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     volumes:
       - ./backend:/app
       - /usr/src/app/node_modules
+      # Named volume for persistent storage of uploaded files
       - project_storage:/app/uploads
     env_file:
-      - ./backend/.env.dev
+      - ./backend/.env.dev  #Inject .env.dev dynamically
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     volumes:
       - ./frontend:/app
       - /app/node_modules
     env_file:
       - ./frontend/.env.dev
-
-  seeder:
-    env_file:
-      - ./backend/.env.dev
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+    command: ["npm", "run", "dev", "--", "--host"]
+    depends_on:
+      - backend
 
 volumes:
+  mongo_data:
   project_storage:
 ```
 
 4. **Start the Application using Docker**
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+docker-compose up --build
+```
+
+To stop and remove container, use:
+```bash
+docker-compose down
 ```
 
 ### Local environment without Docker (Optional)

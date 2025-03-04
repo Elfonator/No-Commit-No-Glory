@@ -2,9 +2,24 @@ import app from "./app";
 import cron from "node-cron";
 import { updateConferenceStatus } from "./middleware/updateConferenceStatus";
 import { updatePaperStatus } from "./middleware/updatePaperStatus";
+import { prepareDatabase } from "./seed";
 
-app.listen(5000, () => {
-  console.log(`Server is running on port ${process.env.PORT || 5000}`);
+const PORT = process.env.PORT || 5000;
+
+// Run database seeding only if needed (non-blocking)
+(async () => {
+  try {
+    console.log("Checking if database needs seeding...");
+    await prepareDatabase();
+    console.log("Database ready.");
+  } catch (error) {
+    console.error("Database seeding failed:", error);
+  }
+})();
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 
 // Schedule the cron job

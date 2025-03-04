@@ -13,13 +13,6 @@ RUN npm install
 # Copy the source code
 COPY . .
 
-# Copy the entrypoint script into the WORKDIR
-COPY docker-entrypoint.sh /usr/src/app/docker-entrypoint.sh
-RUN chmod +x /usr/src/app/docker-entrypoint.sh
-
-# Set the entrypoint
-ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]
-
 # Expose the port for the backend
 EXPOSE 5000
 

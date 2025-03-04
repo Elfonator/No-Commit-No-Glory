@@ -30,7 +30,3 @@ backend/dist
 # IDE settings (for example, IntelliJ or VSCode)
 .idea/
 .vscode/
-
-# Docker files
-docker-compose.override.yml
-docker-compose.override.*

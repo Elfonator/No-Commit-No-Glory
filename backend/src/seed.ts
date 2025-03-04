@@ -45,7 +45,7 @@ const markAsSeeded = async (): Promise<void> => {
     });
 };
 
-const prepareDatabase = async () => {
+export async function prepareDatabase(): Promise<void> {
   try {
     // Validate environment variables before proceeding
     validateEnvVariables();
