@@ -18,8 +18,8 @@ export interface IUser extends Document {
   created_at: Date;
   isVerified: boolean;
   status: UserStatus;
-  verificationToken: string | null;
-  refreshToken: string | null;
+  verificationToken?: string | null;
+  refreshToken?: string | null;
   faculty?: string;
   about?: string;
   avatar?: string;

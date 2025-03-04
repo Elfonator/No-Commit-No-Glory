@@ -51,7 +51,7 @@ export const getUserById = async (
 // Create a new user (Admin only)
 export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { first_name, last_name, email, password, university, role, status } = req.body;
+    const { first_name, last_name, email, password, university, faculty, role, status } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -70,6 +70,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
       email,
       password: hashedPassword,
       university,
+      faculty,
       role,
       isVerified: true, // Admin manually creates verified users
       status: status || UserStatus.Active,
