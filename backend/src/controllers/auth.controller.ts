@@ -26,6 +26,9 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     //Verify password
     const isPasswordValid = await argon2.verify(user.password, password);
+    console.log("Stored Password:", user.password);
+    console.log("Entered Password:", password);
+    console.log("Password Match:", isPasswordValid);
     if (!isPasswordValid) {
       res.status(401).json({ message: "Neplatné prihlasovacie údaje" });
       return;
@@ -71,6 +74,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     //Send tokens and user data in response
     res.status(200).json({
+      user,
       token,
       refreshToken, // Include the refresh token in the response
       role: user.role,

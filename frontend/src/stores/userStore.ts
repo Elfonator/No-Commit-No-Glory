@@ -82,7 +82,7 @@ export const useUserStore = defineStore('users', () => {
     university: string
     faculty?: string,
     role: string
-    status?: string
+    status: string
   }) => {
     try {
       const mappedUserData = {

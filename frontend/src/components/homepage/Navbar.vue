@@ -245,12 +245,12 @@ export default defineComponent({
 
     <!-- GitHub Icon -->
     <v-btn
-      href="https://github.com/Elfonator/No-Commit-No-Glory"
+      href="https://www.fpvai.ukf.sk/sk/"
       target="_blank"
       variant="text"
-      class="github-icon"
+      class="faculty_logo"
     >
-      <v-icon size="54" color="#2C3531">mdi-github</v-icon>
+      <img src="@/assets/images/FPVaI_logo.png" alt="FPVaI Logo" class="faculty-logo-img"/>
     </v-btn>
 
     <!-- Login/Registration Modal -->
@@ -454,13 +454,21 @@ export default defineComponent({
   }
 }
 
-.github-icon {
+.faculty-logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
+  padding-bottom: 10px;
+  background: none;
+  border: none;
+}
+
+.faculty-logo-img {
+  height: 50px;
+  max-width: 150px;
+  object-fit: contain;
   &:hover {
-    color: #555;
+    transform: scale(1.1);
   }
 }
 

@@ -182,14 +182,12 @@ export const getUserProfile = async (
 
 // Set up Multer for avatar uploads
 const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: async (req, file, cb) => {
     // e.g., /app/uploads/avatars
-    const avatarPath = path.join(BASE_UPLOAD_DIR, "avatars");
+    const avatarPath = path.join(config.uploads, "avatars");
 
     // Make sure the directory exists
-    if (!fs.existsSync(avatarPath)) {
-      fs.mkdirSync(avatarPath, { recursive: true });
-    }
+    await fs.promises.mkdir(avatarPath, { recursive: true });
 
     cb(null, avatarPath);
   },
@@ -200,21 +198,24 @@ const avatarStorage = multer.diskStorage({
   },
 });
 
+// Multer file filter for image validation
+const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedTypes = /jpeg|jpg|png|gif/;
+  const mimeMatches = allowedTypes.test(file.mimetype);
+  const extMatches = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+
+  if (mimeMatches && extMatches) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only JPEG, JPG, GIF, and PNG files are allowed."));
+  }
+};
+
+// Initialize Multer
 export const upload = multer({
   storage: avatarStorage,
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const mimeMatches = allowedTypes.test(file.mimetype);
-    const extMatches = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase(),
-    );
-
-    if (mimeMatches && extMatches) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only JPEG, JPG, GIF, and PNG files are allowed."));
-    }
-  },
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
 });
 
 //Profile update
@@ -247,26 +248,17 @@ export const updateUserProfile = async (
       delete updates.newPassword;
     }
 
-    // Handle avatar upload only if a file is provided
+    // Handle avatar update
     if (req.file) {
-      // We'll store a relative path in DB
-      const relativePath = path.join("avatars", req.file.filename);
-      updates.avatar = `/${relativePath}`;
+      const newAvatarPath = path.join("avatars", req.file.filename);
+      updates.avatar = `/${newAvatarPath}`;
 
-      // Optionally delete the old avatar if it exists
+      // Delete the old avatar if it exists
       if (user.avatar) {
-        try {
-          // Convert it to an absolute path inside our upload directory
-          const oldAvatarAbsolutePath = path.join(
-            BASE_UPLOAD_DIR,
-            user.avatar.replace(/^\/+/, ""),
-          );
-          if (fs.existsSync(oldAvatarAbsolutePath)) {
-            fs.unlinkSync(oldAvatarAbsolutePath);
-            console.log("Old avatar deleted successfully:", oldAvatarAbsolutePath);
-          }
-        } catch (error) {
-          console.warn("Failed to delete old avatar:", error);
+        const oldAvatarPath = path.join(config.uploads, user.avatar.replace(/^\/+/, ""));
+        if (fs.existsSync(oldAvatarPath)) {
+          fs.unlinkSync(oldAvatarPath);
+          console.log(`Old avatar deleted: ${oldAvatarPath}`);
         }
       }
     }
