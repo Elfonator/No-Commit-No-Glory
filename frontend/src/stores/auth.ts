@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axiosInstance from '@/config/axiosConfig'
 import type { User } from '@/types/user.ts'
+import router from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
   //Reactive state
@@ -54,47 +55,64 @@ export const useAuthStore = defineStore('auth', () => {
 
   const refreshAccessToken = async () => {
     const refreshToken = localStorage.getItem('refreshToken')
-    console.log('Retrieved refresh token:', refreshToken)
+
     if (!refreshToken) {
       console.warn('No refresh token found, user needs to reauthenticate')
-      isTokenExpired.value = true // Trigger modal or redirect logic
+      isTokenExpired.value = true
       return
     }
 
     try {
       console.log('Attempting to refresh token...')
-      const response = await axiosInstance.post('/refresh-token', {
-        refreshToken,
-      })
+      const response = await axiosInstance.post('/refresh-token', { refreshToken })
 
-      token.value = response.data.token // Store new access token
-      localStorage.setItem('authToken', token.value || '') // Update localStorage
-      axiosInstance.defaults.headers.common['Authorization'] =
-        `Bearer ${token.value}`
-      isTokenExpired.value = false // Reset token expiry status
+      // Check if refresh token is still valid
+      if (!response.data.token) {
+        console.error('Invalid refresh token, logging out...')
+        await logout()
+        return
+      }
+
+      token.value = response.data.token
+      localStorage.setItem('authToken', token.value || '')
+
+      // Set new token for future requests
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+      isTokenExpired.value = false
 
       console.log('Token refreshed successfully')
     } catch (error) {
       console.error('Failed to refresh token:', error)
-      isTokenExpired.value = true // Mark token as expired
-
-      // Optionally log the user out if the refresh fails
-      await logout()
+      isTokenExpired.value = true
+      await logout() // Ensure full logout if refresh fails
     }
   }
 
   const logout = async () => {
-    user.value = null
-    token.value = null
-    role.value = null
-    isAuthenticated.value = false
-    isTokenExpired.value = false
+    try {
+      // Notify backend to invalidate refresh token
+      await axiosInstance.post('/auth/logout').catch(() => {})
 
-    //Clear tokens from localStorage
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('userRole')
-    delete axiosInstance.defaults.headers.common['Authorization']
+      // Clear authentication state
+      user.value = null
+      token.value = null
+      role.value = null
+      isAuthenticated.value = false
+      isTokenExpired.value = false
+
+      // Remove authentication data from localStorage
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('userRole')
+
+      // Remove the token from Axios headers
+      delete axiosInstance.defaults.headers.common['Authorization']
+
+      // Redirect to homepage
+      await router.push('/')
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
   }
 
   const verifyEmail = async (token: string) => {

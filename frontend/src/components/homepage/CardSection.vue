@@ -4,9 +4,9 @@
       <!-- Card 1 -->
       <v-col cols="12" sm="4" class="card-item">
         <v-card class="modal-card">
-          <v-card-title>
-            POKYNY PRE AUTOROV
-            <v-icon class="card-icon" large>mdi-file-document-outline</v-icon>
+          <v-card-title class="d-flex flex-column align-center text-center">
+            <v-icon class="card-icon" size="40">mdi-file-document-outline</v-icon>
+            <span>POKYNY PRE AUTOROV</span>
           </v-card-title>
           <v-card-text>
             Konferencia je určená pre študentov, alebo kolektívy študentov 1.,
@@ -21,9 +21,9 @@
       <!-- Card 2 -->
       <v-col cols="12" sm="4" class="card-item">
         <v-card class="modal-card">
-          <v-card-title>
-            VÝBORY KONFERENCIE
+          <v-card-title class="d-flex flex-column align-center text-center">
             <v-icon class="card-icon" left>mdi-account-group-outline</v-icon>
+            <span>VÝBORY KONFERENCIE</span>
           </v-card-title>
           <v-card-text>
             Zoznámte sa s odbornými výbormi konferencie z univerzít, ktoré sa
@@ -40,9 +40,9 @@
       <!-- Card 3 -->
       <v-col cols="12" sm="4" class="card-item">
         <v-card class="modal-card">
-          <v-card-title>
-            MINULÉ PRÁCE
+          <v-card-title class="d-flex flex-column align-center text-center">
             <v-icon class="card-icon" left>mdi-clock-outline</v-icon>
+            <span>MINULÉ PRÁCE</span>
           </v-card-title>
           <v-card-text>
             Objavte úspechy a zaujímavé práce z aktuálného a tiež
@@ -513,6 +513,7 @@ export default defineComponent({
       margin-left: 5px;
       padding-top: 40px;
       text-align: center;
+      font-size: 1.1rem !important;
     }
 
     .v-card-text {

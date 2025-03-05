@@ -26,6 +26,7 @@ services:
       - "5000:5000"
     depends_on:
       - mongo
+    restart: always
 
   frontend:
     build:
@@ -42,6 +43,20 @@ services:
     command: ["npm", "run", "dev", "--", "--host"]
     depends_on:
       - backend
+    restart: unless-stopped
+
+
+  # Database seeding
+  seeder:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    entrypoint: [ "npx", "ts-node", "src/seed.ts" ]
+    env_file:
+      - ./backend/.env.dev
+    depends_on:
+      - mongo
+    restart: "no"
 
 volumes:
   mongo_data:

@@ -4,9 +4,15 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import axiosInstance from '@/config/axiosConfig.ts'
+import router from '@/router'
 
 export default defineComponent({
   name: 'Navbar',
+  methods: {
+    router() {
+      return router
+    }
+  },
   setup() {
     const loginDialog = ref(false)
     const activeTab = ref('login')
@@ -34,14 +40,8 @@ export default defineComponent({
     const authStore = useAuthStore()
 
     //Password mismatch check
-    const passwordError = ref<string | null>(null)
-    const passwordMismatch = computed(() => {
-      const mismatch =
-        registerPassword.value !== confirmPassword.value &&
-        confirmPassword.value !== ''
-      passwordError.value = mismatch ? 'Heslá sa nezhodujú.' : null
-      return mismatch
-    })
+    const passwordMismatch = computed(() => registerPassword.value !== confirmPassword.value);
+    const passwordError = computed(() => (passwordMismatch.value ? 'Heslá sa nezhodujú.' : null));
 
     //Error pop-ups for better UX
     const errors = ref<Record<string, string[]>>({})
@@ -160,8 +160,22 @@ export default defineComponent({
             color: 'error',
           })
         }
+        loginEmail.value = ''
+        loginPassword.value = ''
       }
     }
+
+    const isLoggedIn = computed(() => authStore.isAuthenticated);
+
+    const loginButtonLabel = computed(() => (isLoggedIn.value ? "Profil" : "Prihlásenie"));
+
+    const loginButtonAction = () => {
+      if (isLoggedIn.value) {
+        router.push("/auth/profile"); // Navigate to profile if logged in
+      } else {
+        loginDialog.value = true;
+      }
+    };
 
     //Reset form fields after successful registration
     const resetForm = () => {
@@ -199,6 +213,9 @@ export default defineComponent({
       universities,
       roles,
       snackbar,
+      loginButtonLabel,
+      isLoggedIn,
+      loginButtonAction,
       openLoginModal,
       showSnackbar,
       togglePasswordVisibility,
@@ -222,20 +239,20 @@ export default defineComponent({
 
     <v-spacer></v-spacer>
 
-    <!-- Login Button -->
-    <v-btn outlined class="login-button" @click="loginDialog = true">
-      Prihlásenie
-      <v-icon left>mdi-login</v-icon>
+    <!-- Login/Profile Button -->
+    <v-btn outlined class="login-button" @click="loginButtonAction">
+      {{ loginButtonLabel }}
+      <v-icon left>{{ isLoggedIn ? 'mdi-account' : 'mdi-login' }}</v-icon>
     </v-btn>
 
     <!-- GitHub Icon -->
     <v-btn
-      href="https://github.com/Elfonator/No-Commit-No-Glory"
+      href="https://www.fpvai.ukf.sk/sk/"
       target="_blank"
       variant="text"
-      class="github-icon"
+      class="faculty_logo"
     >
-      <v-icon size="54" color="#2C3531">mdi-github</v-icon>
+      <img src="@/assets/images/FPVaI_logo.png" alt="FPVaI Logo" class="faculty-logo-img"/>
     </v-btn>
 
     <!-- Login/Registration Modal -->
@@ -439,13 +456,22 @@ export default defineComponent({
   }
 }
 
-.github-icon {
+.faculty-logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
+  background: none;
+  border: none;
+  height: 100px;
+}
+
+.faculty-logo-img {
+  height: 50px;
+  max-width: 150px;
+  object-fit: contain;
+  margin-top: -5px;
   &:hover {
-    color: #555;
+    transform: scale(1.1);
   }
 }
 

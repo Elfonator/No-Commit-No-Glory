@@ -149,7 +149,7 @@ export default defineComponent({
           const submissionDeadline = new Date(
             ongoingConference.deadline_submission,
           )
-          const reviewDeadline = new Date(ongoingConference.deadline_review)
+          const reviewDeadline = new Date(ongoingConference.date)
           const conferenceDate = new Date(ongoingConference.date)
 
           // Calculate derived dates

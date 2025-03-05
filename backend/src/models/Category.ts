@@ -8,7 +8,7 @@ export interface ICategory extends Document {
 const CategorySchema: Schema = new Schema(
   {
     name: { type: String, required: true, unique: true },
-    isActive: { type: Boolean }, //Boolean field for active/inactive status
+    isActive: { type: Boolean, default: true },
   },
   { collection: "categories" },
 );

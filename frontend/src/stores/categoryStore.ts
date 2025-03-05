@@ -46,7 +46,8 @@ export const useCategoryStore = defineStore('categories', () => {
         '/auth/admin/categories',
         category,
       )
-      categories.value.push(response.data.category)
+      await fetchAllCategories()
+
     } catch (err) {
       console.error('Failed to add category:', err)
       throw err
@@ -60,12 +61,7 @@ export const useCategoryStore = defineStore('categories', () => {
         updates,
       )
       const index = categories.value.findIndex(c => c._id === id)
-      if (index !== -1) {
-        categories.value[index] = {
-          ...categories.value[index],
-          ...response.data.category,
-        }
-      }
+      await fetchAllCategories()
     } catch (err) {
       console.error('Failed to update category:', err)
       throw err

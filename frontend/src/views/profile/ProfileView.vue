@@ -6,6 +6,7 @@ import defaultAvatar from '@/assets/images/unknown_person.jpg'
 export default defineComponent({
   name: 'ProfileView',
   setup() {
+
     const userStore = useUserStore()
     const editMode = ref(false)
     const profileData = reactive({
@@ -98,7 +99,7 @@ export default defineComponent({
         <!-- Avatar -->
         <v-col cols="12" md="2" class="d-flex justify-center">
           <v-avatar size="120">
-            <v-img :src="avatarUrl" alt="Avatar"></v-img>
+            <v-img :src="avatarUrl" alt="Avatar" contain style="object-fit: cover;"></v-img>
           </v-avatar>
         </v-col>
 
@@ -217,7 +218,7 @@ export default defineComponent({
   </v-container>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .profile {
   display: flex;
   justify-content: center;
@@ -255,8 +256,8 @@ export default defineComponent({
 
 .v-avatar img {
   border-radius: 10%;
-  object-fit: cover;
-  padding-bottom: 20px;
+  object-fit: cover !important;
+  padding-bottom: 5px;
 }
 
 .v-card-title {

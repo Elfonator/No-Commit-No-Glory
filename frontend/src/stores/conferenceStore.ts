@@ -84,7 +84,8 @@ export const useConferenceStore = defineStore('conferences', () => {
         '/auth/admin/conferences',
         conference,
       )
-      adminConferences.value = [...adminConferences.value, response.data]
+      await fetchAdminConferences();
+
     } catch (err) {
       console.error('Failed to add conference:', err)
       throw err
@@ -95,12 +96,9 @@ export const useConferenceStore = defineStore('conferences', () => {
     try {
       await axiosInstance.patch(`/auth/admin/conferences/${id}`, updates)
       const index = adminConferences.value.findIndex(c => c._id === id)
-      if (index !== -1) {
-        adminConferences.value[index] = {
-          ...adminConferences.value[index],
-          ...updates,
-        }
-      }
+
+      await fetchAdminConferences()
+
     } catch (err) {
       console.error('Failed to update conference:', err)
       throw err

@@ -57,7 +57,7 @@ export async function prepareDatabase(): Promise<void> {
     // Check if seeding has already been performed
     if (await hasAlreadySeeded()) {
       console.log("Database already seeded. Skipping...");
-      return;
+      process.exit(0); //Exit the process successfully
     }
 
     console.log("Seeding database...");
@@ -118,12 +118,12 @@ export async function prepareDatabase(): Promise<void> {
 
     // Insert categories
     await Category.insertMany([
-      { name: "Biológia, ekológia a environmentalistika" },
-      { name: "Geografia a regionálny rozvoj a geológia" },
-      { name: "Informatika" },
-      { name: "Chémia, fyzika a matematika" },
-      { name: "Odborová didaktika" },
-      { name: "PhD" },
+      { name: "Biológia, ekológia a environmentalistika", isActive: true },
+      { name: "Geografia a regionálny rozvoj a geológia", isActive: true },
+      { name: "Informatika", isActive: true },
+      { name: "Chémia, fyzika a matematika", isActive: true },
+      { name: "Odborová didaktika", isActive: true },
+      { name: "PhD", isActive: true },
     ]);
 
     // Initialize empty collections without data and ensure they exist

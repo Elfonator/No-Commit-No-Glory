@@ -84,7 +84,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
-// Edit user details (Admin can modify everything)
+// Edit user details
 export const editUserDetails = async (
   req: AuthRequest,
   res: Response
@@ -93,9 +93,17 @@ export const editUserDetails = async (
     const { userId } = req.params;
     const updates = req.body;
 
-    // If updating password, hash it before saving
-    if (updates.password) {
-      updates.password = await argon2.hash(updates.password);
+    console.log("Received update payload:", updates); // Debugging
+
+    const existingUser = await User.findById(userId);
+    if (!existingUser) {
+      res.status(404).json({ message: "Používateľ nebol nájdený." });
+      return;
+    }
+
+    // Preserve faculty if not explicitly sent
+    if (updates.faculty === undefined) {
+      updates.faculty = existingUser.faculty;
     }
 
     const updatedUser = await User.findByIdAndUpdate(userId, updates, {
