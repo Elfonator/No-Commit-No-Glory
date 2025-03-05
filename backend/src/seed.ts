@@ -57,7 +57,7 @@ const prepareDatabase = async () => {
     // Check if seeding has already been performed
     if (await hasAlreadySeeded()) {
       console.log("Database already seeded. Skipping...");
-      return;
+      process.exit(0); //Exit the process successfully
     }
 
     console.log("Seeding database...");
