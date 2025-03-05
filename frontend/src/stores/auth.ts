@@ -55,38 +55,42 @@ export const useAuthStore = defineStore('auth', () => {
 
   const refreshAccessToken = async () => {
     const refreshToken = localStorage.getItem('refreshToken')
-    console.log('Retrieved refresh token:', refreshToken)
+
     if (!refreshToken) {
       console.warn('No refresh token found, user needs to reauthenticate')
-      isTokenExpired.value = true // Trigger modal or redirect logic
+      isTokenExpired.value = true
       return
     }
 
     try {
       console.log('Attempting to refresh token...')
-      const response = await axiosInstance.post('/refresh-token', {
-        refreshToken,
-      })
+      const response = await axiosInstance.post('/refresh-token', { refreshToken })
 
-      token.value = response.data.token // Store new access token
-      localStorage.setItem('authToken', token.value || '') // Update localStorage
-      axiosInstance.defaults.headers.common['Authorization'] =
-        `Bearer ${token.value}`
-      isTokenExpired.value = false // Reset token expiry status
+      // Check if refresh token is still valid
+      if (!response.data.token) {
+        console.error('Invalid refresh token, logging out...')
+        await logout()
+        return
+      }
+
+      token.value = response.data.token
+      localStorage.setItem('authToken', token.value || '')
+
+      // Set new token for future requests
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+      isTokenExpired.value = false
 
       console.log('Token refreshed successfully')
     } catch (error) {
       console.error('Failed to refresh token:', error)
-      isTokenExpired.value = true // Mark token as expired
-
-      // Optionally log the user out if the refresh fails
-      await logout()
+      isTokenExpired.value = true
+      await logout() // Ensure full logout if refresh fails
     }
   }
 
   const logout = async () => {
     try {
-      // Call backend logout API if applicable
+      // Notify backend to invalidate refresh token
       await axiosInstance.post('/auth/logout').catch(() => {})
 
       // Clear authentication state
@@ -106,7 +110,6 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Redirect to homepage
       await router.push('/')
-
     } catch (error) {
       console.error('Logout failed:', error)
     }

@@ -160,6 +160,8 @@ export default defineComponent({
             color: 'error',
           })
         }
+        loginEmail.value = ''
+        loginPassword.value = ''
       }
     }
 

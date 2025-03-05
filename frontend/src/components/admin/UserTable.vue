@@ -182,19 +182,23 @@ export default defineComponent({
       });
     };
 
-    // Save user (create or update)
+// Save user (create or update)
     const saveUser = async () => {
       try {
-        const payload = {
+        const payload: any = {
           first_name: currentUser.first_name,
           last_name: currentUser.last_name,
           email: currentUser.email,
-          password: currentUser.password,
           university: currentUser.university,
           faculty: currentUser.faculty,
           role: userStore.roleMapping[currentUser.role] || currentUser.role,
           status: currentUser.status,
         };
+
+        // Only send password if the user is being created or explicitly changing it
+        if (dialogMode.value === 'add' || (currentUser.password && currentUser.password.trim() !== "")) {
+          payload.password = currentUser.password;
+        }
 
         console.log("Sending update payload:", payload); // Debugging
 
@@ -208,7 +212,7 @@ export default defineComponent({
       } catch (error) {
         showSnackbar?.({ message: 'Nepodarilo sa uložiť používateľa.', color: 'error' })
       }
-    }
+    };
 
     //user deletion handling
     const confirmDelete = (user: {

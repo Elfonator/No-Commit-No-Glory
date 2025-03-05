@@ -84,7 +84,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
-// Edit user details (Admin can modify everything)
+// Edit user details
 export const editUserDetails = async (
   req: AuthRequest,
   res: Response
@@ -106,16 +106,10 @@ export const editUserDetails = async (
       updates.faculty = existingUser.faculty;
     }
 
-    // If updating password, hash it
-    if (updates.password) {
-      updates.password = await argon2.hash(updates.password);
-    }
-
     const updatedUser = await User.findByIdAndUpdate(userId, updates, {
       new: true,
       runValidators: true,
     });
-
 
     if (!updatedUser) {
       res.status(404).json({ message: "Používateľ nebol nájdený alebo sa nepodarilo aktualizovať." });

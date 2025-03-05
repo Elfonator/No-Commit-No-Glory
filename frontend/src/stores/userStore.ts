@@ -46,16 +46,17 @@ export const useUserStore = defineStore('users', () => {
   }
 
   const fetchUserById = async (userId: string) => {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      const response = await axiosInstance.get(`/auth/admin/users/${userId}`)
-      return response.data
+      const response = await axiosInstance.get(`/auth/admin/users/${userId}`);
+      const { password, ...userWithoutPassword } = response.data; // Remove password if somehow included
+      return userWithoutPassword;
     } catch (err) {
-      console.error('Failed to fetch user by ID:', err)
-      throw err
+      console.error('Failed to fetch user by ID:', err);
+      throw err;
     }
-  }
+  };
 
   // Fetch all reviewers for dropdown
   const fetchReviewers = async () => {
