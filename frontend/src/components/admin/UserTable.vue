@@ -36,14 +36,12 @@ export default defineComponent({
     const isDeleteDialogOpen = ref(false)
     const userToDelete = ref(null);
     const dialogMode = ref<'add' | 'edit'>('add')
-    const selectedUser = ref<any>({})
     const password = ref('')
     const confirmPassword = ref('')
     const showPassword = ref(false)
     const showConfirmPassword = ref(false)
 
-    // Form for new/edit users
-    const userForm = reactive({
+    const currentUser = reactive({
       _id: '',
       first_name: '',
       last_name: '',
@@ -54,7 +52,7 @@ export default defineComponent({
       faculty: '',
       role: '',
       status: UserStatus.Active,
-    })
+    });
 
     // University and status options
     const universityOptions = [
@@ -131,7 +129,7 @@ export default defineComponent({
 
     // Check if passwords match
     const passwordMismatch = computed(() => {
-      return userForm.password !== userForm.confirmPassword && userForm.confirmPassword !== ''
+      return currentUser.password !== currentUser.confirmPassword && currentUser.confirmPassword !== ''
     })
 
     const togglePasswordVisibility = () => {
@@ -144,22 +142,14 @@ export default defineComponent({
 
     // Open dialog for add/edit user
     const openDialog = async (mode: 'add' | 'edit', userId?: string) => {
-      dialogMode.value = mode
+      dialogMode.value = mode;
+
       if (mode === 'edit' && userId) {
         const user = await userStore.fetchUserById(userId);
-
-        selectedUser.value = { ...user }
-        Object.assign(userForm, {
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email: user.email,
-          university: user.university,
-          faculty: user.faculty,
-          role: userStore.reverseRoleMapping[user.role] || user.role,
-          status: user.status,
-        })
+        Object.assign(currentUser, { ...user });
       } else {
-        Object.assign(userForm, {
+        Object.assign(currentUser, {
+          _id: '',
           first_name: '',
           last_name: '',
           email: '',
@@ -168,44 +158,52 @@ export default defineComponent({
           faculty: '',
           role: '',
           status: UserStatus.Active
-        })
+        });
       }
-      isDialogOpen.value = true
-    }
+
+      isDialogOpen.value = true;
+    };
 
     // Close dialog
     const closeDialog = () => {
-      isDialogOpen.value = false
-      selectedUser.value = {}
-    }
+      isDialogOpen.value = false;
+
+      // Reset user
+      Object.assign(currentUser, {
+        _id: '',
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        university: '',
+        faculty: '',
+        role: '',
+        status: UserStatus.Active
+      });
+    };
 
     // Save user (create or update)
     const saveUser = async () => {
       try {
+        const payload = {
+          first_name: currentUser.first_name,
+          last_name: currentUser.last_name,
+          email: currentUser.email,
+          password: currentUser.password,
+          university: currentUser.university,
+          faculty: currentUser.faculty,
+          role: userStore.roleMapping[currentUser.role] || currentUser.role,
+          status: currentUser.status,
+        };
+
+        console.log("Sending update payload:", payload); // Debugging
+
         if (dialogMode.value === 'add') {
-          await userStore.createUser({
-            first_name: userForm.first_name,
-            last_name: userForm.last_name,
-            email: userForm.email,
-            password: userForm.password,
-            university: userForm.university,
-            faculty: userForm.faculty,
-            role: userStore.roleMapping[userForm.role] || userForm.role,
-            status: userForm.status,
-          })
-          showSnackbar?.({ message: 'Používateľ bol úspešne pridaný.', color: 'success' })
+          await userStore.createUser(payload);
         } else {
-          await userStore.updateUser(selectedUser.value._id, {
-            first_name: userForm.first_name,
-            last_name: userForm.last_name,
-            email: userForm.email,
-            university: userForm.university,
-            faculty: userForm.faculty,
-            role: userStore.roleMapping[userForm.role] || userForm.role,
-            status: userForm.status,
-          })
-          showSnackbar?.({ message: 'Údaje používateľa boli aktualizované.', color: 'success' })
+          await userStore.updateUser(currentUser._id, payload);
         }
+        showSnackbar?.({ message: 'Údaje používateľa boli aktualizované.', color: 'success' })
         closeDialog()
       } catch (error) {
         showSnackbar?.({ message: 'Nepodarilo sa uložiť používateľa.', color: 'error' })
@@ -218,7 +216,7 @@ export default defineComponent({
       first_name: string
       last_name: string
     }) => {
-      Object.assign(selectedUser.value, user)
+      Object.assign(currentUser, user)
       isDeleteDialogOpen.value = true
     }
 
@@ -228,7 +226,7 @@ export default defineComponent({
 
     const deleteUser = async () => {
       try {
-        await userStore.deleteUser(selectedUser.value._id);
+        await userStore.deleteUser(currentUser._id);
         showSnackbar?.({
           message: 'Používateľ bol úspešne odstránený.',
           color: 'success',
@@ -254,7 +252,7 @@ export default defineComponent({
       perPage,
       isDialogOpen,
       dialogMode,
-      selectedUser,
+      currentUser,
       universityOptions,
       statusOptions,
       roleOptions,
@@ -385,7 +383,7 @@ export default defineComponent({
             </v-chip>
           </td>
           <td class="d-flex justify-center align-center">
-            <v-btn @click="openDialog('edit', user)" color="#FFCD16">
+            <v-btn @click="openDialog('edit', user._id)" color="#FFCD16">
               <v-icon size="24">mdi-pencil</v-icon>
             </v-btn>
             <v-btn color="#BC463A" @click="confirmDelete(user)">
@@ -404,35 +402,35 @@ export default defineComponent({
       <v-card-text>
         <v-form ref="userForm" v-model="valid">
           <v-select
-            v-model="selectedUser.status"
+            v-model="currentUser.status"
             :items="statusOptions"
             label="Stav"
             outlined
             dense
           />
           <v-select
-            v-model="selectedUser.role"
+            v-model="currentUser.role"
             :items="roleOptions"
             label="Rola"
             outlined
             dense
           />
           <v-text-field
-            v-model="selectedUser.first_name"
+            v-model="currentUser.first_name"
             label="Meno"
             :rules="[v => !!v || 'Meno je povinné']"
             outlined
             dense
           />
           <v-text-field
-            v-model="selectedUser.last_name"
+            v-model="currentUser.last_name"
             label="Priezvisko"
             :rules="[v => !!v || 'Priezvisko je povinné']"
             outlined
             dense
           />
           <v-text-field
-            v-model="selectedUser.email"
+            v-model="currentUser.email"
             label="Email"
             :rules="[v => !!v || 'Email je povinný', v => /.+@.+\..+/.test(v) || 'Neplatný email']"
             outlined
@@ -441,7 +439,7 @@ export default defineComponent({
           <!-- Password only required when adding a new user -->
           <v-text-field
             v-if="dialogMode === 'add'"
-            v-model="selectedUser.password"
+            v-model="currentUser.password"
             label="Heslo"
             :type="showPassword ? 'text' : 'password'"
             :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
@@ -451,16 +449,16 @@ export default defineComponent({
           <!-- Confirm Password Field -->
           <v-text-field
             v-if="dialogMode === 'add'"
-            v-model="selectedUser.confirmPassword"
+            v-model="currentUser.confirmPassword"
             label="Zopakujte heslo"
             :type="showConfirmPassword ? 'text' : 'password'"
             :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
             @click:append-inner="toggleConfirmPasswordVisibility"
-            :rules="[v => !!v || 'Potvrdenie hesla je povinné', v => v === selectedUser.password || 'Heslá sa nezhodujú']"
+            :rules="[v => !!v || 'Potvrdenie hesla je povinné', v => v === currentUser.password || 'Heslá sa nezhodujú']"
           />
 
           <v-select
-            v-model="selectedUser.university"
+            v-model="currentUser.university"
             :items="universityOptions"
             label="Univerzita"
             :rules="[v => !!v || 'Univerzita je povinná']"
@@ -468,7 +466,7 @@ export default defineComponent({
             dense
           />
           <v-text-field
-            v-model="selectedUser.faculty"
+            v-model="currentUser.faculty"
             label="Fakulta"
             outlined
             dense
@@ -489,7 +487,7 @@ export default defineComponent({
       <v-card-text>
         <p>
           Ste si istí, že chcete odstrániť používateľa
-          <strong>{{ selectedUser.first_name }} {{ selectedUser.last_name }}</strong>?
+          <strong>{{ currentUser.first_name }} {{ currentUser.last_name }}</strong>?
         </p>
       </v-card-text>
       <v-card-actions>

@@ -34,7 +34,7 @@ router.use(authenticateToken);
 
 //Users
 router.get("/users", getAllUsers);
-router.get("/users/:id", getUserById);
+router.get("/users/:userId", getUserById);
 router.patch("/users/:userId", editUserDetails);
 router.post("/users", createUser)
 router.get("/reviewers", getReviewers);

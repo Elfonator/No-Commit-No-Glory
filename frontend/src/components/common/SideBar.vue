@@ -26,6 +26,8 @@
         <v-list-item
           v-for="(link, index) in roleSpecificLinks"
           :key="authStore.role + '-' + index"
+          :to="link.path"
+          exact-active-class="active-link"
           @click="navigateTo(link.path)"
         >
           <div class="link-container">
@@ -59,6 +61,8 @@
       <v-list-item
         v-for="(link, index) in generalLinksBottom"
         :key="'general-bottom-' + index"
+        :to="link.path"
+        exact-active-class="active-link"
         @click="navigateTo(link.path)"
       >
         <v-list-item-title>{{ link.name }}</v-list-item-title>
@@ -163,6 +167,13 @@ const newPaperCount = computed(() => notificationStore.newPaperCount)
     font-size: 1.2rem;
     font-family: 'Lato', sans-serif;
     color: #2c3531;
+  }
+
+  .v-list-item.active-link {
+    background-color: #dfe6e9; /* Light gray background */
+    font-weight: bold;
+    color: #bc4639 !important; /* SciSubmit main accent color */
+    border-radius: 5px;
   }
 }
 

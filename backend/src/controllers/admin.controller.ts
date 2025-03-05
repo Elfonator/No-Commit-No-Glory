@@ -51,7 +51,7 @@ export const getUserById = async (
 // Create a new user (Admin only)
 export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { first_name, last_name, email, password, university, role, status } = req.body;
+    const { first_name, last_name, email, password, university, faculty, role, status } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -70,6 +70,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
       email,
       password: hashedPassword,
       university,
+      faculty,
       role,
       isVerified: true, // Admin manually creates verified users
       status: status || UserStatus.Active,
@@ -92,7 +93,20 @@ export const editUserDetails = async (
     const { userId } = req.params;
     const updates = req.body;
 
-    // If updating password, hash it before saving
+    console.log("Received update payload:", updates); // Debugging
+
+    const existingUser = await User.findById(userId);
+    if (!existingUser) {
+      res.status(404).json({ message: "Používateľ nebol nájdený." });
+      return;
+    }
+
+    // Preserve faculty if not explicitly sent
+    if (updates.faculty === undefined) {
+      updates.faculty = existingUser.faculty;
+    }
+
+    // If updating password, hash it
     if (updates.password) {
       updates.password = await argon2.hash(updates.password);
     }
@@ -101,6 +115,7 @@ export const editUserDetails = async (
       new: true,
       runValidators: true,
     });
+
 
     if (!updatedUser) {
       res.status(404).json({ message: "Používateľ nebol nájdený alebo sa nepodarilo aktualizovať." });

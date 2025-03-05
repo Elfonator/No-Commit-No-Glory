@@ -7,7 +7,7 @@ export const useUserStore = defineStore('users', () => {
   // Reactive state
   const adminUsers = ref<Array<any>>([])
   const reviewers = ref<Array<any>>([])
-  const admins = ref([]);
+  //const admins = ref([]);
   const userProfile = ref<any>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -36,7 +36,7 @@ export const useUserStore = defineStore('users', () => {
         ...user,
         role: reverseRoleMapping[user.role] || user.role, //Map role to Slovak
       }))
-      //console.log("adminUsers.value",adminUsers.value)
+      console.log("adminUsers.value",adminUsers.value)
     } catch (err) {
       error.value = 'Failed to fetch users.'
       console.error(err)
@@ -45,11 +45,11 @@ export const useUserStore = defineStore('users', () => {
     }
   }
 
-  const fetchUserById = async (id: string) => {
+  const fetchUserById = async (userId: string) => {
     loading.value = true
     error.value = null
     try {
-      const response = await axiosInstance.get(`/auth/admin/users/${id}`)
+      const response = await axiosInstance.get(`/auth/admin/users/${userId}`)
       return response.data
     } catch (err) {
       console.error('Failed to fetch user by ID:', err)
@@ -80,7 +80,7 @@ export const useUserStore = defineStore('users', () => {
     email: string
     password: string
     university: string
-    faculty: string,
+    faculty?: string,
     role: string
     status?: string
   }) => {
@@ -91,12 +91,7 @@ export const useUserStore = defineStore('users', () => {
       }
 
       const response = await axiosInstance.post('/auth/admin/users', mappedUserData)
-
-      // Add new user to state
-      adminUsers.value.push({
-        ...response.data,
-        role: reverseRoleMapping[response.data.role] || response.data.role,
-      })
+      await fetchAllUsers();
 
       return response.data
     } catch (err) {
@@ -107,12 +102,11 @@ export const useUserStore = defineStore('users', () => {
 
   // Update user details (Admin only)
   const updateUser = async (
-    id: string,
+    userId: string,
     updates: {
       first_name?: string;
       last_name?: string;
       email?: string;
-      password?: string;
       university?: string;
       faculty?: string;
       role?: string;
@@ -126,16 +120,10 @@ export const useUserStore = defineStore('users', () => {
         role: updates.role ? roleMapping[updates.role] || updates.role : undefined,
       }
 
-      const response = await axiosInstance.patch(`/auth/admin/users/${id}`, mappedUpdates)
+      console.log(mappedUpdates);
 
-      // Find and update the user in the local store
-      const index = adminUsers.value.findIndex((u) => u._id === id)
-      if (index !== -1) {
-        adminUsers.value[index] = {
-          ...adminUsers.value[index],
-          ...updates,
-        }
-      }
+      const response = await axiosInstance.patch(`/auth/admin/users/${userId}`, mappedUpdates)
+      await fetchAllUsers();
 
       return response.data
     } catch (err) {

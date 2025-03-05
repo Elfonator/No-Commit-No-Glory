@@ -6,6 +6,7 @@ import defaultAvatar from '@/assets/images/unknown_person.jpg'
 export default defineComponent({
   name: 'ProfileView',
   setup() {
+
     const userStore = useUserStore()
     const editMode = ref(false)
     const profileData = reactive({
@@ -217,7 +218,7 @@ export default defineComponent({
   </v-container>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .profile {
   display: flex;
   justify-content: center;
