@@ -182,7 +182,7 @@ export default defineComponent({
   }
 
   @media (min-width: 1200px) {
-    height: 750px;
+    height: 500px;
   }
 
   .banner-image {
@@ -227,7 +227,7 @@ export default defineComponent({
     }
 
     @media (min-width: 1200px) {
-      font-size: 4rem;
+      font-size: 3.5rem;
     }
   }
 
@@ -310,18 +310,18 @@ export default defineComponent({
   background-color: rgba(210, 233, 227, 0.8);
   text-align: center;
   width: 100%;
-  max-height: 90px;
+  max-height: 100px;
   margin-bottom: 30px;
 
   .cta-title {
     margin-top: -5px;
-    font-size: 24px;
+    font-size: 1.5rem;
     font-weight: bold;
     color: #2c3531;
   }
 
   .cta-description {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: #28655c;
     line-height: 1.2;
   }

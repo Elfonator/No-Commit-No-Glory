@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axiosInstance from '@/config/axiosConfig'
 import type { User } from '@/types/user.ts'
+import router from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
   //Reactive state
@@ -84,17 +85,31 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async () => {
-    user.value = null
-    token.value = null
-    role.value = null
-    isAuthenticated.value = false
-    isTokenExpired.value = false
+    try {
+      // Call backend logout API if applicable
+      await axiosInstance.post('/auth/logout').catch(() => {})
 
-    //Clear tokens from localStorage
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('userRole')
-    delete axiosInstance.defaults.headers.common['Authorization']
+      // Clear authentication state
+      user.value = null
+      token.value = null
+      role.value = null
+      isAuthenticated.value = false
+      isTokenExpired.value = false
+
+      // Remove authentication data from localStorage
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('userRole')
+
+      // Remove the token from Axios headers
+      delete axiosInstance.defaults.headers.common['Authorization']
+
+      // Redirect to homepage
+      await router.push('/')
+
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
   }
 
   const verifyEmail = async (token: string) => {

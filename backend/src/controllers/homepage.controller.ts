@@ -13,7 +13,7 @@ export const getHomepageData = async (
     const ongoingConference = await Conference.findOne({
       status: ConferenceStatus.Ongoing,
     }).select(
-      "year location university date start_date end_date deadline_submission deadline_review",
+      "year location university date start_date end_date deadline_submission",
     );
 
     // Fetch past conferences (completed)

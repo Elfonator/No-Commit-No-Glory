@@ -436,7 +436,7 @@ export default defineComponent({
                   </template>
                   <v-date-picker
                     v-model="currentConference.date"
-                    @accept="menu.date = false"
+                    @update:modelValue="menu.date = false"
                     :color="'primary'"
                   />
                 </v-menu>
@@ -489,7 +489,7 @@ export default defineComponent({
                   </template>
                   <v-date-picker
                     v-model="currentConference.deadline_submission"
-                    @accept="menu.deadline_submission = false"
+                    @update:modelValue="menu.deadline_submission = false"
                     :color="'primary'"
                   />
                 </v-menu>
@@ -518,7 +518,7 @@ export default defineComponent({
                   </template>
                   <v-date-picker
                     v-model="currentConference.start_date"
-                    @accept="menu.start_date = false"
+                    @update:modelValue="menu.start_date = false"
                     :color="'primary'"
                   />
                 </v-menu>
@@ -547,7 +547,7 @@ export default defineComponent({
                   </template>
                   <v-date-picker
                     v-model="currentConference.end_date"
-                    @accept="menu.end_date = false"
+                    @update:modelValue="menu.end_date = false"
                     :color="'primary'"
                   />
                 </v-menu>

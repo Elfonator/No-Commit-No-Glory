@@ -171,7 +171,7 @@ export default defineComponent({
       if (isLoggedIn.value) {
         router.push("/auth/profile"); // Navigate to profile if logged in
       } else {
-        loginDialog.value = true; // Open login modal if not logged in
+        loginDialog.value = true;
       }
     };
 
@@ -458,15 +458,16 @@ export default defineComponent({
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-bottom: 10px;
   background: none;
   border: none;
+  height: 100px;
 }
 
 .faculty-logo-img {
   height: 50px;
   max-width: 150px;
   object-fit: contain;
+  margin-top: -5px;
   &:hover {
     transform: scale(1.1);
   }
