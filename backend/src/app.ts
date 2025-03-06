@@ -1,5 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
+
 import cors from "cors";
 import Database from "./config/db";
 import commonRoutes from "./routes/common.routes";
@@ -8,9 +10,7 @@ import reviewerRoutes from "./routes/reviewer.routes";
 import participantRoutes from "./routes/participant.routes";
 import adminRoutes from "./routes/admin.routes";
 import path from "path";
-import { config } from './config'
-
-dotenv.config();
+import {config} from "./config";
 
 const app = express();
 
@@ -19,7 +19,7 @@ app.use(express.json());
 
 // CORS configuration
 const corsOptions = {
-  origin: ["http://localhost:8080", "http://frontend:8080"],
+  origin: [config.baseFrontendUrl, "https://svk-ukf.sk"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -52,7 +52,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/auth/admin", adminRoutes);
 app.use("/api/auth/participant", participantRoutes);
 app.use("/api/auth/reviewer", reviewerRoutes);
-app.use("/avatars", express.static(path.join(config.uploads, "avatars")));
-app.use("/docs", express.static(path.join(config.uploads, "docs")));
+app.use('/uploads', express.static(path.join(__dirname, '../../../uploads')));
 
 export default app;

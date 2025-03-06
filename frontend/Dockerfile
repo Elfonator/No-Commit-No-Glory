@@ -1,36 +1,34 @@
-# Step 1: Build stage
-# Step 1: Build Stage
-FROM node:22 AS build-stage
+FROM node:22 AS development
 
 USER node
 
 WORKDIR /app
 
-# Copy only package.json and package-lock.json first for better caching
 COPY --chown=node:node package*.json ./
 
-# Install dependencies
 RUN npm install
 
-# Copy the rest of the application files
 COPY --chown=node:node . .
 
-# Build the application
-RUN npm run build
+EXPOSE 3000
 
-# Step 2: Production Stage
-FROM node:22 AS production-stage
+CMD ["npm", "run", "dev"]
+
+FROM node:22 AS build
 
 USER node
 
 WORKDIR /app
 
-# Copy only necessary files from the build stage
-COPY --chown=node:node --from=build-stage /app/node_modules node_modules
-COPY --chown=node:node --from=build-stage /app/dist dist
+COPY --from=development /app .
 
-# Expose the port for Vite
-EXPOSE 8080
+RUN npm run build
 
-# Start the development server
-CMD ["npm", "run", "dev"]
+
+FROM nginx:alpine AS production
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
