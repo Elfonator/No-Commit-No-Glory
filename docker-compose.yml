@@ -17,6 +17,7 @@ services:
       - svk-network
 
   backend:
+    image: ppsdocker/svk-be:latest  # Pridanie názvu image pre backend
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -36,6 +37,7 @@ services:
       - svk-network
 
   frontend:
+    image: ppsdocker/svk-fe:latest  # Pridanie názvu image pre frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile

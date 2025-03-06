@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: svk-be
+  namespace: svk
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
+  selector:
+    app: svk-be
+  type: ClusterIP
+  sessionAffinity: None
