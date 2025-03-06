@@ -13,14 +13,15 @@
 
     <!-- Role-Based Links -->
     <template v-if="roleSpecificLinks.length">
-      <v-list-subheader v-if="authStore.isParticipant">
-        Účastník
+      <v-list-subheader  style="justify-self: center" v-if="authStore.isParticipant">
+        ÚČASTNÍK
       </v-list-subheader>
-      <v-list-subheader v-if="authStore.isReviewer">
-        Recenzent
+      <v-list-subheader style="justify-self: center" v-if="authStore.isReviewer">
+        RECENZENT
       </v-list-subheader>
-      <v-list-subheader v-if="authStore.isAdmin"
-        >Administrátor</v-list-subheader
+      <v-list-subheader style="justify-self: center" v-if="authStore.isAdmin">
+        ADMINISTRÁTOR
+      </v-list-subheader
       >
       <v-list>
         <v-list-item

@@ -6,10 +6,7 @@ import { UserStatus } from '@/types/user'
 export default defineComponent({
   name: 'UserTable',
   setup() {
-    const showSnackbar = inject('showSnackbar') as ({
-                                                      message,
-                                                      color,
-                                                    }: {
+    const showSnackbar = inject('showSnackbar') as ({ message, color }: {
       message: string
       color?: string
     }) => void
@@ -179,7 +176,7 @@ export default defineComponent({
         faculty: '',
         role: '',
         status: UserStatus.Active
-      });
+      })
     };
 
 // Save user (create or update)

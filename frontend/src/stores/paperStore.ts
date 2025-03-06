@@ -47,8 +47,8 @@ export const usePaperStore = defineStore('papers', () => {
           headers: { 'Content-Type': 'multipart/form-data' },
         },
       )
+      await getMyPapers()
 
-      participantPapers.value.push(response.data) // Add to participant papers
       return response.data
     } catch (err) {
       console.error('Failed to create paper:', err)
@@ -124,13 +124,7 @@ export const usePaperStore = defineStore('papers', () => {
         },
       )
 
-      const index = participantPapers.value.findIndex(p => p._id === id)
-      if (index !== -1) {
-        participantPapers.value[index] = {
-          ...participantPapers.value[index],
-          ...updates,
-        }
-      }
+      await getMyPapers()
 
       return response.data
     } catch (err) {

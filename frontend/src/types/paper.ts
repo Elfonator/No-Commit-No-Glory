@@ -17,7 +17,7 @@ export interface Paper {
     first_name: string
     last_name: string
   }
-  category: { name: string }
+  category: { _id: string, name: string }
   conference: { _id: string; year: number; location: string; date: Date }
   abstract: string
   keywords: string[]

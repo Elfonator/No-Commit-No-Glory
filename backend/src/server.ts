@@ -6,17 +6,6 @@ import { prepareDatabase } from "./seed";
 
 const PORT = process.env.PORT || 5000;
 
-// Run database seeding only if needed (non-blocking)
-(async () => {
-  try {
-    console.log("Checking if database needs seeding...");
-    await prepareDatabase();
-    console.log("Database ready.");
-  } catch (error) {
-    console.error("Database seeding failed:", error);
-  }
-})();
-
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

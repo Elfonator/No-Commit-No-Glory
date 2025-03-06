@@ -18,7 +18,7 @@ const router = Router();
 router.use(authenticateToken);
 
 router.get("/papers", viewMyPapers);
-router.post('/upload', paperUpload.single("file_link"), async (req, res) => {
+router.post('/papers', paperUpload.single("file_link"), async (req, res) => {
   try {
     await createPaper(req, res);
   } catch (error) {

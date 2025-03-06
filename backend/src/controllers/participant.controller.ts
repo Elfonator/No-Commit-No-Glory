@@ -2,7 +2,7 @@ import { Response } from "express";
 import Paper, { PaperStatus } from "../models/Paper";
 import { AuthRequest } from "../middleware/authenticateToken";
 import Category from "../models/Category";
-import Conference from "../models/Conference";
+import Conference, { ConferenceStatus } from '../models/Conference'
 import { sendEmail } from "../utils/emailService";
 import User from "../models/User";
 import path from "path";
@@ -33,12 +33,19 @@ export const createPaper = async (
       isFinal,
     } = req.body;
 
+    console.log('Conference ->', conference);
+    console.log('Body ->', req.body);
+
     //Validate conference
-    const selectedConference = await Conference.findById(conference);
-    if (!selectedConference || selectedConference.status !== "Aktuálna") {
-      res
-        .status(400)
-        .json({ message: "Konferencia neexistuje alebo nie je aktuálna." });
+    const selectedConference = await Conference.findOne({
+      _id: conference,
+      status: ConferenceStatus.Ongoing,
+    });
+
+    console.log('SelectedConfernce id ->', selectedConference);
+
+    if (!selectedConference) {
+      res.status(400).json({ message: "Konferencia neexistuje alebo nie je aktuálna." });
       return;
     }
 
@@ -73,7 +80,7 @@ export const createPaper = async (
       authors: JSON.parse(authors),
       file_link: filePath,
       submission_date: new Date(),
-      isFinal: !!isFinal,
+      isFinal: isFinal === "true" || isFinal === true,
       deadline_date: selectedConference.deadline_submission,
     });
 
@@ -166,6 +173,16 @@ export const editPaper = async (
     delete updates.deadline_date;
     delete updates.reviewer;
     delete updates.awarded;
+
+    if (typeof updates.authors === 'string') {
+      try {
+        updates.authors = JSON.parse(updates.authors);
+      } catch (error) {
+        console.error("Invalid authors format:", updates.authors);
+        res.status(400).json({ message: "Invalid authors format." });
+        return;
+      }
+    }
 
     //Handle file upload if a new file is provided
     if (req.file) {

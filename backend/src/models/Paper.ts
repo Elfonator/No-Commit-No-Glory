@@ -47,15 +47,15 @@ const PaperSchema: Schema = new Schema({
     ref: "Conference",
     required: true,
   },
-  abstract: { type: String, required: true },
-  keywords: { type: [String], required: true },
+  abstract: { type: String, required: false },
+  keywords: { type: [String], required: false },
   authors: [
     {
       firstName: { type: String, required: true },
       lastName: { type: String, required: true },
     },
   ],
-  file_link: { type: String, required: true },
+  file_link: { type: String, required: false },
   isFinal: { type: Boolean, default: false },
   deadline_date: { type: Date, required: false },
   reviewer: {

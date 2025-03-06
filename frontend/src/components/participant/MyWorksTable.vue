@@ -112,10 +112,10 @@ export default defineComponent({
     })
 
     const selectedConference = computed(() =>
-      currentPaper.conference
+      currentPaper.conference && currentPaper.conference.date
         ? `${currentPaper.conference.year} - ${currentPaper.conference.location}: ${formatDate(currentPaper.conference.date)}`
-        : '',
-    )
+        : ''
+    );
 
     const selectedCategory = computed(() =>
       currentPaper.category ? `${currentPaper.category.name}` : '',
@@ -204,9 +204,9 @@ export default defineComponent({
     }
 
     const selectCategory = (category: ActiveCategory) => {
-      currentPaper.category = category
-      menuCatOpen.value = false
-    }
+      currentPaper.category = { _id: category._id, name: category.name } as ActiveCategory;
+      menuCatOpen.value = false;
+    };
 
     const resetFilters = () => {
       filters.selectedConference = ''
@@ -247,12 +247,22 @@ export default defineComponent({
     }
 
     const closeDialog = () => {
-      isDialogOpen.value = false
+
+      isDialogOpen.value = false;
+
       Object.assign(currentPaper, {
+        status: '',
         title: '',
-        category: '',
-        conference: '',
+        category: undefined,
+        conference: undefined,
+        abstract: '',
+        keywords: [],
+        authors: userStore.userProfile
+          ? [{ firstName: userStore.userProfile.first_name, lastName: userStore.userProfile.last_name }]
+          : [],
+        submission_date: '',
         file_link: undefined,
+        deadline_date: '',
         isFinal: false,
       })
     }
@@ -274,14 +284,14 @@ export default defineComponent({
           keywords: currentPaper.keywords,
           isFinal: currentPaper.isFinal,
           status: currentPaper.status,
-          conference:
-            currentPaper.conference && '_id' in currentPaper.conference
-              ? currentPaper.conference._id
-              : undefined,
-          category:
-            currentPaper.category && '_id' in currentPaper.category
-              ? currentPaper.category._id
-              : undefined,
+          conference: currentPaper.conference?._id,
+          category: currentPaper.category?._id,
+          authors: Array.isArray(currentPaper.authors)
+            ? currentPaper.authors.map(author => ({
+              firstName: author.firstName,
+              lastName: author.lastName,
+            }))
+            : [],
         }
 
         if (dialogMode.value === 'edit' && currentPaper._id) {
@@ -295,6 +305,7 @@ export default defineComponent({
             message: 'Práca bola úspešne upravená.',
             color: 'success',
           })
+
         } else {
           //Create new paper
           await paperStore.createPaper(payload, currentPaper.file_link)
@@ -304,7 +315,7 @@ export default defineComponent({
           })
         }
 
-        closeDialog()
+        closeDialog();
       } catch (err) {
         console.error(err)
         showSnackbar?.({ message: 'Uloženie práce zlyhalo.', color: 'error' })
@@ -380,9 +391,17 @@ export default defineComponent({
       }
     }
 
-    const formatDate = (date: Date | string) =>
-      format(new Date(date), 'dd.MM.yyyy')
+    const formatDate = (date: Date | string | undefined | null) => {
+      if (!date) return "N/A";
 
+      const parsedDate = new Date(date);
+      if (isNaN(parsedDate.getTime())) {
+        console.error("Invalid date value:", date);
+        return "N/A";
+      }
+
+      return format(parsedDate, "dd.MM.yyyy");
+    };
     onMounted(() => {
       fetchDependencies()
     })
@@ -551,7 +570,7 @@ export default defineComponent({
             <v-text-field
               v-model="currentPaper.title"
               label="Title"
-              :rules="[() => !currentPaper.isFinal || 'Názov práce je povinný']"
+              :rules="[() => !!currentPaper.title || 'Názov práce je povinný']"
               outlined
               dense
               class="large-text-field"
@@ -572,7 +591,7 @@ export default defineComponent({
                   readonly
                   append-inner-icon="mdi-chevron-down"
                   class="large-text-field"
-                  :rules="[() => (!currentPaper.isFinal || currentPaper.category?.name) || 'Vyberte kategóriu']"
+                  :rules="[() => !!currentPaper.category || 'Vyberte kategóriu']"
                 />
               </template>
               <v-list>
@@ -594,6 +613,7 @@ export default defineComponent({
               class="custom-menu"
             >
               <template v-slot:activator="{ props }">
+
                 <v-text-field
                   v-bind="props"
                   label="Conference"
@@ -603,7 +623,7 @@ export default defineComponent({
                   readonly
                   append-inner-icon="mdi-chevron-down"
                   class="large-text-field"
-                  :rules="[() => currentPaper.conference?._id || 'Vyberte konferenciu']"
+                  :rules="[() => !!currentPaper.conference || 'Vyberte konferenciu']"
                 />
               </template>
               <v-list>
@@ -626,8 +646,8 @@ export default defineComponent({
               placeholder="Vložte kľúčové slová oddelené čiarkou"
               outlined
               dense
-              required
               class="large-text-field"
+              :rules="[() => !currentPaper.isFinal || 'Kľúčové slová sú povinné pre finálnu verziu']"
             />
             <v-row>
               <v-col
@@ -676,7 +696,7 @@ export default defineComponent({
               label="Abstrakt"
               outlined
               dense
-              :rules="[() => !currentPaper.isFinal || 'Abstrakt je povinný']"
+              :rules="[() => !currentPaper.isFinal || 'Abstrakt je povinný pre finálnu verziu']"
               class="large-text-field"
             />
             <v-file-input
@@ -686,7 +706,7 @@ export default defineComponent({
               dense
               :disabled="dialogMode === 'view'"
               class="large-text-field"
-              :rules="[() => !currentPaper.isFinal || 'Súbor je povinný']"
+              :rules="[() => !currentPaper.isFinal || 'Súbor je povinný pre finálnu verziu']"
             ></v-file-input>
             <v-checkbox
               v-model="currentPaper.isFinal"
@@ -696,12 +716,12 @@ export default defineComponent({
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn @click="closeDialog" color="red">Zrušiť</v-btn>
-          <v-btn @click="savePaper" color="primary">Uložiť</v-btn>
+          <v-btn @click="closeDialog" color="#BC463A" variant="flat">Zrušiť</v-btn>
+          <v-btn @click="savePaper" color="secondary" variant="flat">Uložiť</v-btn>
           <v-btn
             v-if="currentPaper.isFinal"
             @click="submitPaper"
-            color="red"
+            color="primary" variant="flat"
             :disabled="currentPaper.status === PaperStatus.Submitted"
             >Odoslať</v-btn
           >
