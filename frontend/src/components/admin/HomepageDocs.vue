@@ -1,6 +1,15 @@
 <script lang="ts">
 import { defineComponent, ref, reactive, inject } from 'vue'
 
+// Move the interface outside of setup for better visibility
+export interface HomepageDocument {
+  id: string;
+  name: string;
+  year: string;
+  fileName: string;
+  file: File | null;
+}
+
 export default defineComponent({
   name: 'DocumentTable',
   setup() {
@@ -17,16 +26,22 @@ export default defineComponent({
     }
 
     // Temporary data for documents
-    const documents = ref([
+    const documents = ref<HomepageDocument[]>([
       { id: '1', name: 'Dokument 2023', year: '2023', fileName: '', file: null },
       { id: '2', name: 'Dokument 2022', year: '2022', fileName: '', file: null },
       { id: '3', name: 'Dokument 2021', year: '2021', fileName: '', file: null },
-    ])
+    ]);
 
     // States for handling the modal and form data
     const isDialogOpen = ref(false)
     const dialogMode = ref<'add' | 'edit'>('add')
-    const currentDocument = reactive({ id: '', name: '', year: '', file: null as File | null, fileName: '' })
+    const currentDocument = reactive<HomepageDocument>({
+      id: '',
+      name: '',
+      year: '',
+      fileName: '',
+      file: null
+    });
     const valid = ref(false)
 
     // Table headers
@@ -78,7 +93,7 @@ export default defineComponent({
               name: currentDocument.name,
               year: currentDocument.year,
               fileName: currentDocument.file ? currentDocument.file.name : documents.value[index].fileName,
-              file: currentDocument.file,  // Update file
+              file: currentDocument.file,
             }
           }
           showSnackbar?.({
@@ -129,7 +144,6 @@ export default defineComponent({
   },
 })
 </script>
-
 <template>
   <v-card>
     <v-card-title>
@@ -202,7 +216,6 @@ export default defineComponent({
     </v-dialog>
   </v-card>
 </template>
-
 
 <style scoped>
 
