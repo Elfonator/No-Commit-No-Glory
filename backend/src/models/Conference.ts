@@ -16,7 +16,9 @@ export interface IConference extends Document {
   start_date: Date;
   end_date: Date;
   deadline_submission: Date;
-  deadline_review?: Date;
+  submission_confirmation: Date;
+  deadline_review: Date;
+  deadline_correction: Date;
   created_at: Date;
 }
 
@@ -45,7 +47,9 @@ const ConferenceSchema: Schema = new Schema(
     start_date: { type: Date, required: true },
     end_date: { type: Date, required: true },
     deadline_submission: { type: Date, required: true },
+    submission_confirmation: { type: Date, required: false },
     deadline_review: { type: Date, required: false },
+    deadline_correction: { type: Date, required: false },
     created_at: { type: Date, default: Date.now },
   },
   { collection: "conferences" },

@@ -109,7 +109,7 @@
           <ol>
             <li>
               Prihláste sa do systému
-              <a href="http://localhost:5173/">SciSubmit</a>.
+              <a href="/homepage">SciSubmit</a>.
             </li>
             <li>
               Zadajte údaje o autoroch, názve práce, abstrakte a kľúčových

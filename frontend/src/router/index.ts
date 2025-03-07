@@ -82,6 +82,21 @@ const routes = [
             component: () => import('@/components/admin/ConferencePapers.vue'),
             props: true,
           },
+          {
+            path: 'tabs',
+            name: 'HomepageTabs',
+            component: () => import('@/components/admin/HomepageTabs.vue'),
+          },
+          {
+            path: 'cards',
+            name: 'HomepageCards',
+            component: () => import('@/components/admin/HomepageCards.vue'),
+          },
+          {
+            path: 'documents',
+            name: 'HomepageDocs',
+            component: () => import('@/components/admin/HomepageDocs.vue'),
+          },
         ],
       },
 

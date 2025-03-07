@@ -66,32 +66,39 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('Attempting to refresh token...')
       const response = await axiosInstance.post('/refresh-token', { refreshToken })
 
-      // Check if refresh token is still valid
       if (!response.data.token) {
-        console.error('Invalid refresh token, logging out...')
-        await logout()
+        console.error('Invalid refresh token, clearing stored tokens...')
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('userRole')
+        isAuthenticated.value = false
         return
       }
 
       token.value = response.data.token
       localStorage.setItem('authToken', token.value || '')
-
-      // Set new token for future requests
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
       isTokenExpired.value = false
 
       console.log('Token refreshed successfully')
     } catch (error) {
       console.error('Failed to refresh token:', error)
-      isTokenExpired.value = true
-      await logout() // Ensure full logout if refresh fails
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('userRole')
+      isAuthenticated.value = false
     }
   }
 
   const logout = async () => {
+    if (!isAuthenticated.value) {
+      console.log("User already logged out, skipping logout request.");
+      return;
+    }
+
     try {
       // Notify backend to invalidate refresh token
-      await axiosInstance.post('/auth/logout').catch(() => {})
+      await axiosInstance.post('/auth/logout').catch(() => {});
 
       // Clear authentication state
       user.value = null
@@ -145,10 +152,14 @@ export const useAuthStore = defineStore('auth', () => {
         isAuthenticated.value = true
       } catch (error) {
         console.error('Failed to refresh token:', error)
-        await logout() // Clear invalid tokens
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('userRole')
+        isAuthenticated.value = false
       }
     } else {
-      await logout() // No valid tokens, log out
+      console.log("No valid authentication found, but not triggering logout.");
+      isAuthenticated.value = false;
     }
   }
 

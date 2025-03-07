@@ -9,6 +9,7 @@ import Paper from "./models/Paper";
 import Review from "./models/Review";
 import Question from "./models/Question";
 import Database from "./config/db";
+import Homepage from './models/Homepage'
 
 dotenv.config();
 
@@ -278,6 +279,61 @@ export async function prepareDatabase(): Promise<void> {
     ]);
 
     console.log("Questions inserted successfully.");
+
+    const existingHomepage = await Homepage.findOne();
+    if (!existingHomepage) {
+      await Homepage.create({
+        program: {
+          fileLink: "",
+          items: [
+            { schedule: "8:15 – 9:00", description: "Registrácia" },
+            { schedule: "9:00 – 9:20", description: "Otvorenie konferencie" },
+            { schedule: "9:20 – 13:00", description: "Prezentácie príspevkov v sekciách" },
+            { schedule: "13:00 – 14:00", description: "Prestávka na obed" },
+            { schedule: "14:00 – 14:30", description: "Vyhodnotenie konferencie" },
+          ],
+        },
+        templates: {
+          word: "",
+          latex: "",
+        },
+        committees: [
+          { fullName: "prof. RNDr. Radoslav Omelka, PhD.", university: "UKF" },
+          { fullName: "PaedDr. Katarína Zverková", university: "UKF" },
+          { fullName: "RNDr. Gabriela Repaská, PhD.", university: "UKF" },
+          { fullName: "Ing. Michal Levický, PhD.", university: "UKF" },
+          { fullName: "Mgr. Mária Pappová", university: "UKF" },
+          { fullName: "Mgr. Matúš Valko", university: "UKF" },
+          { fullName: "Mgr. Veronika Kubová", university: "UKF" },
+          { fullName: "Mgr. Barbora Loncová", university: "UKF" },
+          { fullName: "Mgr. Silvia Haringová", university: "UKF" },
+          { fullName: "Mgr. Tibor Kovács", university: "UKF" },
+          { fullName: "Mgr. Marcel Cvik", university: "UKF" },
+          { fullName: "Mgr. Silvia Čajková", university: "UKF" },
+          { fullName: "doc. RNDr. Ingrid Turisová, PhD.", university: "UMB" },
+          { fullName: "Ing. Slavka Račáková, PhD", university: "UMB" },
+          { fullName: "doc. RNDr. Zuzana Melichová, PhD.", university: "UMB" },
+          { fullName: "doc. Ing. Ján Tomaškin, PhD.", university: "UMB" },
+          { fullName: "doc. PaedDr. Ján Stebila, PhD.", university: "UMB" },
+          { fullName: "RNDr. Miroslav Melicherčík, PhD.", university: "UMB" },
+          { fullName: "prof. RNDr. Vladimír Janiš, CSc.", university: "UMB" },
+          { fullName: "doc. Ing. Juraj Švajda, PhD.", university: "UMB" },
+          { fullName: "prof. Dr. Boris Tomášik", university: "UMB" },
+          { fullName: "Mgr. Lenka Balážovičová, PhD.", university: "UMB" },
+          { fullName: "Mgr. Tomáš Valent", university: "UMB" },
+          { fullName: "Mgr. Dominika Vešelényiová, PhD.", university: "UCM" },
+          { fullName: "doc. Ing. Jozef Sokol, CSc.", university: "UCM" },
+          { fullName: "doc. Mgr. Daniel Mihálik, PhD.", university: "UCM" },
+          { fullName: "Mgr. Martin Valica, PhD.", university: "UCM" },
+          { fullName: "Ing. Eva Ürgeová, PhD.", university: "UCM" },
+          { fullName: "Ing. Jana Jurinová, PhD.", university: "UCM" },
+        ],
+        conferenceFiles: [],
+      });
+      console.log("Homepage data inserted successfully.");
+    } else {
+      console.log("Homepage data already exists. Skipping homepage seeding...");
+    }
 
     console.log("Database preparation complete.");
 
