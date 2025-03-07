@@ -53,8 +53,38 @@
             ></v-badge>
           </div>
         </v-list-item>
+
       </v-list>
     </template>
+    <template v-if="authStore.isAdmin">
+      <v-divider class="my-4"></v-divider>
+      <v-list-subheader>Úprava Homepage</v-list-subheader>
+      <v-list>
+        <v-list-item
+          :to="'/auth/admin/tabs'"
+          exact-active-class="active-link"
+          @click="navigateTo('/auth/admin/tabs')"
+        >
+          <v-list-item-title>Odseky</v-list-item-title>
+        </v-list-item>
+        <v-list-item
+          :to="'/auth/admin/cards'"
+          exact-active-class="active-link"
+          @click="navigateTo('/auth/admin/cards')"
+        >
+          <v-list-item-title>Karty</v-list-item-title>
+        </v-list-item>
+        <v-list-item
+          :to="'/auth/admin/documents'"
+          exact-active-class="active-link"
+          @click="navigateTo('/auth/admin/documents')"
+        >
+          <v-list-item-title>Dokumenty</v-list-item-title>
+        </v-list-item>
+      </v-list>
+    </template>
+
+
 
     <!-- General Links Bottom -->
     <v-divider class="my-4"></v-divider>
