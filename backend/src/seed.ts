@@ -348,4 +348,4 @@ export async function prepareDatabase(): Promise<void> {
     console.error("Error preparing the database", error);
     process.exit(1);
   }
-};
+}

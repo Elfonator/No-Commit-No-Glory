@@ -109,7 +109,7 @@
           <ol>
             <li>
               Prihláste sa do systému
-              <a href="/homepage">SciSubmit</a>.
+              <a href="/">SciSubmit</a>.
             </li>
             <li>
               Zadajte údaje o autoroch, názve práce, abstrakte a kľúčových

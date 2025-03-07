@@ -18,7 +18,7 @@ interface EmailOptions {
 const transporter = nodemailer.createTransport({
   host: config.emailHost,
   port: Number(config.emailPort) || 587,
-  secure: false, // Use TLS
+  secure: false,
   auth: {
     user: config.emailUser,
     pass: config.emailPass,
@@ -35,12 +35,6 @@ export const sendEmail = async (options: EmailOptions) => {
       html: options.html,
       text: options.text || undefined,
       attachments: [
-        ...(options.attachments || []), // Include any other attachments provided
-        {
-          filename: "logo.png", // Name of the image
-          path: path.resolve(__dirname, "../assets/logo.png"), // Adjust the path to your logo file
-          cid: "scisubmit-logo", // Must match the "cid" in the email HTML
-        },
       ],
     };
 
