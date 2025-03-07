@@ -1,7 +1,9 @@
 <script lang="ts">
-import {defineComponent, ref, computed, onMounted, inject, reactive} from 'vue'
+import {defineComponent, ref, computed, onMounted, inject, reactive, watch} from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { UserStatus } from '@/types/user'
+
+
 
 export default defineComponent({
   name: 'UserTable',
@@ -37,6 +39,7 @@ export default defineComponent({
     const confirmPassword = ref('')
     const showPassword = ref(false)
     const showConfirmPassword = ref(false)
+    const customUniversity = ref('')
 
     const currentUser = reactive({
       _id: '',
@@ -51,11 +54,18 @@ export default defineComponent({
       status: UserStatus.Active,
     });
 
+    watch(() => currentUser.university, (newVal) => {
+      if (newVal !== 'Iné') {
+        customUniversity.value = ''
+      }
+    })
+
     // University and status options
     const universityOptions = [
       'Univerzita Konštantína Filozofa',
       'Univerzita sv. Cyrila a Metoda',
       'Univerzita Mateja Bela',
+      'Iné'
     ]
     const statusOptions = ['Aktívny', 'Neaktívny', 'Čakajúci', 'Pozastavený']
     const roleOptions = Object.values(userStore.reverseRoleMapping) //Use Slovak roles from store
@@ -65,6 +75,7 @@ export default defineComponent({
       [UserStatus.Pending]: 'blue',
       [UserStatus.Suspended]: 'red',
     }
+
 
     const roleColors = {
       Admin: 'pink',
@@ -112,6 +123,7 @@ export default defineComponent({
         )
       }),
     )
+
 
     // Reset filters
     const resetFilters = () => {
@@ -179,6 +191,7 @@ export default defineComponent({
       })
     };
 
+
 // Save user (create or update)
     const saveUser = async () => {
       try {
@@ -186,7 +199,7 @@ export default defineComponent({
           first_name: currentUser.first_name,
           last_name: currentUser.last_name,
           email: currentUser.email,
-          university: currentUser.university,
+          university: currentUser.university === 'Iné' ? customUniversity.value : currentUser.university,
           faculty: currentUser.faculty,
           role: userStore.roleMapping[currentUser.role] || currentUser.role,
           status: currentUser.status,
@@ -243,6 +256,8 @@ export default defineComponent({
       }
     };
 
+
+
     // Fetch users on component mount
     onMounted(userStore.fetchAllUsers)
 
@@ -255,6 +270,7 @@ export default defineComponent({
       dialogMode,
       currentUser,
       universityOptions,
+      customUniversity,
       statusOptions,
       roleOptions,
       statusColors,
@@ -463,6 +479,13 @@ export default defineComponent({
             :items="universityOptions"
             label="Univerzita"
             :rules="[v => !!v || 'Univerzita je povinná']"
+            outlined
+            dense
+          />
+          <v-text-field
+            v-if="currentUser.university === 'Iné'"
+            v-model="customUniversity"
+            label="Zadajte názov univerzity"
             outlined
             dense
           />
