@@ -18,7 +18,7 @@ interface EmailOptions {
 const transporter = nodemailer.createTransport({
   host: config.emailHost,
   port: Number(config.emailPort) || 587,
-  secure: false, // Use TLS
+  secure: true, // Use TLS
   auth: {
     user: config.emailUser,
     pass: config.emailPass,
