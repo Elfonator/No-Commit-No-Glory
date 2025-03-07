@@ -7,7 +7,7 @@ import {
   validateRequest,
   loginValidationRules,
 } from "../middleware/validation";
-import { getHomepageData } from "../controllers/homepage.controller";
+import { getHomepageData } from '../controllers/homepage.controller'
 
 const router = Router();
 

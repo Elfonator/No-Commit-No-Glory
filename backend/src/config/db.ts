@@ -25,9 +25,9 @@ class Database {
     try {
       const connection = await mongoose.connect(dbUri); // No additional options are needed in Mongoose 6+
       this.connection = connection.connection;
-      console.log("Connected to MongoDB Atlas");
+      console.log("Connected to MongoDB");
     } catch (error) {
-      console.error("Failed to connect to MongoDB Atlas:", error);
+      console.error("Failed to connect to MongoDB:", error);
       throw error;
     }
   }

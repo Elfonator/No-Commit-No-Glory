@@ -27,6 +27,7 @@ import {
   deleteUser, createUser,
 } from "../controllers/admin.controller";
 import { authenticateToken } from "../middleware/authenticateToken";
+import { updateProgram } from '../controllers/homepage.controller'
 
 const router = Router();
 
@@ -66,6 +67,8 @@ router.get("/papers/:paperId", getPaperById);
 router.get("/papers/download/:conferenceId", downloadPapersByConference);
 router.patch("/papers/:paperId/reviewer", assignReviewer);
 router.patch("/papers/:paperId/deadline", changeSubmissionDeadline);
+
+router.patch("/homepage/program", updateProgram);
 
 router.get("/reports", getAdminReports);
 export default router;

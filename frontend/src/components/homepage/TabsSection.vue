@@ -1,6 +1,27 @@
+<script lang="ts">
+import { defineComponent, ref, onMounted } from "vue";
+import { useHomepageStore } from "@/stores/homepageStore";
+
+export default defineComponent({
+  name: "TabSection",
+  async setup() {
+    const activeTab = ref("benefits");
+    const store = useHomepageStore();
+    await store.fetchHomepageData();
+
+    return {
+      activeTab,
+      categories: store.activeCategories,
+      deadlines: store.deadlines,
+      program: store.program,
+      programDocumentUrl: store.programDocumentUrl,
+    };
+  },
+});
+</script>
+
 <template>
   <v-container class="tabs-container">
-    <!-- Tabs -->
     <v-tabs v-model="activeTab" grow>
       <v-tab value="benefits">VÝHODY</v-tab>
       <v-tab value="deadlines">TERMÍNY</v-tab>
@@ -8,32 +29,16 @@
       <v-tab value="program">PROGRAM</v-tab>
     </v-tabs>
 
-    <!-- Tab Content -->
     <v-tabs-window v-model="activeTab" class="tabs-window">
       <!-- VÝHODY -->
       <v-tabs-window-item value="benefits">
         <div class="tab-content">
           <ul>
-            <li>
-              Je zadarmo: účasť na konferencii je bez konferenčného poplatku
-            </li>
-            <li>
-              Výstupom je publikácia: prezentovaný príspevok bude publikovaný v
-              zborníku recenzovaných prác
-            </li>
-            <li>
-              Možnosť získať ocenenie: najlepšie práce budú ocenené diplomom a
-              mimoriadnym štipendiom či vecnou cenou
-            </li>
-            <li>
-              Výhody pre ďalšiu kariéru: skúsenosti s vystúpením na
-              konferenciách a publikácie zvyšujú napríklad šancu prijatia na
-              doktorandské štúdium
-            </li>
-            <li>
-              Šanca pre nové kontakty: na konferencii je možnosť spoznať nových
-              ľudí v odbore a nadviazať nové spolupráce
-            </li>
+            <li>Je zadarmo: účasť na konferencii je bez konferenčného poplatku</li>
+            <li>Výstupom je publikácia: prezentovaný príspevok bude publikovaný v zborníku recenzovaných prác</li>
+            <li>Možnosť získať ocenenie: najlepšie práce budú ocenené diplomom a mimoriadnym štipendiom či vecnou cenou</li>
+            <li>Výhody pre ďalšiu kariéru: skúsenosti s vystúpením na konferenciách a publikácie zvyšujú napríklad šancu prijatia na doktorandské štúdium</li>
+            <li>Šanca pre nové kontakty: na konferencii je možnosť spoznať nových ľudí v odbore a nadviazať nové spolupráce</li>
           </ul>
         </div>
       </v-tabs-window-item>
@@ -42,28 +47,11 @@
       <v-tabs-window-item value="deadlines">
         <div class="tab-content">
           <ul>
-            <li>
-              Odovzdanie práce:&nbsp;<strong>{{
-                deadlines.submissionDeadline
-              }}</strong>
-            </li>
-            <li>
-              Potvrdenie prijatia práce a sprístupnenie recenzného
-              posudku:&nbsp;
-              <strong>{{ deadlines.reviewAvailable }}</strong>
-            </li>
-            <li>
-              Nahratie upravenej verzie príspevku na základe recenzie:&nbsp;
-              <strong>{{ deadlines.revisedSubmission }}</strong>
-            </li>
-            <li>
-              Konferencia:&nbsp;<strong>{{ deadlines.conferenceDate }}</strong>
-            </li>
-            <li>
-              Oprava práce po konferencii:&nbsp;<strong>{{
-                deadlines.finalRevision
-              }}</strong>
-            </li>
+            <li>Odovzdanie práce: <strong>&nbsp;&nbsp;{{ deadlines.submissionDeadline }}</strong></li>
+            <li>Potvrdenie prijatia práce: <strong>&nbsp;&nbsp;{{ deadlines.submissionConfirmation }}</strong></li>
+            <li>Termín recenzovania: <strong>&nbsp;&nbsp;{{ deadlines.reviewDeadline }}</strong></li>
+            <li>Oprava práce: <strong>&nbsp;&nbsp;{{ deadlines.correctionDeadline }}</strong></li>
+            <li>Konferencia: <strong>&nbsp;&nbsp;{{ deadlines.conferenceDate }}</strong></li>
           </ul>
         </div>
       </v-tabs-window-item>
@@ -71,127 +59,37 @@
       <!-- SEKCIE -->
       <v-tabs-window-item value="categories">
         <div class="tab-content">
-          <ul>
+          <ul v-if="categories.length > 0">
             <li v-for="category in categories" :key="category._id">
               {{ category.name }}
             </li>
           </ul>
+          <p v-else class="note">Žiadne sekcie neboli načítané.</p>
         </div>
         <p class="note">
-          Počet a zameranie jednotlivých sekcií budú upresnené po odovzdaní
-          všetkých príspevkov.
+          Počet a zameranie jednotlivých sekcií budú upresnené po odovzdaní všetkých príspevkov.
         </p>
       </v-tabs-window-item>
 
       <!-- PROGRAM -->
       <v-tabs-window-item value="program">
         <div class="tab-content">
-          <ul>
-            <li><strong>8:15 – 9:00</strong>&nbsp; Registrácia</li>
-            <li><strong>9:00 – 9:20</strong>&nbsp; Otvorenie konferencie</li>
-            <li>
-              <strong>9:20 – 13:00</strong>&nbsp; Prezentácie príspevkov v
-              sekciách
-            </li>
-            <li><strong>13:00 – 14:00</strong>&nbsp; Prestávka na obed</li>
-            <li>
-              <strong>14:00 – 14:30</strong>&nbsp; Vyhodnotenie konferencie,
-              vyhlásenie najlepších prác
+          <ul v-if="program.length > 0">
+            <li v-for="(event, index) in program" :key="index">
+              <strong>{{ event.schedule }}</strong>&nbsp;  {{ event.description }}
             </li>
           </ul>
+          <p v-else class="note">Žiadne programové údaje nie sú k dispozícii.</p>
+
+          <p v-if="programDocumentUrl" class="note">
+            Detailný program je možné pozrieť
+            <a :href="programDocumentUrl" target="_blank">TU</a>
+          </p>
         </div>
-        <p class="note">
-          Detailný program je možné pozrieť
-          <a href="/docs/program.pdf" target="_blank" rel="noopener noreferrer">
-            TU</a
-          >
-        </p>
       </v-tabs-window-item>
     </v-tabs-window>
   </v-container>
 </template>
-
-<script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue'
-import axios from 'axios'
-import type { ActiveCategory } from '@/types/conference'
-import axiosInstance from '@/config/axiosConfig.ts'
-
-export default defineComponent({
-  name: 'TabsSection',
-  setup() {
-    const activeTab = ref('benefits')
-    const categories = ref<ActiveCategory[]>([])
-    const deadlines = ref({
-      submissionDeadline: '',
-      reviewAvailable: '',
-      revisedSubmission: '',
-      conferenceDate: '',
-      finalRevision: '',
-    })
-    const programDocumentUrl = ref('')
-
-    const getCategories = async () => {
-      try {
-        const response = await axiosInstance.get('/homepage')
-        categories.value = response.data.activeCategories || []
-      } catch (error) {
-        console.error('Error fetching categories:', error)
-      }
-    }
-
-    const getConferenceData = async () => {
-      try {
-        const response = await axiosInstance.get('/homepage')
-        const ongoingConference = response.data.ongoingConference
-
-        if (ongoingConference) {
-          const submissionDeadline = new Date(
-            ongoingConference.deadline_submission,
-          )
-          const reviewDeadline = new Date(ongoingConference.date)
-          const conferenceDate = new Date(ongoingConference.date)
-
-          // Calculate derived dates
-          const reviewAvailable = new Date(reviewDeadline)
-          reviewAvailable.setDate(reviewAvailable.getDate() + 1) // +1 day
-
-          const revisedSubmission = new Date(reviewAvailable)
-          revisedSubmission.setMonth(reviewAvailable.getMonth() + 1) // End of the month
-          revisedSubmission.setDate(0) // Set to last day of the previous month
-
-          deadlines.value = {
-            submissionDeadline: submissionDeadline.toLocaleDateString('sk-SK'),
-            reviewAvailable: reviewAvailable.toLocaleDateString('sk-SK'),
-            revisedSubmission: revisedSubmission.toLocaleDateString('sk-SK'),
-            conferenceDate: conferenceDate.toLocaleDateString('sk-SK'),
-            finalRevision: revisedSubmission.toLocaleDateString('sk-SK'),
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching conference data:', error)
-      }
-    }
-
-    const getProgramDocument = async () => {
-      try {
-        const response = await axiosInstance.get('/homepage')
-        programDocumentUrl.value = response.data.programDocument || ''
-      } catch (error) {
-        console.error('Error fetching program document:', error)
-      }
-    }
-
-    onMounted(() => {
-      getCategories()
-      getConferenceData()
-      getProgramDocument()
-    })
-
-    return { activeTab, categories, deadlines, programDocumentUrl }
-  },
-})
-</script>
 
 <style lang="scss">
 .tabs-container {
@@ -228,7 +126,7 @@ export default defineComponent({
         align-items: center;
 
         &::before {
-          content: '≫';
+          content: "≫";
           color: #116466;
           font-size: 2rem;
           margin-right: 10px;

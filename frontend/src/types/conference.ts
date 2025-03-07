@@ -8,7 +8,9 @@ export interface ConferenceAdmin {
   start_date: Date
   end_date: Date
   deadline_submission: Date
-  deadline_review?: Date
+  submission_confirmation: Date
+  deadline_review: Date
+  deadline_correction: Date
   [key: string]: any
 }
 
