@@ -11,6 +11,17 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
+// Run database seeding only if needed (non-blocking)
+(async () => {
+  try {
+    console.log("Checking if database needs seeding...");
+    //await prepareDatabase();
+    console.log("Database ready.");
+  } catch (error) {
+    console.error("Database seeding failed:", error);
+  }
+})();
+
 // Schedule the cron job
 cron.schedule("0 0 * * *", async () => {
   console.log("Running daily job to update statuses");

@@ -24,6 +24,8 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };
+
+console.log(config);
 // Apply CORS globally
 app.use(cors(corsOptions));
 
@@ -52,6 +54,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/auth/admin", adminRoutes);
 app.use("/api/auth/participant", participantRoutes);
 app.use("/api/auth/reviewer", reviewerRoutes);
+//app.use('/uploads', express.static(path.join(__dirname, '../../../uploads')));
 app.use("/avatars", express.static(path.join(config.uploads, "avatars")));
 app.use("/docs", express.static(path.join(config.uploads, "docs")));
 

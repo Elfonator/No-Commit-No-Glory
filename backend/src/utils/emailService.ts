@@ -18,7 +18,7 @@ interface EmailOptions {
 const transporter = nodemailer.createTransport({
   host: config.emailHost,
   port: Number(config.emailPort) || 587,
-  secure: false,
+  secure: true, // Use TLS
   auth: {
     user: config.emailUser,
     pass: config.emailPass,
@@ -34,8 +34,7 @@ export const sendEmail = async (options: EmailOptions) => {
       subject: options.subject,
       html: options.html,
       text: options.text || undefined,
-      attachments: [
-      ],
+      attachments: [],
     };
 
     await transporter.sendMail(emailOptions);
