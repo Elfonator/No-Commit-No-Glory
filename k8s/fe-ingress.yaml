@@ -1,0 +1,44 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: svk-fe
+  namespace: svk
+  annotations:
+    cert-manager.io/cluster-issuer: googleca-prod
+    ingress.kubernetes.io/ssl-redirect: 'true'
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/configuration-snippet: >
+      proxy_cache static-cache;
+
+      proxy_cache_valid 300s;
+
+      proxy_cache_valid 404 1m;
+
+      proxy_cache_min_uses 2;
+
+      proxy_cache_use_stale error timeout updating http_404 http_500 http_502
+      http_503 http_504;
+
+      proxy_cache_bypass $http_x_purge;
+
+      add_header X-Cache-Status $upstream_cache_status;
+    nginx.ingress.kubernetes.io/proxy-body-size: 1024m
+    nginx.ingress.kubernetes.io/proxy-buffering: 'off'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '120'
+    nginx.ingress.kubernetes.io/upstream-hash-by: $remote_addr
+spec:
+  tls:
+    - hosts:
+        - svk-ukf.sk
+      secretName: svk-ukf-sk-secret-google
+  rules:
+    - host: svk-ukf.sk
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: svk-fe
+                port:
+                  number: 80

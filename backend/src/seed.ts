@@ -343,24 +343,9 @@ export async function prepareDatabase(): Promise<void> {
 
     // Disconnect from the database
     await mongoose.disconnect();
-
-    // Exit the script successfully
-    process.exit(0);
+    
   } catch (error) {
     console.error("Error preparing the database", error);
     process.exit(1);
   }
 };
-
-// Add environment information to the startup log
-console.log(`Starting database seeding in ${process.env.NODE_ENV || 'development'} environment`);
-
-// IIFE to handle the async prepareDatabase function
-(async () => {
-  try {
-    await prepareDatabase();
-    console.log("Database prepared successfully.");
-  } catch (error) {
-    console.error("Error in preparing the database:", error);
-  }
-})();
