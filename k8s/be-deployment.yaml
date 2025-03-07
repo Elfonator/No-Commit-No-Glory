@@ -1,0 +1,104 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: svk-be
+  namespace: svk
+  labels:
+    app: svk-be
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: svk-be
+  template:
+    metadata:
+      labels:
+        app: svk-be
+    spec:
+      volumes:
+        - name: upload
+          nfs:
+            server: 192.168.59.100
+            path: /ppm/k8s-lab/svk/upload
+      containers:
+        - name: svk-be
+          image: ppsdocker/svk-be:latest
+          command:
+            - node
+            - 'dist/server.js'
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          env:
+            - name: PORT
+              value: '5000'
+            - name: MONGO_URI
+              value: >-
+                mongodb+srv://lol:double-lol@host.host.sk/?retryWrites=true&w=majority&appName=SVK
+            - name: ADMIN_EMAIL
+              value: maria.pappova2@ukf.sk
+            - name: ADMIN_PASSWORD
+              value: this_is_the_end_of_the_world_as_we_know_it
+            - name: NODE_ENV
+              value: production
+            - name: UPLOADS_DIR
+              value: /app/uploads
+            - name: BASE_URL
+              value: https://api.svk-ukf.sk:5000
+            - name: BASE_FRONTEND_URL
+              value: https://svk-ukf.sk
+            - name: PROD_FRONTEND_URL
+              value: https://svk-ukf.sk
+            - name: JWT_SECRET
+              value: this_is_the_end_of_the_world_as_we_know_it_jwt
+            - name: EMAIL_HOST
+              value: smtp.m1.host.sk
+            - name: EMAIL_PORT
+              value: '465'
+            - name: EMAIL_USER
+              value: svk@svk-ukf.sk
+            - name: EMAIL_PASS
+              value: this_is_the_end_of_the_world_as_we_know_it
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              memory: 128Mi
+          volumeMounts:
+            - name: upload
+              mountPath: /app/upload
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
