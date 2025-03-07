@@ -17,16 +17,7 @@ const router = Router();
 router.use(authenticateToken);
 
 router.get("/papers", getAssignedPapers);
-/*router.get('/uploads/docs/:conferenceId/:filename', (req, res) => {
-  const filePath = path.join(__dirname, 'uploads/docs', req.params.filename);
-  res.download(filePath, (err) => {
-    if (err) {
-      console.error('Error during file download:', err);
-      res.status(404).send('File not found');
-    }
-  });
-});*/
-router.get('/papers/:filename/download', (req, res) => {
+router.get('/uploads/docs/:conferenceId/:filename', (req, res) => {
   const filePath = path.join(__dirname, 'uploads/docs', req.params.filename);
   res.download(filePath, (err) => {
     if (err) {
