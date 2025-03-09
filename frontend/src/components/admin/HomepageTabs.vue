@@ -1,41 +1,72 @@
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
-import type {Program, ProgramItem} from "@/types/homepage.ts";
+import {computed, defineComponent, onMounted, ref} from 'vue';
+import {useHomepageStore} from "@/stores/homepageStore.ts";
 
 export default defineComponent({
   name: 'ConferenceProgram',
   setup() {
 
-    const program = ref<Program>({
-      fileLink: null,
-      items: [
-        { _id: '1', schedule: '8:15 – 9:00', description: 'Registrácia' },
-        { _id: '2', schedule: '9:00 – 9:20', description: 'Otvorenie konferencie' },
-        { _id: '3', schedule: '9:20 – 13:00', description: 'Prezentácie príspevkov v sekciách' },
-        { _id: '4', schedule: '13:00 – 14:00', description: 'Prestávka na obed' },
-        { _id: '5', schedule: '14:00 – 14:30', description: 'Vyhodnotenie konferencie, vyhlásenie najlepších prác' }
-      ]
+    const homepageStore = useHomepageStore();
+    const program = computed(() => homepageStore.program);
+
+    const programFile = ref<File | null>(null);
+
+    onMounted(async () => {
+      try {
+        await homepageStore.fetchProgram();
+        console.log(homepageStore.program);
+      } catch (error) {
+        console.error("Failed to fetch program:", error);
+      }
     });
 
-    const addEvent = () => {
-      const newEvent: ProgramItem = {
-        _id: String(program.value.items.length + 1),
-        schedule: '',
-        description: ''
-      };
-      program.value.items.push(newEvent);
+    const addEvent = async () => {
+      try {
+        const newEvent = {
+          _id: "",
+          schedule: "",
+          description: "",
+          fileLink: "",
+        };
+
+        program.value.push(newEvent);
+      } catch (error) {
+        console.error("Failed to add event:", error);
+      }
     };
 
-    const removeEvent = (index: number) => {
-      program.value.items.splice(index, 1);
+    const removeEvent = (itemId: string) => {
+      try {
+        const index = program.value.findIndex(event => event._id === itemId || itemId === "");
+
+        if (index !== -1) {
+          program.value.splice(index, 1);
+        }
+      } catch (error) {
+        console.error("Failed to remove event:", error);
+      }
     };
 
-    const saveProgram = () => {
-      console.log('Program saved:', program.value);
+
+    const saveProgram = async () => {
+      try {
+        const file = programFile.value;  // The file selected for upload
+
+        if (file) {
+          await homepageStore.uploadProgramFile(file);
+        }
+
+        await homepageStore.updateProgram(program.value);
+        console.log("Program saved successfully!");
+      } catch (error) {
+        console.error("Failed to save program:", error);
+      }
     };
+
 
     return {
       program,
+      programFile,
       addEvent,
       removeEvent,
       saveProgram,
@@ -81,7 +112,7 @@ export default defineComponent({
 
           <!-- Delete button column -->
           <v-col cols="1" class="d-flex justify-end">
-            <v-btn color="#BC463A" @click="removeEvent(index)">
+            <v-btn color="#BC463A" @click="removeEvent(event._id)">
               <v-icon>mdi-delete</v-icon>
             </v-btn>
           </v-col>
@@ -93,7 +124,7 @@ export default defineComponent({
     <v-row class="mt-3" justify="center">
       <v-col cols="6" class="d-flex justify-center">
         <v-file-input
-          v-model="program.fileLink"
+          v-model="programFile"
           label="Vyberte programový súbor"
           accept=".pdf,.docx,.txt"
           outlined
