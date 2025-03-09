@@ -11,6 +11,6 @@ export interface ProgramItem {
 }
 
 export interface Program {
-  fileLink: File;
+  fileLink: File | null;
   items: ProgramItem[];
 }

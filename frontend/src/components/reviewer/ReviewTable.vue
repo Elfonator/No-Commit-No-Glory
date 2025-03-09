@@ -84,30 +84,30 @@ export default defineComponent({
     const sendReview = async (review: Review) => {
       if (!review.isDraft) return;
 
-      try {
-        await reviewStore.updateReviewStatus(review._id, "submitted");
-        showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
-        await reviewStore.fetchAllReviews(); // Refresh the list
-      } catch (error) {
-        console.error("Error sending review:", error);
-        showSnackbar?.({ message: "Chyba pri odosielaní recenzie.", color: "error" });
-      }
-    };
+    //   try {
+    //     await reviewStore.updateReviewStatus(review._id, "submitted");
+    //     showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
+    //     await reviewStore.fetchAllReviews(); // Refresh the list
+    //   } catch (error) {
+    //     console.error("Error sending review:", error);
+    //     showSnackbar?.({ message: "Chyba pri odosielaní recenzie.", color: "error" });
+    //   }
+    // };
+    //
+    // const confirmDelete = async (review: Review) => {
+    //   if (!review.isDraft) return;
+    //
+    //   const confirmed = confirm("Naozaj chcete vymazať túto recenziu?");
+    //   if (!confirmed) return;
 
-    const confirmDelete = async (review: Review) => {
-      if (!review.isDraft) return;
-
-      const confirmed = confirm("Naozaj chcete vymazať túto recenziu?");
-      if (!confirmed) return;
-
-      try {
-        await reviewStore.deleteReview(review._id);
-        showSnackbar?.({ message: "Recenzia bola vymazaná.", color: "success" });
-        await reviewStore.fetchAllReviews(); // Refresh list
-      } catch (error) {
-        console.error("Error deleting review:", error);
-        showSnackbar?.({ message: "Chyba pri mazaní recenzie.", color: "error" });
-      }
+      // try {
+      //   await reviewStore.deleteReview(review._id);
+      //   showSnackbar?.({ message: "Recenzia bola vymazaná.", color: "success" });
+      //   await reviewStore.fetchAllReviews(); // Refresh list
+      // } catch (error) {
+      //   console.error("Error deleting review:", error);
+      //   showSnackbar?.({ message: "Chyba pri mazaní recenzie.", color: "error" });
+      // }
     };
 
     const formatDate = (date: Date | string) =>
@@ -128,7 +128,7 @@ export default defineComponent({
       filteredReviews,
       editReview,
       sendReview,
-      confirmDelete,
+      // confirmDelete,
       resetFilters,
       formatDate,
       viewReview,

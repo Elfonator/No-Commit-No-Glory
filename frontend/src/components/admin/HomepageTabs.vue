@@ -1,24 +1,33 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
+import type {Program, ProgramItem} from "@/types/homepage.ts";
 
 export default defineComponent({
   name: 'ConferenceProgram',
   setup() {
 
-    const program = ref([
-      { text: '8:15 – 9:00 Registrácia' },
-      { text: '9:00 – 9:20 Otvorenie konferencie' },
-      { text: '9:20 – 13:00 Prezentácie príspevkov v sekciách' },
-      { text: '13:00 – 14:00 Prestávka na obed' },
-      { text: '14:00 – 14:30 Vyhodnotenie konferencie, vyhlásenie najlepších prác' }
-    ]);
+    const program = ref<Program>({
+      fileLink: null,
+      items: [
+        { _id: '1', schedule: '8:15 – 9:00', description: 'Registrácia' },
+        { _id: '2', schedule: '9:00 – 9:20', description: 'Otvorenie konferencie' },
+        { _id: '3', schedule: '9:20 – 13:00', description: 'Prezentácie príspevkov v sekciách' },
+        { _id: '4', schedule: '13:00 – 14:00', description: 'Prestávka na obed' },
+        { _id: '5', schedule: '14:00 – 14:30', description: 'Vyhodnotenie konferencie, vyhlásenie najlepších prác' }
+      ]
+    });
 
     const addEvent = () => {
-      program.value.push({ text: '' });
+      const newEvent: ProgramItem = {
+        _id: String(program.value.items.length + 1),
+        schedule: '',
+        description: ''
+      };
+      program.value.items.push(newEvent);
     };
 
     const removeEvent = (index: number) => {
-      program.value.splice(index, 1);
+      program.value.items.splice(index, 1);
     };
 
     const saveProgram = () => {
@@ -48,12 +57,22 @@ export default defineComponent({
 
     <!-- List of program events -->
     <v-list>
-      <v-list-item v-for="(event, index) in program" :key="index">
+      <v-list-item v-for="(event, index) in program.items" :key="event._id">
         <v-row class="w-100">
-          <!-- Text field column -->
-          <v-col cols="11">
+          <!-- Schedule text field column -->
+          <v-col cols="2">
             <v-text-field
-              v-model="event.text"
+              v-model="event.schedule"
+              label="Čas"
+              outlined
+              class="mr-2"
+            />
+          </v-col>
+
+          <!-- Description text field column -->
+          <v-col cols="9">
+            <v-text-field
+              v-model="event.description"
               label="Bod programu"
               outlined
               class="mr-2"
@@ -69,6 +88,18 @@ export default defineComponent({
         </v-row>
       </v-list-item>
     </v-list>
+    <v-divider class="my-4"></v-divider>
+    <!-- File input for uploading program PDF -->
+    <v-row class="mt-3" justify="center">
+      <v-col cols="6" class="d-flex justify-center">
+        <v-file-input
+          v-model="program.fileLink"
+          label="Vyberte programový súbor"
+          accept=".pdf,.docx,.txt"
+          outlined
+        />
+      </v-col>
+    </v-row>
 
     <!-- Save Button -->
     <v-card-actions>
@@ -78,5 +109,5 @@ export default defineComponent({
 </template>
 
 <style scoped lang="scss">
-/* Add custom styles here if needed */
+
 </style>

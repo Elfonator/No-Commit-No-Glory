@@ -18,7 +18,7 @@ import type {
 } from '@/types/conference.ts'
 import { useUserStore } from '@/stores/userStore.ts'
 import type { UnwrapRef } from '@vue/runtime-core'
-import type { VForm } from 'vuetify/lib/components/VForm'
+import type { VForm } from 'vuetify/components'
 
 export default defineComponent({
   name: 'ParticipantWorks',

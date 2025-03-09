@@ -343,7 +343,9 @@ export const createConference = async (
       start_date,
       end_date,
       deadline_submission,
+      submission_confirmation,
       deadline_review,
+      deadline_correction,
     } = req.body;
 
     const newConference = new Conference({
@@ -355,7 +357,9 @@ export const createConference = async (
       start_date,
       end_date,
       deadline_submission,
+      submission_confirmation,
       deadline_review,
+      deadline_correction,
       created_at: new Date(),
     });
 
