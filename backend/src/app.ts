@@ -21,7 +21,8 @@ app.use(express.json());
 const corsOptions = {
   origin: ["http://localhost:8080", "http://frontend:8080"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization","Content-Disposition"],
+  exposedHeaders: ["Content-Disposition"],
   credentials: true,
 };
 // Apply CORS globally

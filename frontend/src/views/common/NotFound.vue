@@ -43,7 +43,7 @@ export default defineComponent({
           countdown.value--
         } else {
           clearInterval(interval)
-          //redirectNow(); // Redirect when countdown reaches 0
+          redirectNow(); // Redirect when countdown reaches 0
         }
       }, 1000)
     })

@@ -1,4 +1,11 @@
-export interface ConferenceAdmin {
+export enum ConferenceStatus {
+  Upcoming = "Nadchádzajúca",
+  Ongoing = "Aktuálna",
+  Completed = "Ukončená",
+  Canceled = "Zrušená",
+}
+
+  export interface ConferenceAdmin {
   _id: string
   year: number
   location: string

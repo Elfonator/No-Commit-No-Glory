@@ -15,12 +15,11 @@ export default defineComponent({
     const submittedReviews = computed(() => reviewStore.reviewerReviews);
 
     const headers = [
-      { title: 'Draft', value: 'draft' },
-      { title: 'Odporúčanie', value: 'recommendation' },
-      { title: 'ŠVK', value: 'conference'},
-      { title: 'Dátum', value: 'created_at' },
-      { title: 'Názov práce', value: 'title' },
-      { title: '', value: 'actions' },
+      { title: 'Odporúčanie', key: 'recommendation', width: '50px' },
+      { title: 'ŠVK', key: 'conference', width: '180px'},
+      { title: 'Dátum', key: 'created_at', width: '130px' },
+      { title: 'Názov práce', key: 'title', sortable: false },
+      { title: '', key: 'actions', sortable: false },
     ];
 
     const papers = computed(() =>
@@ -76,6 +75,41 @@ export default defineComponent({
       viewReviewDialog.value = true;
     };
 
+    const editReview = (review: Review) => {
+      if (!review.isDraft) return;
+      selectedReview.value = { ...review };
+      viewReviewDialog.value = true;
+    };
+
+    const sendReview = async (review: Review) => {
+      if (!review.isDraft) return;
+
+      try {
+        await reviewStore.updateReviewStatus(review._id, "submitted");
+        showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
+        await reviewStore.fetchAllReviews(); // Refresh the list
+      } catch (error) {
+        console.error("Error sending review:", error);
+        showSnackbar?.({ message: "Chyba pri odosielaní recenzie.", color: "error" });
+      }
+    };
+
+    const confirmDelete = async (review: Review) => {
+      if (!review.isDraft) return;
+
+      const confirmed = confirm("Naozaj chcete vymazať túto recenziu?");
+      if (!confirmed) return;
+
+      try {
+        await reviewStore.deleteReview(review._id);
+        showSnackbar?.({ message: "Recenzia bola vymazaná.", color: "success" });
+        await reviewStore.fetchAllReviews(); // Refresh list
+      } catch (error) {
+        console.error("Error deleting review:", error);
+        showSnackbar?.({ message: "Chyba pri mazaní recenzie.", color: "error" });
+      }
+    };
+
     const formatDate = (date: Date | string) =>
       format(new Date(date), 'dd.MM.yyyy')
 
@@ -92,6 +126,9 @@ export default defineComponent({
       filters,
       recommendations,
       filteredReviews,
+      editReview,
+      sendReview,
+      confirmDelete,
       resetFilters,
       formatDate,
       viewReview,
@@ -141,27 +178,18 @@ export default defineComponent({
           </v-col>
         </v-row>
       </v-card-subtitle>
-      <v-card-text>
+      <!-- Data Table -->
         <v-data-table
           :headers="headers"
           :items="filteredReviews"
           :items-per-page="10"
+          :pageText="'{0}-{1} z {2}'"
+          items-per-page-text="Recenzie na stránku"
           dense
           class="custom-table"
         >
           <template v-slot:body="{ items }">
             <tr v-for="review in items" :key="review._id">
-              <td>
-                <v-icon
-                  v-if="review.isDraft"
-                  title="Draft"
-                  size="26"
-                  color="orange"
-                  class="mr-2"
-                >
-                  mdi-alert-outline
-                </v-icon>
-              </td>
               <td>
                 <v-chip
                   :color="
@@ -178,15 +206,31 @@ export default defineComponent({
               <td>{{ review.paper.conference?.year }} - {{ formatDate(review.paper.conference?.date) }}</td>
               <td>{{ formatDate(review.created_at )}}</td>
               <td>{{ review.paper.title }}</td>
-              <td class="d-flex justify-end align-center">
-                <v-btn color="primary" @click="viewReview(review)">
-                  <v-icon size="26">mdi-eye</v-icon>
+              <td class="d-flex justify-end align-center w-100">
+                <v-btn
+                  :disabled="!review.isDraft"
+                  color="#FFCD16"
+                  @click="">
+                  <v-icon size="25">mdi-pencil</v-icon>
+                </v-btn>
+                <v-btn
+                  :disabled="!review.isDraft"
+                  color="primary"
+                  @click="">
+                  <v-icon size="25" color="white">mdi-send</v-icon>
+                </v-btn>
+                <v-btn
+                  :disabled="!review.isDraft"
+                  color="#BC463A"
+                  @click=""
+                  title="Zmazať recenziu"
+                >
+                  <v-icon size="25">mdi-delete</v-icon>
                 </v-btn>
               </td>
             </tr>
           </template>
         </v-data-table>
-      </v-card-text>
     </v-card>
 
     <!-- View Review Dialog -->

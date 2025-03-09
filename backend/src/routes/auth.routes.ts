@@ -13,13 +13,7 @@ router.use(authenticateToken);
 
 // Authenticated routes
 router.get("/profile", getUserProfile);
-router.patch("/upload", upload.single("avatar"), async (req, res) => {
-  try {
-    await updateUserProfile(req, res);
-  } catch (error) {
-    res.status(400).json({ message: error });
-  }
-});
+router.patch("/upload", upload.single("avatar"), updateUserProfile);
 router.post("/logout", logoutUser);
 
 export default router;

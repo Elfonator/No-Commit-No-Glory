@@ -5,19 +5,20 @@ import {
   computed,
   ref,
   onMounted,
-  inject,
+  inject, watchEffect, nextTick
 } from 'vue'
 import { usePaperStore } from '@/stores/paperStore'
 import { useConferenceStore } from '@/stores/conferenceStore'
 import { useCategoryStore } from '@/stores/categoryStore'
 import { format } from 'date-fns'
-import { type Paper, PaperStatus } from '@/types/paper.ts'
+import { type Paper, PaperStatus, type ReviewerPaper } from '@/types/paper.ts'
 import type {
   ActiveCategory,
   ParticipantConference,
 } from '@/types/conference.ts'
 import { useUserStore } from '@/stores/userStore.ts'
-import axios from 'axios'
+import type { UnwrapRef } from '@vue/runtime-core'
+import type { VForm } from 'vuetify/lib/components/VForm'
 
 export default defineComponent({
   name: 'ParticipantWorks',
@@ -126,12 +127,12 @@ export default defineComponent({
     const dialogMode = ref<'add' | 'edit' | 'view'>('add')
 
     const tableHeaders = [
-      { title: '', key: 'delete' },
+      { title: '', key: 'actions' },
       { title: 'Status', key: 'status' },
       { title: 'Konferencia', key: 'conference.year' },
       { title: 'Názov práce', key: 'title' },
       { title: 'Vytvorenie', key: 'submission_date' },
-      { title: '', key: 'actions', sortable: false },
+      { title: '', key: 'buttons', sortable: false },
     ]
 
     const filteredPapers = computed(() =>
@@ -213,6 +214,8 @@ export default defineComponent({
       filters.selectedStatus = [] as PaperStatus[]
     }
 
+    const form = ref<VForm | null>(null);
+
     const openDialog = (mode: 'add' | 'edit', paper: any = {}) => {
       dialogMode.value = mode
 
@@ -244,6 +247,10 @@ export default defineComponent({
       }
 
       isDialogOpen.value = true
+
+      nextTick(() => {
+        form.value?.validate();
+      });
     }
 
     const closeDialog = () => {
@@ -332,7 +339,7 @@ export default defineComponent({
           return
         }
 
-        const payload = { status: PaperStatus.Submitted } // Only updating the status
+        const payload = { status: PaperStatus.Submitted,  file_link: currentPaper.file_link }
         await paperStore.updatePaper(currentPaper._id, payload)
 
         showSnackbar?.({
@@ -391,6 +398,48 @@ export default defineComponent({
       }
     }
 
+    // Computed properties
+    const fileDownloadUrl = computed(() => {
+      if (!currentPaper || !currentPaper.file_link) return "#";
+
+      const apiBaseUrl = import.meta.env.VITE_API_URL; // Get API base URL
+
+      if (currentPaper.file_link instanceof File) {
+        // If it's a newly uploaded file, create a local URL
+        return URL.createObjectURL(currentPaper.file_link);
+      }
+
+      // If it's a stored file path (string), append it to the backend URL
+      return `${apiBaseUrl}${currentPaper.file_link}`;
+    });
+
+    watchEffect(() => {
+      if (currentPaper.file_link instanceof File) {
+        const objectUrl = URL.createObjectURL(currentPaper.file_link);
+        return () => URL.revokeObjectURL(objectUrl);
+      }
+    });
+
+    const getFileName = (file: string | File | undefined) => {
+      if (!file) return "No file selected";
+
+      if (file instanceof File) {
+        return file.name; // Extract filename from File object
+      }
+
+      return file.split("/").pop(); // Extract filename from string path
+    };
+
+
+    const selectedFile = ref<File | null>(null);
+
+    const handleFileSelection = (event: Event) => {
+      const input = event.target as HTMLInputElement;
+      if (input.files && input.files[0]) {
+        selectedFile.value = input.files[0];
+      }
+    }
+
     const formatDate = (date: Date | string | undefined | null) => {
       if (!date) return "N/A";
 
@@ -401,7 +450,35 @@ export default defineComponent({
       }
 
       return format(parsedDate, "dd.MM.yyyy");
-    };
+    }
+
+    const paperDetailsDialog = ref(false);
+    const openPaperDetailsDialog = (paper: any) => {
+      Object.assign(currentPaper, paper);
+      paperDetailsDialog.value = true;
+    }
+
+    const downloadPaper = async (paper: any) => {
+      if (!paper.conference?._id) {
+        console.error("Conference ID is missing for paper:", paper);
+        return;
+      }
+
+      await paperStore.downloadPaperReviewer(paper.conference._id, paper._id);
+    }
+
+    const isFormValid = computed(() => {
+      return (
+        !!currentPaper.title &&
+        !!currentPaper.category &&
+        !!currentPaper.conference &&
+        !!(currentPaper.keywords && currentPaper.keywords.length > 0) &&
+        !!currentPaper.abstract &&
+        (!!currentPaper.file_link) // Check if file exists
+      );
+    });
+
+
     onMounted(() => {
       fetchDependencies()
     })
@@ -426,6 +503,13 @@ export default defineComponent({
       selectedCategory,
       user,
       isDeleteDialogOpen,
+      fileDownloadUrl,
+      paperDetailsDialog,
+      isFormValid,
+      downloadPaper,
+      openPaperDetailsDialog,
+      handleFileSelection,
+      getFileName,
       canEditPaper,
       canViewReview,
       isDeadlineEditable,
@@ -503,13 +587,13 @@ export default defineComponent({
         <tr v-for="paper in items" :key="paper._id">
           <td>
             <v-icon
-              size="24"
-              color="#BC463A"
-              @click="confirmDeletePaper(paper)"
+              size="30"
+              color="primary"
+              @click="openPaperDetailsDialog(paper)"
               style="cursor: pointer"
-              v-if="paper.status == PaperStatus.Draft"
+              v-if="paper.status != PaperStatus.Draft"
             >
-              > mdi-delete
+              > mdi-eye
             </v-icon>
           </td>
           <td>
@@ -538,7 +622,7 @@ export default defineComponent({
               @click="openDialog('edit', paper)"
               title="Upraviť"
             >
-              <v-icon size="24">mdi-pencil</v-icon>
+              <v-icon size="25">mdi-pencil</v-icon>
             </v-btn>
             <v-btn
               :disabled="!canViewReview(paper)"
@@ -546,7 +630,15 @@ export default defineComponent({
               @click="viewReview"
               title="Ukazať recenziu"
             >
-              <v-icon size="24" color="black">mdi-account-alert</v-icon>
+              <v-icon size="25" color="black">mdi-account-alert</v-icon>
+            </v-btn>
+            <v-btn
+              :disabled="paper.status != PaperStatus.Draft"
+              color="#BC463A"
+              @click="confirmDeletePaper"
+              title="Zmazať prácu"
+            >
+              <v-icon size="25">mdi-delete</v-icon>
             </v-btn>
           </td>
         </tr>
@@ -569,7 +661,7 @@ export default defineComponent({
           <v-form ref="form" v-model="valid">
             <v-text-field
               v-model="currentPaper.title"
-              label="Title"
+              label="Názov"
               :rules="[() => !!currentPaper.title || 'Názov práce je povinný']"
               outlined
               dense
@@ -647,8 +739,7 @@ export default defineComponent({
               outlined
               dense
               class="large-text-field"
-              :rules="[() => !currentPaper.isFinal || 'Kľúčové slová sú povinné pre finálnu verziu']"
-            />
+              :rules="[() => !currentPaper.isFinal || !!currentPaper.keywords || 'Kľúčové slová sú povinné pre finálnu verziu']"            />
             <v-row>
               <v-col
                 cols="12"
@@ -696,7 +787,7 @@ export default defineComponent({
               label="Abstrakt"
               outlined
               dense
-              :rules="[() => !currentPaper.isFinal || 'Abstrakt je povinný pre finálnu verziu']"
+              :rules="[() => !currentPaper.isFinal || !!currentPaper.abstract || 'Abstrakt je povinný pre finálnu verziu']"
               class="large-text-field"
             />
             <v-file-input
@@ -706,8 +797,14 @@ export default defineComponent({
               dense
               :disabled="dialogMode === 'view'"
               class="large-text-field"
-              :rules="[() => !currentPaper.isFinal || 'Súbor je povinný pre finálnu verziu']"
+              :rules="[() => !!currentPaper.file_link || 'Súbor je povinný']"
+              @change="handleFileSelection"
             ></v-file-input>
+            <!-- Show Existing File -->
+            <p v-if="currentPaper && currentPaper.file_link">
+              Aktuálny súbor:
+              <a :href="fileDownloadUrl" target="_blank">{{ getFileName(currentPaper.file_link) }}</a>
+            </p>
             <v-checkbox
               v-model="currentPaper.isFinal"
               color="red"
@@ -722,7 +819,7 @@ export default defineComponent({
             v-if="currentPaper.isFinal"
             @click="submitPaper"
             color="primary" variant="flat"
-            :disabled="currentPaper.status === PaperStatus.Submitted"
+            :disabled="!isFormValid"
             >Odoslať</v-btn
           >
         </v-card-actions>
@@ -743,6 +840,54 @@ export default defineComponent({
           >
           <v-btn color="red" @click="deletePaper">Vymazať</v-btn>
         </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Paper Details Dialog -->
+    <v-dialog v-model="paperDetailsDialog" max-width="800px">
+      <v-card>
+        <v-card-title>Detaily práce</v-card-title>
+        <v-card-text>
+          <v-table dense>
+            <tbody>
+            <tr>
+              <td><strong>Názov:</strong></td>
+              <td>{{ currentPaper?.title }}</td>
+            </tr>
+            <tr>
+              <td><strong>Konferencia:</strong></td>
+              <td>
+                {{ currentPaper?.conference?.year }} -
+                {{ formatDate(currentPaper?.conference?.date) }}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Sekcia:</strong></td>
+              <td>{{ currentPaper?.category?.name }}</td>
+            </tr>
+            <tr>
+              <td><strong>Kľúčové slová:</strong></td>
+              <td>{{ currentPaper?.keywords?.join(', ') }}</td>
+            </tr>
+            <tr>
+              <td><strong>Abstrakt:</strong></td>
+              <td><em>{{ currentPaper?.abstract }}</em></td>
+            </tr>
+            </tbody>
+          </v-table>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+            color="primary"
+            @click="downloadPaper(currentPaper)">
+            <v-icon size="36">mdi-download-box</v-icon>
+            Stiahnuť
+          </v-btn>
+          <v-btn color="tertiary" @click="paperDetailsDialog = false"
+          >Zrušiť</v-btn
+          >
+        </v-card-actions>
+
       </v-card>
     </v-dialog>
   </v-card>

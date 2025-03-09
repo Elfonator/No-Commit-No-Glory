@@ -67,7 +67,8 @@ export const createPaper = async (
     }
 
     //Build file path
-    const filePath = path.join(config.uploads, "docs", conference.toString(), req.file.filename);
+    //const filePath = path.join(config.uploads, "docs", conference.toString(), req.file.filename);
+    const filePath = `/docs/${conference.toString()}/${req.file.filename}`;
 
     // Create a new paper record
     const paper = new Paper({
@@ -186,12 +187,13 @@ export const editPaper = async (
 
     //Handle file upload if a new file is provided
     if (req.file) {
-      const newFilePath = path.join(config.uploads, "docs", paper.conference.toString(), req.file.filename);
+      //const newFilePath = path.join(config.uploads, "docs", paper.conference.toString(), req.file.filename);
+      const newFilePath = `/docs/${paper.conference.toString()}/${req.file.filename}`;
 
       //Delete the old file if it exists
       if (paper.file_link) {
         try {
-          const oldFilePath = path.join(config.uploads, paper.file_link);
+          const oldFilePath = path.join(config.uploads, paper.file_link.replace('/docs/', 'docs/'));
           await fs.promises.access(oldFilePath, fs.constants.F_OK);
           await fs.promises.unlink(oldFilePath);
           console.log(`Old document deleted: ${oldFilePath}`);
@@ -203,13 +205,6 @@ export const editPaper = async (
     }
 
     Object.assign(paper, updates);
-    /*
-      if (!updates.isFinal) {
-        paper.status = PaperStatus.Draft;
-      } else {
-        paper.status = PaperStatus.Submitted;
-      }
-     */
 
     if (!paper.deadline_date) {
       const conference = await Conference.findById(paper.conference);
@@ -222,7 +217,10 @@ export const editPaper = async (
 
     res.status(200).json({
       message: "Práca bola úspešne aktualizovaná.",
-      paper: updatedPaper,
+      paper: {
+        ...updatedPaper.toObject(),
+        file_link: updatedPaper.file_link, // Ensure file_link is always returned
+      },
     });
   } catch (error) {
     console.error("Error editing paper:", error);

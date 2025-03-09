@@ -6,7 +6,7 @@ interface IProgramItem {
 }
 
 interface IProgram {
-  fileLink: string;
+  fileLink?: string;
   items: IProgramItem[];
 }
 
@@ -29,7 +29,7 @@ interface IConferenceFile {
 }
 
 export interface IHomepage extends Document {
-  program: IProgram[];
+  program: IProgram;
   templates: ITemplate;
   committees: ICommittee[];
   conferenceFiles: IConferenceFile[];

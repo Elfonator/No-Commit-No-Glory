@@ -17,23 +17,24 @@ export const getAssignedPapers = async (
   try {
     const reviewerId = req.user?.userId;
     if (!reviewerId) {
-      res
-        .status(401)
-        .json({ message: "Neautorizované. Recenzent nie je prihlásený." });
+      res.status(401).json({ message: "Neautorizované. Recenzent nie je prihlásený." });
       return;
     }
 
+    // Get all reviewed paper IDs (both drafts & submitted)
+    const reviewedPaperIds = await Review.find({ reviewer: reviewerId })
+      .distinct('paper');
+
+    // Find papers that have NOT been reviewed (no drafts or submitted reviews)
     const pendingPapers = await Paper.find({
       reviewer: reviewerId,
-      _id: { $nin: await Review.find({ reviewer: reviewerId, isDraft: false }).distinct('paper') }
+      _id: { $nin: reviewedPaperIds }
     })
       .populate('category', 'name')
       .populate('conference', 'year location date');
 
     if (!pendingPapers.length) {
-      res
-        .status(404)
-        .json({ message: "Žiadne práce pridelené tomuto recenzentovi." });
+      res.status(404).json({ message: "Žiadne práce pridelené tomuto recenzentovi." });
       return;
     }
 
@@ -284,45 +285,52 @@ export const notifyReviewer = async (
 };
 
 //Download assigned paper
-export const downloadPaper = async (
+export const downloadPaperForReview = async (
   req: AuthRequest,
   res: Response,
 ): Promise<void> => {
   try {
-    const paperId = req.params.paperId;
+    const { paperId } = req.params;
+
+    // Find the paper in the database
     const paper = await Paper.findById(paperId);
-
     if (!paper || !paper.file_link) {
-      res
-        .status(404)
-        .json({ message: "Práca nebola nájdená alebo nemá priložený súbor." });
+      res.status(404).json({ message: "Soubor nebyl nalezen." });
       return;
     }
 
-    // Construct the absolute file path
-    const filePath = path.join(config.uploads, paper.file_link);
+    // Ensure the file path is relative to the /docs route
+    let filePath = paper.file_link;
+    if (!filePath.startsWith("/docs/")) {
+      filePath = `/docs/${filePath.split("/docs/").pop()}`;
+    }
 
-    // Check if the file exists before sending
-    try {
-      await fs.access(filePath, fs.constants.F_OK);
-    } catch (err) {
-      console.error("File not found or inaccessible:", err);
-      res
-          .status(404)
-          .json({ message: "Súbor neexistuje alebo nie je dostupný." });
+    // Construct absolute file path
+    const absolutePath = path.join(config.uploads, filePath.replace("/docs/", "docs/"));
+
+    // Generate a safe filename based on ONLY the paper title (no author)
+    const safeTitle = paper.title.trim().replace(/[^a-zA-Z0-9-_]/g, "_");
+    const fileExtension = path.extname(absolutePath);
+    const downloadFilename = `SVK_${safeTitle}${fileExtension}`;
+
+    // Debugging: Log filename & path
+    console.log("File Path:", absolutePath);
+
+    // Check if the file exists
+    if (!absolutePath) {
+      res.status(404).json({ message: "Soubor nebyl na serveru nalezen." });
       return;
     }
 
-    //Send the file to the client
-    res.download(filePath, (err) => {
-      if (err) {
-        console.error("Error downloading file:", err);
-        res.status(500).json({ error: "Nepodarilo sa stiahnuť prácu." });
-      }
-    });
+    // Set proper headers to enforce the filename
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(downloadFilename)}"`);
+    res.setHeader("Content-Type", "application/pdf");
+
+    // Send the file for download - using the custom filename
+    res.download(absolutePath, downloadFilename);
   } catch (error) {
-    console.error("Error downloading paper:", error);
-    res.status(500).json({ error: "Nepodarilo sa stiahnuť prácu." });
+    console.error("Chyba při stahování papíru:", error);
+    res.status(500).json({ message: "Papír se nepodařilo stáhnout.", error });
   }
 };
 

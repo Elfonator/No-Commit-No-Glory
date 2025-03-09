@@ -12,6 +12,8 @@ import { sendEmail } from '../utils/emailService'
 import argon2 from 'argon2'
 import Review from '../models/Review'
 import {config} from "../config";
+import Homepage from '../models/Homepage'
+import multer from 'multer'
 
 /** USERS**/
 //Get all users
@@ -435,9 +437,9 @@ export const updateConference = async (
   }
 };
 
-/*
+
 //Delete conference
-export const deleteConference = async (req: Request, res: Response): Promise<void> => {
+export const deleteConference = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { conferenceId } = req.params;
 
@@ -453,7 +455,7 @@ export const deleteConference = async (req: Request, res: Response): Promise<voi
         res.status(500).json({ message: 'Nepodarilo sa vymazať konferenciu', error });
     }
 };
- */
+
 
 /** QUESTIONS **/
 //Get all questions
@@ -516,25 +518,6 @@ export const createQuestion = async (
     res.status(500).json({ message: "Nepodarilo sa vytvoriť otázku", error });
   }
 };
-//Delete existing question
-export const deleteQuestion = async (
-    req: AuthRequest,
-    res: Response,
-): Promise<void> => {
-  const { questionId } = req.params;
-
-  try {
-    const result = await Question.findByIdAndDelete(questionId);
-    if (!result) {
-      res.status(404).json({ message: "Otázka sa nenašla." });
-      return;
-    }
-    res.status(200).json({ message: "Otázka bola úspešne odstránená." });
-  } catch (error) {
-    console.error("Error deleting question:", error);
-    res.status(500).json({ message: "Otázku sa nepodarilo odstrániť." });
-  }
-};
 
 // Update question (dynamic update)
 export const updateQuestion = async (
@@ -568,6 +551,27 @@ export const updateQuestion = async (
     res
         .status(500)
         .json({ message: "Nepodarilo sa aktualizovať otázku", error });
+  }
+};
+
+
+//Delete existing question
+export const deleteQuestion = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  const { questionId } = req.params;
+
+  try {
+    const result = await Question.findByIdAndDelete(questionId);
+    if (!result) {
+      res.status(404).json({ message: "Otázka sa nenašla." });
+      return;
+    }
+    res.status(200).json({ message: "Otázka bola úspešne odstránená." });
+  } catch (error) {
+    console.error("Error deleting question:", error);
+    res.status(500).json({ message: "Otázku sa nepodarilo odstrániť." });
   }
 };
 
@@ -758,6 +762,88 @@ export const assignReviewer = async (
   }
 };
 
+export const adminDeletePaper = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { paperId } = req.params;
+
+    // Find and delete the paper
+    const paper = await Paper.findByIdAndDelete(paperId);
+
+    if (!paper) {
+      res.status(404).json({ message: 'Paper not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Paper deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting paper:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const downloadSinglePaper = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { paperId } = req.params;
+
+    // Find the paper in the database
+    const paper = await Paper.findById(paperId);
+    if (!paper || !paper.file_link) {
+      res.status(404).json({ message: "Soubor nebyl nalezen." });
+      return;
+    }
+
+    // Ensure the file path is relative to the /docs route
+    let filePath = paper.file_link;
+    if (!filePath.startsWith("/docs/")) {
+      filePath = `/docs/${filePath.split("/docs/").pop()}`;
+    }
+
+    // Construct absolute file path
+    const absolutePath = path.join(config.uploads, filePath.replace("/docs/", "docs/"));
+
+    // Extract the first author from the authors array
+    const firstAuthor = paper.authors?.length
+      ? `${paper.authors[0].firstName}_${paper.authors[0].lastName}`
+      : "Unknown_Author";
+
+    // Generate a safe filename based on the first author's name + paper title
+    const safeTitle = paper.title.trim().replace(/[^a-zA-Z0-9-_]/g, "_"); // Remove special characters
+    const fileExtension = path.extname(absolutePath);
+    const downloadFilename = `${firstAuthor}_${safeTitle}${fileExtension}`;
+
+
+    // Debugging: Log filename & path
+    console.log("File Path:", absolutePath);
+    console.log("Download Filename:", downloadFilename);
+
+    // Check if the file exists
+    if (!absolutePath) {
+      res.status(404).json({ message: "Soubor nebyl na serveru nalezen." });
+      return;
+    }
+
+    // Set proper headers to enforce the filename
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(downloadFilename)}"`);
+    res.setHeader("Content-Type", "application/pdf");
+
+    console.log("Final Response Headers:");
+    console.log(`Content-Disposition: attachment; filename="${downloadFilename}"`);
+    console.log("Absolute Path:", absolutePath);
+
+    // Send the file for download
+    res.download(absolutePath, downloadFilename);
+  } catch (error) {
+    console.error("Chyba při stahování papíru:", error);
+    res.status(500).json({ message: "Papír se nepodařilo stáhnout.", error });
+  }
+};
+
 //Paper download grouped by conference
 export const downloadPapersByConference = async (
     req: AuthRequest,
@@ -830,8 +916,262 @@ export const downloadPapersByConference = async (
   }
 };
 
+/** HOMEPAGE MANAGEMENT **/
+/** Committees **/
+//Fetch committees
+export const getCommittees = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const homepage = await Homepage.findOne().select("committees");
+    res.status(200).json({ committees: homepage?.committees || [] });
+  } catch (error) {
+    console.error("Error fetching committee members:", error);
+    res.status(500).json({ message: "Nepodarilo sa načítať organizačný výbor", error });
+  }
+}
+
+// Add a new committee member
+export const addCommittee = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { fullName, university } = req.body;
+
+    if (!fullName || !university) {
+      res.status(400).json({ message: "Chýbajúce údaje" });
+    }
+
+    const homepage = await Homepage.findOneAndUpdate(
+      {},
+      { $push: { committees: { fullName, university } } },
+      { new: true, upsert: true }
+    );
+
+    res.status(201).json({
+      message: "Člen výboru bol úspešne pridaný",
+      committees: homepage?.committees || [],
+    });
+  } catch (error) {
+    console.error("Error adding committee member:", error);
+    res.status(500).json({ message: "Nepodarilo sa pridať člena výboru", error });
+  }
+};
+
+// Update an existing committee member
+export const updateCommittee = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { committeeId } = req.params;
+    const updates = req.body;
+
+    const homepage = await Homepage.findOneAndUpdate(
+      { "committees._id": committeeId },
+      { $set: { "committees.$": updates } },
+      { new: true }
+    );
+
+    if (!homepage) {
+      res.status(404).json({ message: "Člen výboru nebol nájdený" });
+    }
+
+    res.status(200).json({
+      message: "Člen výboru bol úspešne aktualizovaný",
+      committees: homepage?.committees || [],
+    });
+  } catch (error) {
+    console.error("Error updating committee member:", error);
+    res.status(500).json({ message: "Nepodarilo sa aktualizovať člena výboru", error });
+  }
+};
+
+// Delete a committee member
+export const deleteCommittee = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { committeeId } = req.params;
+
+    const homepage = await Homepage.findOneAndUpdate(
+      {},
+      { $pull: { committees: { _id: committeeId } } },
+      { new: true }
+    );
+
+    if (!homepage) {
+      res.status(404).json({ message: "Člen výboru nebol nájdený" });
+    }
+
+    res.status(200).json({
+      message: "Člen výboru bol úspešne odstránený",
+      committees: homepage?.committees || [],
+    });
+  } catch (error) {
+    console.error("Error deleting committee member:", error);
+    res.status(500).json({ message: "Nepodarilo sa odstrániť člena výboru", error });
+  }
+};
+
+/** Program **/
+// Fetch program
+export const getProgram = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const homepage = await Homepage.findOne().select("program");
+    res.status(200).json({ program: homepage?.program || { fileLink: "", items: [] } });
+  } catch (error) {
+    console.error("Error fetching program:", error);
+    res.status(500).json({ message: "Nepodarilo sa načítať program", error });
+  }
+};
+
+// Add a new program schedule item
+export const addProgramItem = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { schedule, description } = req.body;
+
+    if (!schedule || !description) {
+      res.status(400).json({ message: "Chýbajúce údaje" });
+      return;
+    }
+
+    const homepage = await Homepage.findOneAndUpdate(
+      {},
+      { $push: { "program.items": { schedule, description } } },
+      { new: true, upsert: true }
+    );
+
+    res.status(201).json({
+      message: "Bod programu bol úspešne pridaný",
+      program: homepage?.program || { fileLink: "", items: [] },
+    });
+  } catch (error) {
+    console.error("Error adding program item:", error);
+    res.status(500).json({ message: "Nepodarilo sa pridať bod programu", error });
+  }
+};
+
+// Update an existing program schedule item
+export const updateProgramItem = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { itemId } = req.params;
+    const updates = req.body;
+
+    const homepage = await Homepage.findOneAndUpdate(
+      { "program.items._id": itemId },
+      { $set: { "program.items.$": updates } },
+      { new: true }
+    );
+
+    if (!homepage) {
+      res.status(404).json({ message: "Bod programu nebol nájdený" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Bod programu bol úspešne aktualizovaný",
+      program: homepage?.program || { fileLink: "", items: [] },
+    });
+  } catch (error) {
+    console.error("Error updating program item:", error);
+    res.status(500).json({ message: "Nepodarilo sa aktualizovať bod programu", error });
+  }
+};
+
+// Delete a program schedule item
+export const deleteProgramItem = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { itemId } = req.params;
+
+    const homepage = await Homepage.findOneAndUpdate(
+      {},
+      { $pull: { "program.items": { _id: itemId } } },
+      { new: true }
+    );
+
+    if (!homepage) {
+      res.status(404).json({ message: "Bod programu nebol nájdený" });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Bod programu bol úspešne odstránený",
+      program: homepage?.program || { fileLink: "", items: [] },
+    });
+  } catch (error) {
+    console.error("Error deleting program item:", error);
+    res.status(500).json({ message: "Nepodarilo sa odstrániť bod programu", error });
+  }
+};
+
+const storage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    try {
+      const uploadPath = path.join(config.uploads, "programs");
+      await fs.mkdir(uploadPath, { recursive: true });
+      cb(null, uploadPath);
+    } catch (error) {
+      cb(error instanceof Error ? error : new Error(String(error)), "");
+    }
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+
+const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedExtensions = [".pdf"];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Neplatný typ súboru. Povolené sú iba PDF"));
+  }
+};
+
+export const upload = multer({ storage, fileFilter });
+
+// Upload Program File
+export const uploadProgramFile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: "Súbor nebol nahraný" });
+      return;
+    }
+
+    // Find existing homepage
+    const homepage = await Homepage.findOne();
+
+    if (!homepage) {
+      res.status(404).json({ message: "Nepodarilo sa nájsť domovskú stránku" });
+      return;
+    }
+
+    // Define the new file path
+    const newFilePath = `/programs/${req.file.filename}`;
+
+    // Delete old file if it exists
+    if (homepage.program?.fileLink) {
+      try {
+        const oldFilePath = path.join(config.uploads, homepage.program.fileLink.replace("/uploads/", ""));
+        await fs.access(oldFilePath, fs.constants.F_OK);
+        await fs.unlink(oldFilePath);
+        console.log(`Old program file deleted: ${oldFilePath}`);
+      } catch (err) {
+        console.warn("Failed to delete old file!", err);
+      }
+    }
+
+    // Update database with new file link
+    homepage.program.fileLink = newFilePath;
+    await homepage.save();
+
+    res.status(200).json({
+      message: "Súbor programu bol úspešne nahraný",
+      program: homepage.program,
+    });
+  } catch (error) {
+    console.error("Error uploading program file:", error);
+    res.status(500).json({ message: "Nepodarilo sa nahrať programový súbor", error });
+  }
+};
+
 /** OTHER **/
 //Admin Reports Controller
+  /*
 export const getAdminReports = async (
     _req: AuthRequest,
     res: Response,
@@ -904,3 +1244,4 @@ export const getAdminReports = async (
     res.status(500).json({ message: "Failed to fetch admin reports.", error });
   }
 };
+ */

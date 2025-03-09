@@ -31,6 +31,8 @@ export const useReviewStore = defineStore('reviews', () => {
         reviewerReviews.value.push(updatedReview);
       }
 
+      await fetchAllReviews();
+
       return updatedReview;
     } catch (err) {
       console.error('Failed to submit review:', err);

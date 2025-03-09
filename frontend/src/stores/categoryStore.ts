@@ -60,7 +60,6 @@ export const useCategoryStore = defineStore('categories', () => {
         `/auth/admin/categories/${id}`,
         updates,
       )
-      const index = categories.value.findIndex(c => c._id === id)
       await fetchAllCategories()
     } catch (err) {
       console.error('Failed to update category:', err)

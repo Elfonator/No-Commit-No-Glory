@@ -13,6 +13,7 @@ import { sk } from 'date-fns/locale'
 import { useUserStore } from '@/stores/userStore.ts'
 import { type AdminPaper, PaperStatus } from '@/types/paper'
 import axios from 'axios'
+import { ConferenceStatus } from '@/types/conference.ts'
 
 export default defineComponent({
   name: 'ConferencePapers',
@@ -34,7 +35,7 @@ export default defineComponent({
     //Table headers for papers
     const tableHeaders = [
       { title: '', value: 'view', sortable: false },
-      { title: 'Status', value: 'status' },
+      { title: 'Status', value: 'status', width: '50px' },
       { title: 'Autor', value: 'user' },
       { title: 'Názov', value: 'status' },
       { title: 'Sekcia', value: 'category' },
@@ -94,6 +95,21 @@ export default defineComponent({
       expandedConferenceId.value =
         expandedConferenceId.value === conferenceId ? null : conferenceId
     }
+
+    const downloadPaper = async (conferenceId: string | undefined, paperId: string | undefined) => {
+      if (!conferenceId || !paperId) {
+        showSnackbar?.({ message: "Missing conference or paper ID.", color: "error" });
+        return;
+      }
+
+      try {
+        await paperStore.downloadPaperAdmin(conferenceId, paperId);
+        showSnackbar?.({ message: "Súbor bol úspešne stiahnutý.", color: "success" });
+      } catch (error) {
+        showSnackbar?.({ message: "Nepodarilo sa stiahnuť súbor.", color: "error" });
+      }
+    };
+
 
     const downloadAllPapers = async (conferenceId: string) => {
       if (!conferenceId) {
@@ -287,6 +303,8 @@ export default defineComponent({
           selectedReviewer.value,
         )
 
+        await paperStore.getAllPapers()
+
         closeAssignReviewerDialog()
         console.log('Reviewer assigned successfully!')
         showSnackbar?.({
@@ -315,10 +333,51 @@ export default defineComponent({
         : format(parsedDate, 'dd.MM.yyyy', { locale: sk })
     }
 
+    const isDeletePaperDialogOpen = ref(false);
+
+    const confirmDeletePaper = (paper: AdminPaper) => {
+      selectedPaper.value = paper;
+      isDeletePaperDialogOpen.value = true;
+    };
+
+    const closeDeletePaperDialog = () => {
+      isDeletePaperDialogOpen.value = false;
+    };
+
+    const deletePaper = async () => {
+      if (!selectedPaper.value) return;
+
+      try {
+        await paperStore.adminDeletePaper(selectedPaper.value._id);
+        showSnackbar?.({
+          message: 'Práca bola úspešne odstránená.',
+          color: 'success',
+        });
+
+        // Refresh the paper list
+        await paperStore.getAllPapers();
+      } catch (error) {
+        console.error('Error deleting paper:', error);
+        showSnackbar?.({
+          message: 'Nepodarilo sa odstrániť prácu.',
+          color: 'error',
+        });
+      } finally {
+        closeDeletePaperDialog();
+      }
+    };
+
     //Fetch admin papers and reviewers
     onMounted(() => {
       paperStore.getAllPapers().then(() => {
-        console.log('Papers from API:', paperStore.adminPapers)
+        //console.log('Papers from API:', paperStore.adminPapers)
+        const ongoingConference = groupedPapers.value.find(conference =>
+          conference.papers.some((paper: AdminPaper) => paper.status === PaperStatus.Submitted)
+        );
+
+        if (ongoingConference) {
+          expandedConferenceId.value = ongoingConference._id;
+        }
       })
       userStore.fetchReviewers().then(() => {
         console.log('Reviewers:', userStore.reviewers)
@@ -348,6 +407,11 @@ export default defineComponent({
       filteredConferences,
       filteredPapers,
       PaperStatus,
+      isDeletePaperDialogOpen,
+      confirmDeletePaper,
+      deletePaper,
+      closeDeletePaperDialog,
+      downloadPaper,
       isReviewerDisabled,
       isDeadlineDisabled,
       resetConferenceFilters,
@@ -493,11 +557,11 @@ export default defineComponent({
                   >
                     <td>
                       <v-icon
-                        size="24"
+                        size="30"
                         color="primary"
                         @click="viewPaper(paper)"
                         style="cursor: pointer"
-                        title="View details"
+                        title="Podrobnosti"
                       >
                         mdi-eye
                       </v-icon>
@@ -539,18 +603,24 @@ export default defineComponent({
                       <v-btn
                         :disabled="isReviewerDisabled(paper)"
                         color="#3C888C"
-                        title="Assign Reviewer"
+                        title="Priradiť recenzenta"
                         @click="openAssignReviewerDialog(paper)"
                       >
-                        <v-icon size="24">mdi-account-plus</v-icon>
+                        <v-icon size="25">mdi-account-plus</v-icon>
                       </v-btn>
                       <v-btn
                         :disabled="isDeadlineDisabled(paper.conference)"
                         color="#FFCD16"
                         @click="openDeadlineDialog(paper)"
-                        title="Edit Deadline"
+                        title="Upraviť termín"
                       >
-                        <v-icon size="24">mdi-timer-edit</v-icon>
+                        <v-icon size="25">mdi-timer-edit</v-icon>
+                      </v-btn>
+                      <v-btn
+                        color="#BC463A"
+                        @click="confirmDeletePaper(paper)"
+                        title="Odstraniť">
+                        <v-icon size="25" color="white">mdi-delete</v-icon>
                       </v-btn>
                     </td>
                   </tr>
@@ -558,6 +628,7 @@ export default defineComponent({
               </v-data-table>
             </div>
           </v-expand-transition>
+
           <v-dialog v-model="isAssignReviewerDialogOpen" max-width="600px">
             <v-card>
               <v-card-title>Priradiť recenzenta</v-card-title>
@@ -592,6 +663,7 @@ export default defineComponent({
               </v-card-actions>
             </v-card>
           </v-dialog>
+
           <v-dialog v-model="isPaperViewDialogOpen" max-width="900px">
             <v-card>
               <v-card-title>Detaily práce</v-card-title>
@@ -654,7 +726,9 @@ export default defineComponent({
                 </v-row>
               </v-card-text>
               <v-card-actions>
-                <v-btn color="primary" @click="" title="Edit Deadline">
+                <v-btn
+                  color="primary"
+                  @click="downloadPaper(selectedPaper?.conference?._id, selectedPaper?._id)">
                   <v-icon size="36">mdi-download-box</v-icon>
                   Stiahnuť
                 </v-btn>
@@ -673,6 +747,22 @@ export default defineComponent({
               <v-card-actions>
                 <v-btn @click="isDeadlineDialogOpen = false">Zrušiť</v-btn>
                 <v-btn color="primary" @click="changeDeadline">Uložiť</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <v-dialog v-model="isDeletePaperDialogOpen" max-width="500px">
+            <v-card>
+              <v-card-title>Potvrdenie odstránenia</v-card-title>
+              <v-card-text>
+                <p>
+                  Ste si istí, že chcete odstrániť prácu
+                  <strong>{{ selectedPaper?.title }}</strong
+                  >?
+                </p>
+              </v-card-text>
+              <v-card-actions>
+                <v-btn color="secondary" @click="closeDeletePaperDialog">Zrušiť</v-btn>
+                <v-btn color="red" @click="deletePaper">Odstrániť</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>

@@ -149,27 +149,40 @@ export default defineComponent({
         })
       }
     }
-    /*
-        // Delete confirmation handling
-        const confirmDelete = (conference) => {
-          Object.assign(currentConference, conference);
-          isDeleteDialogOpen.value = true;
-        };
 
-        const closeDeleteDialog = () => {
-          isDeleteDialogOpen.value = false;
-        };
+    // Delete confirmation handling
+    const confirmDelete = (conference: ConferenceAdmin) => {
+      Object.assign(currentConference, conference);
+      isDeleteDialogOpen.value = true;
+    };
 
-        const deleteConference = async () => {
-          try {
-            await conferenceStore.deleteConference(currentConference._id);
-          } catch (error) {
-            console.error("Error deleting conference:", error);
-          } finally {
-            closeDeleteDialog();
-          }
-        };
-     */
+    const closeDeleteDialog = () => {
+      isDeleteDialogOpen.value = false;
+    };
+
+    const deleteConference = async () => {
+      if (!currentConference._id) return;
+
+      try {
+        await conferenceStore.deleteConference(currentConference._id);
+        showSnackbar?.({
+          message: 'Konferencia bola úspešne odstránená.',
+          color: 'success',
+        });
+
+        // Refresh conferences after deletion
+        await conferenceStore.fetchAdminConferences();
+      } catch (error) {
+        console.error('Error deleting conference:', error);
+        showSnackbar?.({
+          message: 'Nepodarilo sa odstrániť konferenciu.',
+          color: 'error',
+        });
+      } finally {
+        closeDeleteDialog();
+      }
+    };
+
 
     // View works for a specific conference
     const viewWorksForConference = (conference: any) => {
@@ -248,9 +261,9 @@ export default defineComponent({
       openDialog,
       closeDialog,
       saveConference,
-      //confirmDelete,
-      //closeDeleteDialog,
-      //deleteConference,
+      confirmDelete,
+      closeDeleteDialog,
+      deleteConference,
       viewWorksForConference,
       formatTimestamp,
     }
@@ -365,6 +378,9 @@ export default defineComponent({
               @click="openDialog('edit', conference)"
             >
               <v-icon size="24">mdi-pencil</v-icon>
+            </v-btn>
+            <v-btn color="#BC463A" @click="confirmDelete(conference)">
+              <v-icon size="24" color="white">mdi-delete</v-icon>
             </v-btn>
           </td>
         </tr>
@@ -564,6 +580,23 @@ export default defineComponent({
             @click="saveConference"
             >Uložiť</v-btn
           >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="isDeleteDialogOpen" max-width="500px">
+      <v-card>
+        <v-card-title>Potvrdenie odstránenia</v-card-title>
+        <v-card-text>
+          <p>
+            Ste si istí, že chcete odstrániť konferenciu
+            <strong>{{ currentConference?.year }} - {{ currentConference?.location }}</strong
+            >?
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="secondary" @click="closeDeleteDialog">Zrušiť</v-btn>
+          <v-btn color="red" @click="deleteConference">Odstrániť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
