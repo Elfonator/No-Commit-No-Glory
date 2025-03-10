@@ -24,7 +24,7 @@ router.post('/papers/:paperId', appendReview);
 router.get('/reviews', getAllReviews)
 router.get("/reviews/:reviewId", getReviewById);
 router.post("/reviews", createReview);
-router.patch("/reviews/:reviewId", sendReview);
+router.patch("/reviews/:reviewId/send", sendReview);
 router.patch("/reviews/:reviewId", updateReview);
 router.delete("/reviews/:reviewId", deleteReview)
 

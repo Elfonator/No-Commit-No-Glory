@@ -23,6 +23,14 @@ export default defineComponent({
       console.error('showSnackbar is not provided')
     }
 
+    const isReviewDeadlinePassed = (review: Review): boolean => {
+      if (!review.paper?.conference?.deadline_review) {
+        return false; // If no deadline is set, allow editing
+      }
+      const deadline = new Date(review.paper.conference.deadline_review);
+      return new Date() > deadline;
+    };
+
     const reviewStore = useReviewStore();
     const paperStore = usePaperStore();
     const questionStore = useQuestionStore();
@@ -117,7 +125,12 @@ export default defineComponent({
 
     // Edit an existing review
     const editReview = (review: Review) => {
-      if (!review.isDraft) return;
+      //if (!review.isDraft) return;
+
+      if (isReviewDeadlinePassed(review)) {
+        showSnackbar?.({ message: "Recenziu už nie je možné upraviť po termíne.", color: "error" });
+        return;
+      }
 
       Object.assign(selectedReview, review);
 
@@ -171,14 +184,50 @@ export default defineComponent({
     };
 
     const sendReview = async (review: Review) => {
+      console.log("Sending review:", review);
+
       if (!review._id) {
         showSnackbar?.({ message: "Chyba: Recenzia nemá ID!", color: "error" });
         return;
       }
 
-      await reviewStore.sendReview(review._id);
-      showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
-      reviewDialog.value = false;
+      if (isReviewDeadlinePassed(review)) {
+        showSnackbar?.({ message: "Termín na odoslanie recenzie už vypršal!", color: "error" });
+        return;
+      }
+
+      try {
+        // If sending from edit dialog, update the review first
+        if (reviewDialog.value) {
+          // Format responses for submission
+          const formattedResponses = formatResponses();
+
+          // Update the review with current values
+          await reviewStore.updateReview(review._id, {
+            paper: review.paper,
+            reviewer: review.reviewer,
+            responses: formattedResponses,
+            recommendation: review.recommendation,
+            comments: review.comments,
+            isDraft: true, // Still a draft until sent
+          });
+        }
+
+        // Now send the review
+        await reviewStore.sendReview(review._id);
+        showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
+
+        // Close dialog if open
+        if (reviewDialog.value) {
+          reviewDialog.value = false;
+        }
+
+        // Refresh reviews
+        await reviewStore.fetchAllReviews();
+      } catch (error) {
+        console.error("Error sending review:", error);
+        showSnackbar?.({ message: "Nepodarilo sa odoslať recenziu.", color: "error" });
+      }
     };
 
     //Delete review
@@ -247,6 +296,7 @@ export default defineComponent({
       textQuestions,
       isDeleteDialogOpen,
       reviewToDelete,
+      isReviewDeadlinePassed,
       closeDeleteDialog,
       deleteReview,
       editReview,
@@ -331,20 +381,20 @@ export default defineComponent({
             <td>{{ formatDate(review.created_at) }}</td>
             <td>{{ review.paper.title }}</td>
             <td class="d-flex justify-end align-center">
+              <!-- :disabled="!review.isDraft" -->
               <v-btn
-                :disabled="!review.isDraft"
                 color="#FFCD16"
                 @click="editReview(review)">
                 <v-icon size="24">mdi-pencil</v-icon>
               </v-btn>
+              <!-- :disabled="!review.isDraft" -->
               <v-btn
-                :disabled="!review.isDraft"
                 color="primary"
                 @click="sendReview(review)">
                 <v-icon size="24">mdi-send</v-icon>
               </v-btn>
+              <!-- :disabled="!review.isDraft" -->
               <v-btn
-                :disabled="!review.isDraft"
                 color="#BC463A"
                 @click="confirmDeleteReview(review)">
                 <v-icon size="24" color="white">mdi-delete</v-icon>
@@ -407,7 +457,7 @@ export default defineComponent({
       </v-card-text>
       <v-card-actions>
         <v-btn color="primary" @click="saveDraft">Uložiť</v-btn>
-        <v-btn color="error" @click="sendReview">Odoslať</v-btn>
+        <v-btn color="error" @click="sendReview(selectedReview)">Odoslať</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

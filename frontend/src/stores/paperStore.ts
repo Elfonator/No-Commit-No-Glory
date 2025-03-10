@@ -163,7 +163,7 @@ export const usePaperStore = defineStore('papers', () => {
 
     try {
       const response = await axiosInstance.get('/auth/reviewer/papers');
-      const allAssignedPapers = response.data;
+      const allAssignedPapers = response.data || [];
 
       // Initialize reviewStore (must be inside a function, not globally)
       const reviewStore = useReviewStore();

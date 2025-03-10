@@ -37,3 +37,14 @@ export interface ParticipantConference {
   start_date: Date
   end_date: Date
 }
+
+export interface ReviewerConference {
+  _id: string
+  year: number
+  university: string
+  location: string
+  date: Date
+  deadline_review: Date
+  start_date: Date
+  end_date: Date
+}

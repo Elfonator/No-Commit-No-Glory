@@ -42,7 +42,7 @@ export const useReviewStore = defineStore('reviews', () => {
   //Submit a review
   const sendReview = async (reviewId: string) => {
     try {
-      const response = await axiosInstance.patch(`/auth/reviewer/reviews/${reviewId}`, { isDraft: false });
+      const response = await axiosInstance.patch(`/auth/reviewer/reviews/${reviewId}/send`, { isDraft: false });
       const updatedReview: Review = response.data.review;
 
       // Update local state

@@ -137,12 +137,34 @@ export default defineComponent({
     };
 
     const confirmSubmission = async () => {
-      if (!selectedReview.value) return;
+      if (!selectedPaper.value) return;
 
-      await reviewStore.sendReview(selectedReview.value._id);
-      showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
+      try {
+        // Create the review data
+        const reviewData: Review = {
+          created_at: new Date(),
+          paper: selectedPaper.value._id,
+          reviewer: userStore.userProfile._id,
+          responses: formatResponses(),
+          recommendation: recommendation.value,
+          comments: comments.value,
+          isDraft: false, // Not a draft since we're submitting
+        };
 
-      reviewDialog.value = false;
+        // Create the review
+        await reviewStore.createReview(reviewData);
+
+        showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
+        reviewDialog.value = false;
+        confirmationDialog.value = false;
+
+        // Refresh the data
+        await reviewStore.fetchAllReviews();
+        await paperStore.getAssignedPapers();
+      } catch (error) {
+        console.error("Error submitting review:", error);
+        showSnackbar?.({ message: "Chyba pri odosielaní recenzie.", color: "error" });
+      }
     };
 
 
@@ -159,7 +181,7 @@ export default defineComponent({
       return questions.value.map((question) => ({
         _id: question._id,
         question: question._id,
-        answer: reviewResponses.value[question._id] || null,
+        answer: reviewResponses.value[question._id] ?? null,
       }));
     };
 
@@ -257,7 +279,7 @@ export default defineComponent({
       <v-card>
         <v-card-title class="wrap-title">Nová recenzia: {{ selectedPaper.title }}</v-card-title>
         <v-card-text>
-          <v-form ref="reviewForm" @submit.prevent="submitReviewConfirmation">
+          <v-form ref="reviewForm">
             <v-container>
               <!-- Rating Questions -->
               <v-row v-for="question in ratingQuestions" :key="question._id" align="center">
@@ -396,7 +418,7 @@ export default defineComponent({
         <v-card-actions>
           <v-btn
             color="primary"
-            @click="downloadPaper(selectedPaper?._id)">
+            @click="downloadPaper(selectedPaper)">
             <v-icon size="36">mdi-download-box</v-icon>
             Stiahnuť
           </v-btn>

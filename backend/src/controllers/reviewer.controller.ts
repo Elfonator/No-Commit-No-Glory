@@ -30,12 +30,7 @@ export const getAssignedPapers = async (
       _id: { $nin: reviewedPaperIds }
     })
       .populate('category', 'name')
-      .populate('conference', 'year location date');
-
-    if (!pendingPapers.length) {
-      res.status(404).json({ message: "Žiadne práce pridelené tomuto recenzentovi." });
-      return;
-    }
+      .populate('conference', 'year location date end_date deadline_review');
 
     res.status(200).json(pendingPapers);
   } catch (error) {
@@ -157,6 +152,58 @@ export const updateReview = async (req: AuthRequest, res: Response): Promise<voi
 };
 
 // Function to submit a review (change draft to final submission)
+const appendReviewToPaper = async (paperId: string, reviewId: string): Promise<boolean> => {
+  try {
+    console.log("Setting review for paper - Paper ID:", paperId, "Review ID:", reviewId);
+
+    // Get the reviewer ID from the current review
+    const currentReview = await Review.findById(reviewId);
+    if (!currentReview) {
+      console.error('Review not found');
+      return false;
+    }
+
+    // Simply update the paper with the new review ID
+    const result = await Paper.findByIdAndUpdate(
+        paperId,
+        { review: reviewId },
+        { new: true }
+    );
+
+    if (!result) {
+      console.error('Paper not found');
+      return false;
+    }
+
+    console.log("Review successfully set for paper");
+    return true;
+  } catch (error) {
+    console.error('Error setting review for paper:', error);
+    return false;
+  }
+};
+
+// The original appendReview function for direct API calls
+export const appendReview = async (req: AuthRequest, res: Response): Promise<void> => {
+  const { paperId } = req.params;
+  const { reviewId } = req.body;
+
+  try {
+    const success = await appendReviewToPaper(paperId, reviewId);
+
+    if (!success) {
+      res.status(404).json({ message: 'Paper not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Review appended to paper' });
+  } catch (error) {
+    console.error('Error appending review to paper:', error);
+    res.status(500).json({ message: 'Failed to append review to paper' });
+  }
+};
+
+// Updated sendReview function
 export const sendReview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { reviewId } = req.params;
@@ -172,25 +219,20 @@ export const sendReview = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
-    if (!review.isDraft) {
-      res.status(400).json({ message: 'Review has already been submitted.' });
-      return;
-    }
-
-    review.isDraft = false; // Mark as final submission
+    //review.isDraft = false; // Mark as final submission
     await review.save();
-
-    res.status(200).json({ message: 'Recenzia bola odoslaná.', review });
-
-    appendReview(
-      Object.assign(req, { params: { paperId: review.paper }, body: { reviewId: review._id } }),
-      res
-    ).catch(error => console.error("Error appending review:", error));
 
     // Update paper status based on recommendation
     const paperStatus = getPaperStatusFromRecommendation(review.recommendation);
     await Paper.findByIdAndUpdate(review.paper, { status: paperStatus });
 
+    // Append review to paper using the helper function
+    const success = await appendReviewToPaper(review.paper.toString(), reviewId);
+    if (!success) {
+      console.warn("Warning: Failed to append review to paper");
+    }
+
+    res.status(200).json({ message: 'Recenzia bola odoslaná.', review });
   } catch (error) {
     console.error("Error submitting review:", error);
     res.status(500).json({ message: "Nepodarilo sa odoslať recenziu." });
@@ -213,10 +255,12 @@ export const deleteReview = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
+    /*
     if (!review.isDraft) {
       res.status(400).json({ message: 'Only draft reviews can be deleted.' });
       return;
     }
+     */
 
     await Review.findByIdAndDelete(reviewId);
     res.status(200).json({ message: 'Recenzia bola vymazaná.' });
@@ -241,30 +285,6 @@ const getPaperStatusFromRecommendation = (
       return PaperStatus.UnderReview;
   }
 };
-
-export const appendReview = async (req: AuthRequest,
-                                   res: Response,): Promise<void> => {
-  const { paperId } = req.params;
-  const { reviewId } = req.body;
-
-  try {
-    const paper = await Paper.findByIdAndUpdate(
-      paperId,
-      { $push: { review: reviewId } },
-      { new: true }
-    );
-
-    if (!paper) {
-      res.status(404).json({ message: 'Paper not found' });
-      return
-    }
-
-    res.status(200).json({ message: 'Review appended to paper', paper });
-  } catch (error) {
-    console.error('Error appending review to paper:', error);
-    res.status(500).json({ message: 'Failed to append review to paper' });
-  }
-}
 
 //Get review by ID
 export const getReviewById = async (req: AuthRequest, res: Response): Promise<void> => {
