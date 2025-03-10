@@ -343,7 +343,9 @@ export const createConference = async (
       start_date,
       end_date,
       deadline_submission,
+      submission_confirmation,
       deadline_review,
+      deadline_correction,
     } = req.body;
 
     const newConference = new Conference({
@@ -355,7 +357,9 @@ export const createConference = async (
       start_date,
       end_date,
       deadline_submission,
+      submission_confirmation,
       deadline_review,
+      deadline_correction,
       created_at: new Date(),
     });
 
@@ -1069,6 +1073,45 @@ export const updateProgramItem = async (req: AuthRequest, res: Response): Promis
     res.status(500).json({ message: "Nepodarilo sa aktualizovať bod programu", error });
   }
 };
+
+
+export const updateProgram = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { programItems, fileLink } = req.body;
+
+    if (!programItems && !fileLink) {
+      res.status(400).json({ message: "No program data to update" });
+    }
+
+    const updateFields: any = {};
+
+
+    if (programItems) {
+      updateFields["program.items"] = programItems;
+    }
+    if (fileLink) {
+      updateFields["program.fileLink"] = fileLink;
+    }
+
+
+    const homepage = await Homepage.findOneAndUpdate(
+        {},
+        { $set: updateFields },
+        { new: true }
+    );
+
+    if (!homepage) {
+      res.status(404).json({ message: "Homepage not found" });
+    }
+    res.status(200).json({
+      message: "Program updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating program:", error);
+    res.status(500).json({ message: "Failed to update program", error });
+  }
+};
+
 
 // Delete a program schedule item
 export const deleteProgramItem = async (req: AuthRequest, res: Response): Promise<void> => {

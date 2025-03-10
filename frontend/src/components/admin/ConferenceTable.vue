@@ -48,6 +48,9 @@ export default defineComponent({
       start_date: new Date(),
       end_date: new Date(),
       deadline_submission: new Date(),
+      submission_confirmation: new Date(),
+      deadline_review: new Date(),
+      deadline_correction: new Date(),
     })
 
     const statusOptions = ['Nadchádzajúca', 'Aktuálna', 'Ukončená', 'Zrušená']
@@ -83,6 +86,15 @@ export default defineComponent({
         deadline_submission: conference.deadline_submission
           ? new Date(conference.deadline_submission)
           : new Date(),
+        submission_confirmation: conference.submission_confirmation
+          ? new Date(conference.submission_confirmation)
+          : new Date(),
+        deadline_review: conference.deadline_review
+          ? new Date(conference.deadline_review)
+          : new Date(),
+        deadline_correction: conference.deadline_correction
+          ? new Date(conference.deadline_correction)
+          : new Date(),
       })
 
       isDialogOpen.value = true
@@ -102,6 +114,9 @@ export default defineComponent({
           start_date: '',
           end_date: '',
           deadline_submission: '',
+          submission_confirmation: '',
+          deadline_review: '',
+          deadline_correction: '',
         })
       }
     }
@@ -204,6 +219,9 @@ export default defineComponent({
       deadline_submission: false,
       start_date: false,
       end_date: false,
+      submission_confirmation: false,
+      deadline_review: false,
+      deadline_correction: false,
     })
 
     const formattedDialogForm = computed({
@@ -215,14 +233,23 @@ export default defineComponent({
             : '',
           deadline_submission: currentConference.deadline_submission
             ? format(currentConference.deadline_submission, 'dd.MM.yyyy', {
-                locale: sk,
-              })
+              locale: sk,
+            })
             : '',
           start_date: currentConference.start_date
             ? format(currentConference.start_date, 'dd.MM.yyyy', { locale: sk })
             : '',
           end_date: currentConference.end_date
             ? format(currentConference.end_date, 'dd.MM.yyyy', { locale: sk })
+            : '',
+          submission_confirmation: currentConference.submission_confirmation
+            ? format(currentConference.submission_confirmation, 'dd.MM.yyyy', { locale: sk })
+            : '',
+          deadline_review: currentConference.deadline_review
+            ? format(currentConference.deadline_review, 'dd.MM.yyyy', { locale: sk })
+            : '',
+          deadline_correction: currentConference.deadline_correction
+            ? format(currentConference.deadline_correction, 'dd.MM.yyyy', { locale: sk })
             : '',
         }
       },
@@ -237,6 +264,9 @@ export default defineComponent({
             ? new Date(newForm.start_date)
             : new Date(),
           end_date: newForm.end_date ? new Date(newForm.end_date) : new Date(),
+          submission_confirmation: newForm.submission_confirmation ? new Date(newForm.submission_confirmation) : new Date(),
+          deadline_review: newForm.deadline_review ? new Date(newForm.deadline_review) : new Date(),
+          deadline_correction: newForm.deadline_correction ? new Date(newForm.deadline_correction) : new Date(),
         })
       },
     })
@@ -564,6 +594,78 @@ export default defineComponent({
                   <v-date-picker
                     v-model="currentConference.end_date"
                     @update:modelValue="menu.end_date = false"
+                    :color="'primary'"
+                  />
+                </v-menu>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-menu v-model="menu.submission_confirmation" :close-on-content-click="false" transition="scale-transition" attach>
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="formattedDialogForm.submission_confirmation"
+                      label="Potvrdenie podania"
+                      readonly
+                      dense
+                      outlined
+                      v-bind="props.attrs"
+                      v-on="props.on"
+                      append-inner-icon="mdi-calendar"
+                      class="large-text-field"
+                      @click:append-inner="menu.submission_confirmation = true"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="currentConference.submission_confirmation"
+                    @update:modelValue="menu.submission_confirmation = false"
+                    :color="'primary'"
+                  />
+                </v-menu>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-menu v-model="menu.deadline_review" :close-on-content-click="false" transition="scale-transition" attach>
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="formattedDialogForm.deadline_review"
+                      label="Konečný termín recenzie"
+                      readonly
+                      dense
+                      outlined
+                      v-bind="props.attrs"
+                      v-on="props.on"
+                      append-inner-icon="mdi-calendar"
+                      class="large-text-field"
+                      @click:append-inner="menu.deadline_review = true"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="currentConference.deadline_review"
+                    @update:modelValue="menu.deadline_review = false"
+                    :color="'primary'"
+                  />
+                </v-menu>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-menu v-model="menu.deadline_correction" :close-on-content-click="false" transition="scale-transition" attach>
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="formattedDialogForm.deadline_correction"
+                      label="Konečný termín opráv"
+                      readonly
+                      dense
+                      outlined
+                      v-bind="props.attrs"
+                      v-on="props.on"
+                      append-inner-icon="mdi-calendar"
+                      class="large-text-field"
+                      @click:append-inner="menu.deadline_correction = true"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="currentConference.deadline_correction"
+                    @update:modelValue="menu.deadline_correction = false"
                     :color="'primary'"
                   />
                 </v-menu>

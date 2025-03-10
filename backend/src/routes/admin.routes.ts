@@ -30,7 +30,7 @@ import {
   deleteConference,
   getCommittees,
   addCommittee,
-  updateCommittee, deleteCommittee, getProgram, deleteProgramItem, uploadProgramFile, addProgramItem, updateProgramItem
+  updateCommittee, deleteCommittee, getProgram, deleteProgramItem, uploadProgramFile, addProgramItem, updateProgramItem, updateProgram
 } from '../controllers/admin.controller'
 import { authenticateToken } from "../middleware/authenticateToken";
 import { upload } from '../controllers/user.controller'
@@ -86,6 +86,7 @@ router.delete('/committees/:committeeId', deleteCommittee);
 //Homepage - Program
 router.get("/program", getProgram);
 router.post("/program", addProgramItem);
+router.patch("/program", updateProgram);
 router.patch("/program/:itemId", updateProgramItem);
 router.delete("/program/:itemId",  deleteProgramItem);
 router.post("/program/upload", upload.single("file"), uploadProgramFile);

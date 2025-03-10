@@ -2,6 +2,7 @@
 import { computed, defineComponent, ref } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import axiosInstance from '@/config/axiosConfig.ts'
 import router from '@/router'
@@ -33,7 +34,9 @@ export default defineComponent({
       'Univerzita Konštantína Filozofa',
       'Univerzita Mateja Bela',
       'Univerzita sv. Cyrila a Metoda',
+      'Iné',
     ])
+    const registerCustomUniversity = ref('')
     const roles = ref(['Účastník', 'Recenzent'])
 
     const router = useRouter()
@@ -65,6 +68,12 @@ export default defineComponent({
     }) => {
       snackbar.value = { show: true, message, color, timeout: 5000 }
     }
+
+    watch(registerUniversity, (newVal) => {
+      if (newVal !== 'Iné') {
+        registerCustomUniversity.value = ''; // Reset custom input if other university is selected
+      }
+    });
 
     //Login modal
     const handleLogin = async () => {
@@ -133,7 +142,7 @@ export default defineComponent({
           email: registerEmail.value,
           password: registerPassword.value,
           confirmPassword: confirmPassword.value,
-          university: registerUniversity.value,
+          university: registerUniversity.value === 'Iné' ? registerCustomUniversity.value : registerUniversity.value,
           role: translatedRole,
         }
         const response = await authStore.register(payload)
@@ -209,6 +218,7 @@ export default defineComponent({
       registerEmail,
       registerPassword,
       registerUniversity,
+      registerCustomUniversity,
       registerRole,
       universities,
       roles,
@@ -345,6 +355,14 @@ export default defineComponent({
                 required
                 class="large-text-field"
               ></v-select>
+              <!-- Custom university input field -->
+              <v-text-field
+                v-if="registerUniversity === 'Iné'"
+                v-model="registerCustomUniversity"
+                label="Zadajte názov univerzity"
+                required
+                class="large-text-field"
+              ></v-text-field>
               <v-select
                 v-model="registerRole"
                 :items="roles"

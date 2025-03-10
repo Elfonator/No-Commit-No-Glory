@@ -4,7 +4,7 @@ import axiosInstance from "@/config/axiosConfig";
 import type { ActiveCategory } from '@/types/conference.ts'
 
 export const useHomepageStore = defineStore("homepage", () => {
-  const program = ref<{ schedule: string; description: string; fileLink: string }[]>([]);
+  const program = ref<{ _id: string; schedule: string; description: string; fileLink: string }[]>([]);
   const activeCategories = ref<ActiveCategory[]>([]);
   const ongoingConference = ref<any>(null);
   const programDocumentUrl = ref<string | null>(null);
@@ -152,8 +152,10 @@ export const useHomepageStore = defineStore("homepage", () => {
     }
   };
 
+
+
 // Delete a program item using its index
-  const deleteProgramItem = async (itemId: number) => {
+  const deleteProgramItem = async (itemId: string) => {
     try {
       const response = await axiosInstance.delete(`/auth/admin/program/${itemId}`);
       program.value = response.data.program;
