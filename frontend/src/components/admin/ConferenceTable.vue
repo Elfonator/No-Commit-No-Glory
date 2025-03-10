@@ -48,6 +48,9 @@ export default defineComponent({
       start_date: new Date(),
       end_date: new Date(),
       deadline_submission: new Date(),
+      submission_confirmation: new Date(),
+      deadline_review: new Date(),
+      deadline_correction: new Date(),
     })
 
     const statusOptions = ['Nadchádzajúca', 'Aktuálna', 'Ukončená', 'Zrušená']
@@ -83,6 +86,15 @@ export default defineComponent({
         deadline_submission: conference.deadline_submission
           ? new Date(conference.deadline_submission)
           : new Date(),
+        submission_confirmation: conference.submission_confirmation
+          ? new Date(conference.submission_confirmation)
+          : new Date(),
+        deadline_review: conference.deadline_review
+          ? new Date(conference.deadline_review)
+          : new Date(),
+        deadline_correction: conference.deadline_correction
+          ? new Date(conference.deadline_correction)
+          : new Date(),
       })
 
       isDialogOpen.value = true
@@ -102,6 +114,9 @@ export default defineComponent({
           start_date: '',
           end_date: '',
           deadline_submission: '',
+          submission_confirmation: '',
+          deadline_review: '',
+          deadline_correction: '',
         })
       }
     }
@@ -149,27 +164,40 @@ export default defineComponent({
         })
       }
     }
-    /*
-        // Delete confirmation handling
-        const confirmDelete = (conference) => {
-          Object.assign(currentConference, conference);
-          isDeleteDialogOpen.value = true;
-        };
 
-        const closeDeleteDialog = () => {
-          isDeleteDialogOpen.value = false;
-        };
+    // Delete confirmation handling
+    const confirmDelete = (conference: ConferenceAdmin) => {
+      Object.assign(currentConference, conference);
+      isDeleteDialogOpen.value = true;
+    };
 
-        const deleteConference = async () => {
-          try {
-            await conferenceStore.deleteConference(currentConference._id);
-          } catch (error) {
-            console.error("Error deleting conference:", error);
-          } finally {
-            closeDeleteDialog();
-          }
-        };
-     */
+    const closeDeleteDialog = () => {
+      isDeleteDialogOpen.value = false;
+    };
+
+    const deleteConference = async () => {
+      if (!currentConference._id) return;
+
+      try {
+        await conferenceStore.deleteConference(currentConference._id);
+        showSnackbar?.({
+          message: 'Konferencia bola úspešne odstránená.',
+          color: 'success',
+        });
+
+        // Refresh conferences after deletion
+        await conferenceStore.fetchAdminConferences();
+      } catch (error) {
+        console.error('Error deleting conference:', error);
+        showSnackbar?.({
+          message: 'Nepodarilo sa odstrániť konferenciu.',
+          color: 'error',
+        });
+      } finally {
+        closeDeleteDialog();
+      }
+    };
+
 
     // View works for a specific conference
     const viewWorksForConference = (conference: any) => {
@@ -188,9 +216,12 @@ export default defineComponent({
 
     const menu = reactive({
       date: false,
-      deadline_submission: false,
       start_date: false,
       end_date: false,
+      deadline_submission: false,
+      submission_confirmation: false,
+      deadline_review: false,
+      deadline_correction: false,
     })
 
     const formattedDialogForm = computed({
@@ -202,14 +233,23 @@ export default defineComponent({
             : '',
           deadline_submission: currentConference.deadline_submission
             ? format(currentConference.deadline_submission, 'dd.MM.yyyy', {
-                locale: sk,
-              })
+              locale: sk,
+            })
             : '',
           start_date: currentConference.start_date
             ? format(currentConference.start_date, 'dd.MM.yyyy', { locale: sk })
             : '',
           end_date: currentConference.end_date
             ? format(currentConference.end_date, 'dd.MM.yyyy', { locale: sk })
+            : '',
+          submission_confirmation: currentConference.submission_confirmation
+            ? format(currentConference.submission_confirmation, 'dd.MM.yyyy', { locale: sk })
+            : '',
+          deadline_review: currentConference.deadline_review
+            ? format(currentConference.deadline_review, 'dd.MM.yyyy', { locale: sk })
+            : '',
+          deadline_correction: currentConference.deadline_correction
+            ? format(currentConference.deadline_correction, 'dd.MM.yyyy', { locale: sk })
             : '',
         }
       },
@@ -224,6 +264,9 @@ export default defineComponent({
             ? new Date(newForm.start_date)
             : new Date(),
           end_date: newForm.end_date ? new Date(newForm.end_date) : new Date(),
+          submission_confirmation: newForm.submission_confirmation ? new Date(newForm.submission_confirmation) : new Date(),
+          deadline_review: newForm.deadline_review ? new Date(newForm.deadline_review) : new Date(),
+          deadline_correction: newForm.deadline_correction ? new Date(newForm.deadline_correction) : new Date(),
         })
       },
     })
@@ -248,9 +291,9 @@ export default defineComponent({
       openDialog,
       closeDialog,
       saveConference,
-      //confirmDelete,
-      //closeDeleteDialog,
-      //deleteConference,
+      confirmDelete,
+      closeDeleteDialog,
+      deleteConference,
       viewWorksForConference,
       formatTimestamp,
     }
@@ -366,6 +409,9 @@ export default defineComponent({
             >
               <v-icon size="24">mdi-pencil</v-icon>
             </v-btn>
+            <v-btn color="#BC463A" @click="confirmDelete(conference)">
+              <v-icon size="24" color="white">mdi-delete</v-icon>
+            </v-btn>
           </td>
         </tr>
       </template>
@@ -386,7 +432,7 @@ export default defineComponent({
         <v-card-text>
           <v-form ref="formRef" v-model="valid">
             <v-row>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="4">
                 <v-select
                   v-model="currentConference.status"
                   :items="statusOptions"
@@ -397,7 +443,7 @@ export default defineComponent({
                   :rules="[v => !!v || 'Stav je povinný']"
                 />
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="4">
                 <v-text-field
                   v-model="currentConference.year"
                   label="Rok"
@@ -412,7 +458,7 @@ export default defineComponent({
               ]"
                 />
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="4">
                 <v-menu
                   v-model="menu.date"
                   :close-on-content-click="false"
@@ -441,7 +487,7 @@ export default defineComponent({
                   />
                 </v-menu>
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="12">
                 <v-text-field
                   v-model="currentConference.university"
                   label="Univerzita"
@@ -452,7 +498,7 @@ export default defineComponent({
                   :rules="[v => !!v || 'Univerzita je povinná']"
                 />
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="12">
                 <v-text-field
                   v-model="currentConference.location"
                   label="Miesto"
@@ -464,36 +510,6 @@ export default defineComponent({
                 />
               </v-col>
 
-              <v-col cols="12" md="6">
-                <v-menu
-                  v-model="menu.deadline_submission"
-                  :close-on-content-click="false"
-                  transition="scale-transition"
-                  attach
-                  :disabled="dialogMode === 'view'"
-                >
-                  <template v-slot:activator="{ props }">
-                    <v-text-field
-                      v-model="formattedDialogForm.deadline_submission"
-                      label="Deadline"
-                      readonly
-                      dense
-                      outlined
-                      v-bind="props.attrs"
-                      v-on="props.on"
-                      append-inner-icon="mdi-calendar"
-                      @click:append-inner="menu.deadline_submission = true"
-                      class="large-text-field"
-                      :disabled="dialogMode === 'view'"
-                    />
-                  </template>
-                  <v-date-picker
-                    v-model="currentConference.deadline_submission"
-                    @update:modelValue="menu.deadline_submission = false"
-                    :color="'primary'"
-                  />
-                </v-menu>
-              </v-col>
               <v-col cols="12" md="6">
                 <v-menu
                   v-model="menu.start_date"
@@ -552,6 +568,109 @@ export default defineComponent({
                   />
                 </v-menu>
               </v-col>
+
+
+              <v-col cols="12" md="6">
+                <v-menu
+                  v-model="menu.deadline_submission"
+                  :close-on-content-click="false"
+                  transition="scale-transition"
+                  attach
+                  :disabled="dialogMode === 'view'"
+                >
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="formattedDialogForm.deadline_submission"
+                      label="Konečný termín odovzdania"
+                      readonly
+                      dense
+                      outlined
+                      v-bind="props.attrs"
+                      v-on="props.on"
+                      append-inner-icon="mdi-calendar"
+                      @click:append-inner="menu.deadline_submission = true"
+                      class="large-text-field"
+                      :disabled="dialogMode === 'view'"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="currentConference.deadline_submission"
+                    @update:modelValue="menu.deadline_submission = false"
+                    :color="'primary'"
+                  />
+                </v-menu>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-menu v-model="menu.submission_confirmation" :close-on-content-click="false" transition="scale-transition" attach>
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="formattedDialogForm.submission_confirmation"
+                      label="Potvrdenie podania"
+                      readonly
+                      dense
+                      outlined
+                      v-bind="props.attrs"
+                      v-on="props.on"
+                      append-inner-icon="mdi-calendar"
+                      class="large-text-field"
+                      @click:append-inner="menu.submission_confirmation = true"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="currentConference.submission_confirmation"
+                    @update:modelValue="menu.submission_confirmation = false"
+                    :color="'primary'"
+                  />
+                </v-menu>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-menu v-model="menu.deadline_review" :close-on-content-click="false" transition="scale-transition" attach>
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="formattedDialogForm.deadline_review"
+                      label="Konečný termín recenzie"
+                      readonly
+                      dense
+                      outlined
+                      v-bind="props.attrs"
+                      v-on="props.on"
+                      append-inner-icon="mdi-calendar"
+                      class="large-text-field"
+                      @click:append-inner="menu.deadline_review = true"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="currentConference.deadline_review"
+                    @update:modelValue="menu.deadline_review = false"
+                    :color="'primary'"
+                  />
+                </v-menu>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-menu v-model="menu.deadline_correction" :close-on-content-click="false" transition="scale-transition" attach>
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="formattedDialogForm.deadline_correction"
+                      label="Konečný termín opráv"
+                      readonly
+                      dense
+                      outlined
+                      v-bind="props.attrs"
+                      v-on="props.on"
+                      append-inner-icon="mdi-calendar"
+                      class="large-text-field"
+                      @click:append-inner="menu.deadline_correction = true"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="currentConference.deadline_correction"
+                    @update:modelValue="menu.deadline_correction = false"
+                    :color="'primary'"
+                  />
+                </v-menu>
+              </v-col>
             </v-row>
           </v-form>
         </v-card-text>
@@ -564,6 +683,23 @@ export default defineComponent({
             @click="saveConference"
             >Uložiť</v-btn
           >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="isDeleteDialogOpen" max-width="500px">
+      <v-card>
+        <v-card-title>Potvrdenie odstránenia</v-card-title>
+        <v-card-text>
+          <p>
+            Ste si istí, že chcete odstrániť konferenciu
+            <strong>{{ currentConference?.year }} - {{ currentConference?.location }}</strong
+            >?
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="secondary" @click="closeDeleteDialog">Zrušiť</v-btn>
+          <v-btn color="red" @click="deleteConference">Odstrániť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

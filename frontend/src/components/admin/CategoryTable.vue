@@ -37,8 +37,7 @@ export default defineComponent({
     //Dialog handling
     const openDialog = (
       mode: 'add' | 'edit',
-      category = { _id: '', name: '', isActive: true },
-    ) => {
+      category = { _id: '', name: '', isActive: true }) => {
       dialogMode.value = mode
       Object.assign(currentCategory, category)
       isDialogOpen.value = true

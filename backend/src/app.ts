@@ -21,7 +21,8 @@ app.use(express.json());
 const corsOptions = {
   origin: [config.baseFrontendUrl, "https://svk-ukf.sk"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization","Content-Disposition"],
+  exposedHeaders: ["Content-Disposition"],
   credentials: true,
 };
 

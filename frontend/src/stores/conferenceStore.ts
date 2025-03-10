@@ -95,7 +95,6 @@ export const useConferenceStore = defineStore('conferences', () => {
   const updateConference = async (id: string, updates: any) => {
     try {
       await axiosInstance.patch(`/auth/admin/conferences/${id}`, updates)
-      const index = adminConferences.value.findIndex(c => c._id === id)
 
       await fetchAdminConferences()
 
@@ -104,6 +103,16 @@ export const useConferenceStore = defineStore('conferences', () => {
       throw err
     }
   }
+
+  const deleteConference = async (conferenceId: string) => {
+    try {
+      await axiosInstance.delete(`/auth/admin/conferences/${conferenceId}`);
+      adminConferences.value = adminConferences.value.filter(conference => conference._id !== conferenceId);
+    } catch (error) {
+      console.error('Failed to delete conference:', error);
+      throw error;
+    }
+  };
 
   const fetchParticipantConferences = async () => {
     loading.value = true
@@ -131,6 +140,7 @@ export const useConferenceStore = defineStore('conferences', () => {
     fetchConferenceById,
     addConference,
     updateConference,
+    deleteConference,
     fetchParticipantConferences,
   }
 })

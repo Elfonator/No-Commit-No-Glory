@@ -65,21 +65,21 @@
           exact-active-class="active-link"
           @click="navigateTo('/auth/admin/tabs')"
         >
-          <v-list-item-title>Odseky</v-list-item-title>
+          <v-list-item-title>Program</v-list-item-title>
         </v-list-item>
         <v-list-item
           :to="'/auth/admin/cards'"
           exact-active-class="active-link"
           @click="navigateTo('/auth/admin/cards')"
         >
-          <v-list-item-title>Karty</v-list-item-title>
+          <v-list-item-title>Výbory</v-list-item-title>
         </v-list-item>
         <v-list-item
           :to="'/auth/admin/documents'"
           exact-active-class="active-link"
           @click="navigateTo('/auth/admin/documents')"
         >
-          <v-list-item-title>Dokumenty</v-list-item-title>
+          <v-list-item-title>Súbory</v-list-item-title>
         </v-list-item>
       </v-list>
     </template>

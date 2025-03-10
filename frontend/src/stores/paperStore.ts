@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axiosInstance from '@/config/axiosConfig'
-import type { Paper } from '@/types/paper.ts'
+import type { Paper, ReviewerPaper } from '@/types/paper.ts'
+import type { AxiosResponse } from 'axios'
+import { useReviewStore } from '@/stores/reviewStore.ts'
 
 export const usePaperStore = defineStore('papers', () => {
   //Reactive state
@@ -101,37 +103,45 @@ export const usePaperStore = defineStore('papers', () => {
 
   const updatePaper = async (id: string, updates: any, file?: File) => {
     try {
-      const formData = new FormData()
+      const formData = new FormData();
 
+      // Add updated values to form data
       Object.keys(updates).forEach(key => {
-        const value = updates[key as keyof Paper]
+        const value = updates[key as keyof Paper];
         if (value !== undefined && value !== null) {
           if (key === 'authors' && Array.isArray(value)) {
-            formData.append(key, JSON.stringify(value))
-          } else if (key === 'file_link' && value instanceof File) {
-            formData.append(key, value)
-          } else {
-            formData.append(key, value as string)
+            formData.append(key, JSON.stringify(value));
+          } else if (key === 'file_link' && file instanceof File) {
+            // Append new file if it's uploaded
+            formData.append('file_link', file);
+          } else if (key !== 'file_link') {
+            formData.append(key, value as string);
           }
         }
-      })
+      });
+
+      if (file) {
+        formData.append('file_link', file);
+      } else {
+        formData.append('file_link', updates.file_link || '');
+      }
 
       const response = await axiosInstance.patch(
         `/auth/participant/papers/${id}`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },
-        },
-      )
+        }
+      );
 
-      await getMyPapers()
+      await getMyPapers();
 
-      return response.data
+      return response.data;
     } catch (err) {
-      console.error('Failed to update paper:', err)
-      throw err
+      console.error('Failed to update paper:', err);
+      throw err;
     }
-  }
+  };
 
   const deletePaper = async (paperId: string) => {
     try {
@@ -148,47 +158,89 @@ export const usePaperStore = defineStore('papers', () => {
 
   /** Reviewer Actions **/
   const getAssignedPapers = async () => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await axiosInstance.get('/auth/reviewer/papers')
-      reviewerPapers.value = response.data
-    } catch (err) {
-      error.value = 'Failed to fetch assigned papers.'
-      console.error(err)
-    } finally {
-      loading.value = false
-    }
-  }
+    loading.value = true;
+    error.value = null;
 
-  const downloadPaperForReview = async (paperId: string) => {
     try {
-      const response = await axiosInstance.get(
-        `/auth/reviewer/papers/${paperId}/download`,
-        {
-          responseType: 'blob',
-        },
+      const response = await axiosInstance.get('/auth/reviewer/papers');
+      const allAssignedPapers = response.data;
+
+      // Initialize reviewStore (must be inside a function, not globally)
+      const reviewStore = useReviewStore();
+
+      // Get reviewed paper IDs (both drafts & submitted)
+      const reviewedPaperIds: Set<any> = new Set([
+        ...reviewStore.draftReviews.map((review) => review.paper),
+        ...reviewStore.submittedReviews.map((review) => review.paper),
+      ]);
+
+      // Remove reviewed papers from the assigned papers list
+      reviewerPapers.value = allAssignedPapers.filter(
+        (paper: ReviewerPaper) => !reviewedPaperIds.has(paper._id)
       );
 
-      //Extract filename from headers if available
-      const contentDisposition = response.headers['content-disposition'];
-      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const filename = filenameMatch ? filenameMatch[1] : 'novaPraca.pdf';
+    } catch (err) {
+      error.value = 'Failed to fetch assigned papers.';
+      console.error(err);
+    } finally {
+      loading.value = false;
+    }
+  };
 
-      //Create a temporary download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
+
+  // Create a shared utility function
+  const extractFilenameFromResponse = (response: AxiosResponse): string => {
+    //console.log("Raw Headers:", response.headers);
+
+    // Extract filename from headers
+    const contentDisposition = response.headers["content-disposition"] || response.headers["Content-Disposition"];
+    //console.log("Final C-D:", contentDisposition);
+
+    let filename = "paper.pdf"; // Default fallback
+
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="(.+?)"/);
+      if (match) {
+        filename = decodeURIComponent(match[1]);
+      }
+    }
+
+    return filename;
+  }
+
+  // Create a common download function that accepts role-specific parameters
+  const downloadPaper = async (endpoint: string, paperId: string, conferenceId: string): Promise<void> => {
+    try {
+      const response = await axiosInstance.get(endpoint, {
+        responseType: "blob",
+        headers: { "Accept": "application/pdf" },
+      });
+
+      const filename = extractFilenameFromResponse(response);
+
+      // Create a download link
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
 
-      // Clean up the URL object
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Failed to download paper for review:', err);
-      throw err;
+      // Cleanup
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Error downloading paper:", error);
+      throw error;
     }
+  };
+
+  // Role-specific wrapper functions
+  const downloadPaperAdmin = async (conferenceId: string, paperId: string) => {
+    return downloadPaper(`/auth/admin/papers/download/${conferenceId}/${paperId}`, conferenceId, paperId);
+  };
+
+  const downloadPaperReviewer = async (conferenceId: string, paperId: string) => {
+    return downloadPaper(`/auth/reviewer/papers/download/${conferenceId}/${paperId}`, conferenceId, paperId);
   };
 
   /** Admin Actions **/
@@ -197,7 +249,7 @@ export const usePaperStore = defineStore('papers', () => {
     error.value = null
     try {
       const response = await axiosInstance.get('/auth/admin/papers')
-      console.log('Raw API Response:', response.data) // Log raw response
+      //console.log('Raw API Response:', response.data) // Log raw response
       adminPapers.value = response.data
     } catch (err) {
       error.value = 'Failed to fetch papers.'
@@ -237,13 +289,9 @@ export const usePaperStore = defineStore('papers', () => {
           reviewerId,
         },
       )
-      const index = adminPapers.value.findIndex(paper => paper._id === paperId);
-      if (index !== -1) {
-        adminPapers.value[index] = {
-          ...adminPapers.value[index],
-          ...response.data.paper,
-        };
-      }
+
+      await getAllPapers();
+
       console.log('Reviewer assigned:', response.data)
       return response.data.paper;
     } catch (err) {
@@ -252,23 +300,48 @@ export const usePaperStore = defineStore('papers', () => {
     }
   }
 
-  const downloadPaper = async (fileLink: string) => {
+  /*
+  const downloadSinglePaper = async (conferenceId: string, paperId: string) => {
     try {
-      const response = await axiosInstance.get(fileLink, {
-        responseType: 'blob',
-      })
-      const url = window.URL.createObjectURL(new Blob([response.data]))
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', 'paper.pdf') // Change as needed
-      document.body.appendChild(link)
-      link.click()
-    } catch (error) {
-      console.error('Error downloading paper:', error)
-      throw error
-    }
-  }
+      const response = await axiosInstance.get(`/auth/admin/papers/download/${conferenceId}/${paperId}`, {
+        responseType: "blob",
+        headers: { "Accept": "application/pdf" },
+      });
 
+      console.log("Raw Headers:", response.headers);
+      console.log("C-D:", response.headers["content-disposition"]);
+
+      // Extract filename from headers
+      const contentDisposition = response.headers["content-disposition"] || response.headers["Content-Disposition"];
+      console.log("Final C-D:", contentDisposition);
+
+      let filename = "paper.pdf"; // Default fallback
+
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+?)"/);
+        if (match) {
+          filename = decodeURIComponent(match[1]); // Correctly decode special characters
+        }
+      }
+
+      console.log("Final Downloaded filename:", filename); // Debugging
+
+      // Create a download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading paper:", error);
+      throw error;
+    }
+  };
+   */
   const downloadAllPapersInConference = async (
     conferenceId: string | undefined,
   ) => {
@@ -297,6 +370,16 @@ export const usePaperStore = defineStore('papers', () => {
     }
   }
 
+  const adminDeletePaper = async (paperId: string) => {
+    try {
+      await axiosInstance.delete(`/auth/admin/papers/${paperId}`)
+      adminPapers.value = adminPapers.value.filter(paper => paper._id !== paperId)
+    } catch (error) {
+      console.error('Error deleting paper:', error)
+      throw error
+    }
+  }
+
   return {
     //State
     participantPapers,
@@ -315,14 +398,15 @@ export const usePaperStore = defineStore('papers', () => {
 
     //Reviewer Actions
     getAssignedPapers,
-    downloadPaperForReview,
+    downloadPaperReviewer,
 
     //Admin Actions
     getAllPapers,
     getPaperById,
     updateDeadline,
     assignReviewerToPaper,
-    downloadPaper,
+    downloadPaperAdmin,
     downloadAllPapersInConference,
+    adminDeletePaper
   }
 })

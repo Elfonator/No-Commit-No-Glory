@@ -5,19 +5,21 @@ import {
   computed,
   ref,
   onMounted,
-  inject,
+  inject, watchEffect, nextTick
 } from 'vue'
 import { usePaperStore } from '@/stores/paperStore'
 import { useConferenceStore } from '@/stores/conferenceStore'
 import { useCategoryStore } from '@/stores/categoryStore'
 import { format } from 'date-fns'
-import { type Paper, PaperStatus } from '@/types/paper.ts'
+import { type Paper, PaperStatus} from '@/types/paper.ts'
 import type {
   ActiveCategory,
   ParticipantConference,
 } from '@/types/conference.ts'
 import { useUserStore } from '@/stores/userStore.ts'
-import axios from 'axios'
+import type { VForm } from 'vuetify/components'
+import { useReviewStore } from '@/stores/reviewStore.ts'
+import type { ParticipantReview, ReviewForParticipant } from '@/types/review.ts'
 
 export default defineComponent({
   name: 'ParticipantWorks',
@@ -89,7 +91,7 @@ export default defineComponent({
 
     const canEditPaper = (paper: Paper) => {
       //Allow editing only if the paper is in Draft status
-      return paper.status === PaperStatus.Draft
+      return paper.status === PaperStatus.Draft || paper.status === PaperStatus.AcceptedWithChanges || paper.status === PaperStatus.Rejected
     }
 
     const canViewReview = (paper: Paper) => {
@@ -126,12 +128,12 @@ export default defineComponent({
     const dialogMode = ref<'add' | 'edit' | 'view'>('add')
 
     const tableHeaders = [
-      { title: '', key: 'delete' },
+      { title: '', key: 'actions' },
       { title: 'Status', key: 'status' },
       { title: 'Konferencia', key: 'conference.year' },
       { title: 'Názov práce', key: 'title' },
       { title: 'Vytvorenie', key: 'submission_date' },
-      { title: '', key: 'actions', sortable: false },
+      { title: '', key: 'buttons', sortable: false },
     ]
 
     const filteredPapers = computed(() =>
@@ -213,6 +215,8 @@ export default defineComponent({
       filters.selectedStatus = [] as PaperStatus[]
     }
 
+    const form = ref<VForm | null>(null);
+
     const openDialog = (mode: 'add' | 'edit', paper: any = {}) => {
       dialogMode.value = mode
 
@@ -244,6 +248,10 @@ export default defineComponent({
       }
 
       isDialogOpen.value = true
+
+      nextTick(() => {
+        form.value?.validate();
+      });
     }
 
     const closeDialog = () => {
@@ -332,7 +340,7 @@ export default defineComponent({
           return
         }
 
-        const payload = { status: PaperStatus.Submitted } // Only updating the status
+        const payload = { status: PaperStatus.Submitted,  file_link: currentPaper.file_link }
         await paperStore.updatePaper(currentPaper._id, payload)
 
         showSnackbar?.({
@@ -349,9 +357,53 @@ export default defineComponent({
       }
     }
 
-    const viewReview = (paper: any) => {
-      console.log('View review for', paper)
-    }
+    const reviewDialog = ref(false);
+    const selectedReview = reactive<ParticipantReview>({
+      _id: '',
+      responses: [],
+      comments: '',
+      recommendation: 'Publikovať'
+    });
+    const reviewStore = useReviewStore();
+
+    const viewReview = async (paper: any) => {
+      if (!paper.review) {
+        showSnackbar?.({ message: 'Pre túto prácu nie je dostupná žiadna recenzia.', color: 'warning' });
+        return;
+      }
+
+      try {
+        // Fetch the review based on paper ID
+        Object.assign(selectedReview, await reviewStore.fetchParticipantReviewById(paper._id));
+
+        reviewDialog.value = true;
+      } catch (error) {
+        console.error("Failed to fetch review:", error);
+        showSnackbar?.({ message: 'Nepodarilo sa načítať recenziu.', color: 'error' });
+      }
+    };
+
+    const ratingResponses = computed(() => {
+      if (!selectedReview?.responses) return [];
+      return selectedReview.responses.filter((r: ReviewForParticipant) => r.question.type === 'rating');
+    });
+
+    const yesNoResponses = computed(() => {
+      if (!selectedReview?.responses) return [];
+      return selectedReview.responses.filter((r: ReviewForParticipant) => r.question.type === 'yes_no');
+    });
+
+    const textResponses = computed(() => {
+      if (!selectedReview?.responses) return [];
+      return selectedReview.responses.filter((r: ReviewForParticipant) => r.question.type === 'text');
+    });
+
+    // Helper function for rating scores
+    const getRatingColor = (score: number) => {
+      if (score >= 5) return 'green';
+      if (score >= 3) return 'orange';
+      return 'red';
+    };
 
     //Deletion of paper
     const confirmDeletePaper = (paper: Paper) => {
@@ -361,6 +413,9 @@ export default defineComponent({
 
     const deletePaper = async () => {
       if (!paperToDelete.value) return
+
+      console.log("Trying to delete paper:", paperToDelete.value);
+      console.log("Paper status:", paperToDelete.value.status);
 
       if (paperToDelete.value.status !== PaperStatus.Draft) {
         showSnackbar?.({
@@ -391,6 +446,48 @@ export default defineComponent({
       }
     }
 
+    // Computed properties
+    const fileDownloadUrl = computed(() => {
+      if (!currentPaper || !currentPaper.file_link) return "#";
+
+      const apiBaseUrl = import.meta.env.VITE_API_URL; // Get API base URL
+
+      if (currentPaper.file_link instanceof File) {
+        // If it's a newly uploaded file, create a local URL
+        return URL.createObjectURL(currentPaper.file_link);
+      }
+
+      // If it's a stored file path (string), append it to the backend URL
+      return `${apiBaseUrl}${currentPaper.file_link}`;
+    });
+
+    watchEffect(() => {
+      if (currentPaper.file_link instanceof File) {
+        const objectUrl = URL.createObjectURL(currentPaper.file_link);
+        return () => URL.revokeObjectURL(objectUrl);
+      }
+    });
+
+    const getFileName = (file: string | File | undefined) => {
+      if (!file) return "No file selected";
+
+      if (file instanceof File) {
+        return file.name; // Extract filename from File object
+      }
+
+      return file.split("/").pop(); // Extract filename from string path
+    };
+
+
+    const selectedFile = ref<File | null>(null);
+
+    const handleFileSelection = (event: Event) => {
+      const input = event.target as HTMLInputElement;
+      if (input.files && input.files[0]) {
+        selectedFile.value = input.files[0];
+      }
+    }
+
     const formatDate = (date: Date | string | undefined | null) => {
       if (!date) return "N/A";
 
@@ -401,10 +498,37 @@ export default defineComponent({
       }
 
       return format(parsedDate, "dd.MM.yyyy");
-    };
-    onMounted(() => {
-      fetchDependencies()
-    })
+    }
+
+    const paperDetailsDialog = ref(false);
+    const openPaperDetailsDialog = (paper: any) => {
+      Object.assign(currentPaper, paper);
+      paperDetailsDialog.value = true;
+    }
+
+    const downloadPaper = async (paper: any) => {
+      if (!paper.conference?._id) {
+        console.error("Conference ID is missing for paper:", paper);
+        return;
+      }
+
+      await paperStore.downloadPaperReviewer(paper.conference._id, paper._id);
+    }
+
+    const isFormValid = computed(() => {
+      return (
+        !!currentPaper.title &&
+        !!currentPaper.category &&
+        !!currentPaper.conference &&
+        !!(currentPaper.keywords && currentPaper.keywords.length > 0) &&
+        !!currentPaper.abstract &&
+        (!!currentPaper.file_link) // Check if file exists
+      );
+    });
+
+    onMounted(async () => {
+      await fetchDependencies()
+    });
 
     return {
       valid,
@@ -426,6 +550,19 @@ export default defineComponent({
       selectedCategory,
       user,
       isDeleteDialogOpen,
+      fileDownloadUrl,
+      paperDetailsDialog,
+      isFormValid,
+      reviewDialog,
+      selectedReview,
+      ratingResponses,
+      yesNoResponses,
+      textResponses,
+      getRatingColor,
+      downloadPaper,
+      openPaperDetailsDialog,
+      handleFileSelection,
+      getFileName,
       canEditPaper,
       canViewReview,
       isDeadlineEditable,
@@ -503,13 +640,13 @@ export default defineComponent({
         <tr v-for="paper in items" :key="paper._id">
           <td>
             <v-icon
-              size="24"
-              color="#BC463A"
-              @click="confirmDeletePaper(paper)"
+              size="30"
+              color="primary"
+              @click="openPaperDetailsDialog(paper)"
               style="cursor: pointer"
-              v-if="paper.status == PaperStatus.Draft"
+              v-if="paper.status != PaperStatus.Draft"
             >
-              > mdi-delete
+              > mdi-eye
             </v-icon>
           </td>
           <td>
@@ -538,15 +675,23 @@ export default defineComponent({
               @click="openDialog('edit', paper)"
               title="Upraviť"
             >
-              <v-icon size="24">mdi-pencil</v-icon>
+              <v-icon size="25">mdi-pencil</v-icon>
             </v-btn>
             <v-btn
               :disabled="!canViewReview(paper)"
               color="success"
-              @click="viewReview"
+              @click="viewReview(paper)"
               title="Ukazať recenziu"
             >
-              <v-icon size="24" color="black">mdi-account-alert</v-icon>
+              <v-icon size="25" color="black">mdi-account-alert</v-icon>
+            </v-btn>
+            <v-btn
+              :disabled="paper.status != PaperStatus.Draft"
+              color="#BC463A"
+              @click="confirmDeletePaper(paper)"
+              title="Zmazať prácu"
+            >
+              <v-icon size="25">mdi-delete</v-icon>
             </v-btn>
           </td>
         </tr>
@@ -569,7 +714,7 @@ export default defineComponent({
           <v-form ref="form" v-model="valid">
             <v-text-field
               v-model="currentPaper.title"
-              label="Title"
+              label="Názov"
               :rules="[() => !!currentPaper.title || 'Názov práce je povinný']"
               outlined
               dense
@@ -647,8 +792,7 @@ export default defineComponent({
               outlined
               dense
               class="large-text-field"
-              :rules="[() => !currentPaper.isFinal || 'Kľúčové slová sú povinné pre finálnu verziu']"
-            />
+              :rules="[() => !currentPaper.isFinal || !!currentPaper.keywords || 'Kľúčové slová sú povinné pre finálnu verziu']"            />
             <v-row>
               <v-col
                 cols="12"
@@ -696,7 +840,7 @@ export default defineComponent({
               label="Abstrakt"
               outlined
               dense
-              :rules="[() => !currentPaper.isFinal || 'Abstrakt je povinný pre finálnu verziu']"
+              :rules="[() => !currentPaper.isFinal || !!currentPaper.abstract || 'Abstrakt je povinný pre finálnu verziu']"
               class="large-text-field"
             />
             <v-file-input
@@ -706,8 +850,14 @@ export default defineComponent({
               dense
               :disabled="dialogMode === 'view'"
               class="large-text-field"
-              :rules="[() => !currentPaper.isFinal || 'Súbor je povinný pre finálnu verziu']"
+              :rules="[() => !!currentPaper.file_link || 'Súbor je povinný']"
+              @change="handleFileSelection"
             ></v-file-input>
+            <!-- Show Existing File -->
+            <p v-if="currentPaper && currentPaper.file_link">
+              Aktuálny súbor:
+              <a :href="fileDownloadUrl" target="_blank">{{ getFileName(currentPaper.file_link) }}</a>
+            </p>
             <v-checkbox
               v-model="currentPaper.isFinal"
               color="red"
@@ -722,7 +872,7 @@ export default defineComponent({
             v-if="currentPaper.isFinal"
             @click="submitPaper"
             color="primary" variant="flat"
-            :disabled="currentPaper.status === PaperStatus.Submitted"
+            :disabled="!isFormValid"
             >Odoslať</v-btn
           >
         </v-card-actions>
@@ -742,6 +892,157 @@ export default defineComponent({
             >Zrušiť</v-btn
           >
           <v-btn color="red" @click="deletePaper">Vymazať</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Paper Details Dialog -->
+    <v-dialog v-model="paperDetailsDialog" max-width="800px">
+      <v-card>
+        <v-card-title>Detaily práce</v-card-title>
+        <v-card-text>
+          <v-table dense>
+            <tbody>
+            <tr>
+              <td><strong>Názov:</strong></td>
+              <td>{{ currentPaper?.title }}</td>
+            </tr>
+            <tr>
+              <td><strong>Konferencia:</strong></td>
+              <td>
+                {{ currentPaper?.conference?.year }} -
+                {{ formatDate(currentPaper?.conference?.date) }}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Sekcia:</strong></td>
+              <td>{{ currentPaper?.category?.name }}</td>
+            </tr>
+            <tr>
+              <td><strong>Kľúčové slová:</strong></td>
+              <td>{{ currentPaper?.keywords?.join(', ') }}</td>
+            </tr>
+            <tr>
+              <td><strong>Abstrakt:</strong></td>
+              <td><em>{{ currentPaper?.abstract }}</em></td>
+            </tr>
+            </tbody>
+          </v-table>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+            color="primary"
+            @click="downloadPaper(currentPaper)">
+            <v-icon size="36">mdi-download-box</v-icon>
+            Stiahnuť
+          </v-btn>
+          <v-btn color="tertiary" @click="paperDetailsDialog = false"
+          >Zrušiť</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="reviewDialog" max-width="800px">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <span class="text-h5">Recenzia práce</span>
+          <v-spacer></v-spacer>
+          <v-chip
+            :color="selectedReview.recommendation === 'Publikovať' ? 'green' :
+                selectedReview.recommendation === 'Odmietnuť' ? 'red' : 'orange'"
+            class="ml-2">
+            {{ selectedReview.recommendation }}
+          </v-chip>
+        </v-card-title>
+
+        <v-divider></v-divider>
+
+        <v-card-text>
+          <!-- Comments section -->
+          <div v-if="selectedReview.comments" class="my-4">
+            <h3 class="text-h6 mb-2">Komentáre recenzenta</h3>
+            <v-card variant="outlined" class="pa-3 bg-grey-lighten-4">
+              <p>{{ selectedReview.comments }}</p>
+            </v-card>
+          </div>
+
+          <!-- Rating questions -->
+          <div v-if="ratingResponses.length" class="my-4">
+            <h3 class="text-h6 mb-2">Bodové hodnotenie</h3>
+            <v-table density="compact">
+              <thead>
+              <tr>
+                <th>Kritérium</th>
+                <th class="text-center">Hodnotenie</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr v-for="response in ratingResponses" :key="response._id">
+                <td>{{ response.question.text }}</td>
+                <td class="text-center">
+                  <v-chip
+                    :color="getRatingColor(Number(response.answer))"
+                    size="small"
+                    class="font-weight-bold">
+                    {{ response.answer }} / {{ response.question.options.max }}
+                  </v-chip>
+                </td>
+              </tr>
+              </tbody>
+            </v-table>
+          </div>
+
+          <!-- Yes/No questions -->
+          <div v-if="yesNoResponses.length" class="my-4">
+            <h3 class="text-h6 mb-2">Kontrolné otázky</h3>
+            <v-table density="compact">
+              <thead>
+              <tr>
+                <th>Otázka</th>
+                <th class="text-center">Odpoveď</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr v-for="response in yesNoResponses" :key="response._id">
+                <td>{{ response.question.text }}</td>
+                <td class="text-center">
+                  <v-chip
+                    :color="response.answer === 'yes' ? 'green' : 'red'"
+                    size="small">
+                    {{ response.answer === 'yes' ? 'Áno' : 'Nie' }}
+                  </v-chip>
+                </td>
+              </tr>
+              </tbody>
+            </v-table>
+          </div>
+
+          <!-- Text questions -->
+          <div v-if="textResponses.length" class="my-4">
+            <h3 class="text-h6 mb-2">Slovné hodnotenie</h3>
+            <v-expansion-panels variant="accordion">
+              <v-expansion-panel
+                v-for="response in textResponses"
+                :key="response._id">
+                <v-expansion-panel-title>
+                  {{ response.question.text }}
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>
+                  {{ response.answer || 'Žiadna odpoveď' }}
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
+          </div>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            @click="reviewDialog = false">
+            Zatvoriť
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

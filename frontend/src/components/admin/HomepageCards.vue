@@ -1,86 +1,108 @@
 <script lang="ts">
-import { defineComponent, ref, reactive } from 'vue'
+import { defineComponent, ref, reactive, onMounted, computed, inject } from 'vue'
+import { useHomepageStore } from '@/stores/homepageStore.ts'
+import type { Committee } from '@/types/homepage.ts'
 
 export default defineComponent({
   name: 'ConferenceCommittee',
   setup() {
-    // Show snackbar function (temporary)
-    const showSnackbar = (message: string, color: string) => {
-      console.log(message, color)
-    }
+    /** Global showSnackbar function **/
+    const showSnackbar = inject('showSnackbar')as ({
+                                                     message,
+                                                     color,
+                                                   }: {
+      message: string
+      color?: string
+    }) => void
 
-    type Committee = {
-      name: string
-      university: 'UKF' | 'UMB' | 'UCM'
+    if (!showSnackbar) {
+      console.error('showSnackbar is not provided')
     }
+    const homepageStore = useHomepageStore();
+    const committees = computed(() => homepageStore.committees);
 
     // Dialog states
     const isDialogOpen = ref(false)
     const dialogMode = ref<'add' | 'edit'>('add')
     const currentMember = reactive<Committee>({
-      name: '',
-      university: 'UKF', // Default to 'UKF'
+      _id: '',
+      fullName: '',
+      university: 'UKF',
     })
-
-    // Committees data (array of members with university property)
-    const committees = reactive<Committee[]>([
-      { name: 'prof. RNDr. Radoslav Omelka, PhD.', university: 'UKF' },
-      { name: 'PaedDr. Katarína Zverková', university: 'UKF' },
-      { name: 'doc. RNDr. Ingrid Turisová, PhD.', university: 'UMB' },
-      { name: 'Mgr. Dominika Vešelényiová, PhD.', university: 'UCM' },
-    ])
 
     // Headers for the table
     const headers = [
-      { text: 'Meno', value: 'name' },
-      { text: 'Univerzita', value: 'university' },
-      { text: 'Akcie', value: 'actions', sortable: false },
+      { title: 'Člen výboru', value: 'fullName' },
+      { title: '', value: 'actions', sortable: false },
     ]
 
     // Open Dialog for Add/Edit
-    const openDialog = (mode: 'add' | 'edit', member: { name: string, university: string } = { name: '', university: 'UKF' }) => {
-      dialogMode.value = mode
-      Object.assign(currentMember, member)
-      isDialogOpen.value = true
-    }
+    const openDialog = (
+      mode: 'add' | 'edit',
+      member: { _id: string; fullName: string; university: string } = { _id: '', fullName: '', university: 'UKF' } // Default object
+    ) => {
+      dialogMode.value = mode;
+      Object.assign(currentMember, member);
+      isDialogOpen.value = true;
+    };
 
     // Close the dialog
     const closeDialog = () => {
       isDialogOpen.value = false
-      currentMember.name = ''
-      currentMember.university = 'UKF' // Reset to default university
+      currentMember.fullName = ''
+      currentMember.university = 'UKF'
     }
 
     // Save/Add Member
-    const saveMember = () => {
-      const member: Committee = { name: currentMember.name, university: currentMember.university }
-
-      if (dialogMode.value === 'add') {
-        committees.push(member)
-        showSnackbar('Člen úspešne pridaný.', 'success')
-      } else {
-        const index = committees.findIndex(m => m.name === currentMember.name && m.university === currentMember.university)
-        if (index !== -1) {
-          committees[index] = member
+    const saveMember = async () => {
+      const member = { fullName: currentMember.fullName, university: currentMember.university };
+      try {
+        if (dialogMode.value === 'add') {
+          await homepageStore.addCommittee(member);
+          showSnackbar?.({
+            message: 'Člen úspešne pridaný.',
+            color: 'success'})
+        } else {
+          await homepageStore.updateCommittee(currentMember._id, member);
+          showSnackbar?.({
+            message: 'Člen úspešne upravený.',
+           color: 'success'
+          });
         }
-        showSnackbar('Člen úspešne upravený.', 'success')
+        closeDialog();
+      } catch {
+        showSnackbar?.({
+          message: 'Nepodarilo sa uložiť člena.',
+          color: 'error'
+        });
       }
-      closeDialog()
     }
 
-    // Delete Member
-    const deleteMember = (member: { name: string, university: string }) => {
-      const index = committees.findIndex(m => m.name === member.name && m.university === member.university)
-      if (index !== -1) {
-        committees.splice(index, 1)
+    const deleteMember = async (member: { _id: string; fullName: string; university: string }) => {
+      try {
+        await homepageStore.deleteCommittee(member._id);
+        showSnackbar?.({
+          message: 'Člen úspešne odstránený.',
+          color: 'success'
+        });
+      } catch {
+        showSnackbar?.({
+          message: 'Nepodarilo sa odstrániť člena.',
+          color: 'error'
+        });
       }
-      showSnackbar('Člen úspešne odstránený.', 'success')
     }
 
     // Filter members by university
     const getMembersByUniversity = (university: 'UKF' | 'UMB' | 'UCM') => {
-      return committees.filter(member => member.university === university)
+      return committees.value.filter(member => member.university === university);
     }
+
+    onMounted(async () => {
+      await homepageStore.fetchCommittees();
+      console.log("Fetched Committees:", homepageStore.committees); // Debugging log
+    });
+
 
     return {
       committees,
@@ -123,8 +145,8 @@ export default defineComponent({
           items-per-page-text="Členovia na stránku"
         >
           <template v-slot:body="{ items }">
-            <tr v-for="member in items" :key="member.name">
-              <td>{{ member.name }}</td>
+            <tr v-for="member in items" :key="member.fullName">
+              <td>{{ member.fullName }}</td>
               <td class="d-flex justify-end align-center">
                 <v-btn color="#FFCD16" @click="openDialog('edit', member)">
                   <v-icon size="24">mdi-pencil</v-icon>
@@ -153,8 +175,8 @@ export default defineComponent({
           items-per-page-text="Členovia na stránku"
         >
           <template v-slot:body="{ items }">
-            <tr v-for="member in items" :key="member.name">
-              <td>{{ member.name }}</td>
+            <tr v-for="member in items" :key="member.fullName">
+              <td>{{ member.fullName }}</td>
               <td class="d-flex justify-end align-center">
                 <v-btn color="#FFCD16" @click="openDialog('edit', member)">
                   <v-icon size="24">mdi-pencil</v-icon>
@@ -183,8 +205,8 @@ export default defineComponent({
           items-per-page-text="Členovia na stránku"
         >
           <template v-slot:body="{ items }">
-            <tr v-for="member in items" :key="member.name">
-              <td>{{ member.name }}</td>
+            <tr v-for="member in items" :key="member.fullName">
+              <td>{{ member.fullName }}</td>
               <td class="d-flex justify-end align-center">
                 <v-btn color="#FFCD16" @click="openDialog('edit', member)">
                   <v-icon size="24">mdi-pencil</v-icon>
@@ -207,7 +229,7 @@ export default defineComponent({
         {{ dialogMode === 'add' ? 'Pridať člena' : 'Upraviť člena' }}
       </v-card-title>
       <v-card-text>
-        <v-text-field v-model="currentMember.name" label="Meno" outlined />
+        <v-text-field v-model="currentMember.fullName" label="Meno" outlined />
         <v-radio-group v-model="currentMember.university" label="Vyberte univerzitu">
           <v-radio label="UKF" value="UKF" />
           <v-radio label="UMB" value="UMB" />

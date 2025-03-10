@@ -24,7 +24,7 @@ export interface Paper {
   authors: { firstName: string; lastName: string }[]
   submission_date: string | Date
   isFinal: boolean
-  file_link: File
+  file_link?: string | File | null;
   deadline_date?: string | Date
   review?: Review
 }
@@ -47,7 +47,7 @@ export interface AdminPaper {
     year: number
     location: string
   }
-  file_link: File
+  file_link: string | File;
   deadline_date?: Date
   reviewer: string
   abstract: string
@@ -71,7 +71,7 @@ export interface ReviewerPaper {
     year: number
     location: string
   }
-  file_link: File
+  file_link: string | File;
   reviewer: string
   review: Review
   abstract: string

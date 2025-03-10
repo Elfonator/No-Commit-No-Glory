@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import Homepage from "../models/Homepage";
 import Conference, { ConferenceStatus } from "../models/Conference";
 import Category from "../models/Category";
-import { AuthRequest } from '../middleware/authenticateToken'
 
 export const getHomepageData = async (_req: Request, res: Response): Promise<void> => {
   try {
@@ -24,6 +23,7 @@ export const getHomepageData = async (_req: Request, res: Response): Promise<voi
 
     res.status(200).json({
       homepage,
+      committees: homepage?.committees || [],
       ongoingConference,
       activeCategories,
     });
@@ -36,32 +36,6 @@ export const getHomepageData = async (_req: Request, res: Response): Promise<voi
   }
 };
 
-// Update Program in Homepage
-export const updateProgram = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { program } = req.body;
-    let programDocumentUrl = "";
-
-    // Check if a file is uploaded
-    if (req.file) {
-      programDocumentUrl = `/uploads/${req.file.filename}`;
-    }
-
-    const homepage = await Homepage.findOneAndUpdate(
-      {},
-      { program, ...(programDocumentUrl && { programDocumentUrl }) },
-      { new: true, upsert: true }
-    );
-
-    res.status(200).json({
-      message: "Program successfully updated",
-      homepage,
-    });
-  } catch (error) {
-    console.error("Error updating program:", error);
-    res.status(500).json({ message: "Nepodarilo sa aktualizovať program", error });
-  }
-};
 
 
 

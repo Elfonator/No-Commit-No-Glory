@@ -28,7 +28,7 @@
     <div class="copyright-section">
       <v-container>
         <v-row justify="center" align="center">
-          <p class="copyright">© 2025 SciSubmit. All Rights Reserved</p>
+          <p class="copyright">© {{ new Date().getFullYear() }} SciSubmit. All Rights Reserved</p>
         </v-row>
       </v-container>
     </div>

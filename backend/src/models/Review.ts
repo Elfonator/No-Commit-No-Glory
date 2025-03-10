@@ -34,7 +34,7 @@ const ReviewSchema: Schema = new Schema(
           ref: "Question",
           required: true,
         },
-        answer: { type: Schema.Types.Mixed, required: true }, // handles text, yes/no, and ratings
+        answer: { type: Schema.Types.Mixed, required: true },
       },
     ],
     comments: { type: String, required: false },

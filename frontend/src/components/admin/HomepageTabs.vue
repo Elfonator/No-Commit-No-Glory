@@ -1,32 +1,72 @@
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import {computed, defineComponent, onMounted, ref} from 'vue';
+import {useHomepageStore} from "@/stores/homepageStore.ts";
 
 export default defineComponent({
   name: 'ConferenceProgram',
   setup() {
 
-    const program = ref([
-      { text: '8:15 – 9:00 Registrácia' },
-      { text: '9:00 – 9:20 Otvorenie konferencie' },
-      { text: '9:20 – 13:00 Prezentácie príspevkov v sekciách' },
-      { text: '13:00 – 14:00 Prestávka na obed' },
-      { text: '14:00 – 14:30 Vyhodnotenie konferencie, vyhlásenie najlepších prác' }
-    ]);
+    const homepageStore = useHomepageStore();
+    const program = computed(() => homepageStore.program);
 
-    const addEvent = () => {
-      program.value.push({ text: '' });
+    const programFile = ref<File | null>(null);
+
+    onMounted(async () => {
+      try {
+        await homepageStore.fetchProgram();
+        console.log(homepageStore.program);
+      } catch (error) {
+        console.error("Failed to fetch program:", error);
+      }
+    });
+
+    const addEvent = async () => {
+      try {
+        const newEvent = {
+          _id: "",
+          schedule: "",
+          description: "",
+          fileLink: "",
+        };
+
+        program.value.push(newEvent);
+      } catch (error) {
+        console.error("Failed to add event:", error);
+      }
     };
 
-    const removeEvent = (index: number) => {
-      program.value.splice(index, 1);
+    const removeEvent = (itemId: string) => {
+      try {
+        const index = program.value.findIndex(event => event._id === itemId || itemId === "");
+
+        if (index !== -1) {
+          program.value.splice(index, 1);
+        }
+      } catch (error) {
+        console.error("Failed to remove event:", error);
+      }
     };
 
-    const saveProgram = () => {
-      console.log('Program saved:', program.value);
+
+    const saveProgram = async () => {
+      try {
+        const file = programFile.value;  // The file selected for upload
+
+        if (file) {
+          await homepageStore.uploadProgramFile(file);
+        }
+
+        await homepageStore.updateProgram(program.value);
+        console.log("Program saved successfully!");
+      } catch (error) {
+        console.error("Failed to save program:", error);
+      }
     };
+
 
     return {
       program,
+      programFile,
       addEvent,
       removeEvent,
       saveProgram,
@@ -48,12 +88,22 @@ export default defineComponent({
 
     <!-- List of program events -->
     <v-list>
-      <v-list-item v-for="(event, index) in program" :key="index">
+      <v-list-item v-for="(event, index) in program" :key="event._id">
         <v-row class="w-100">
-          <!-- Text field column -->
-          <v-col cols="11">
+          <!-- Schedule text field column -->
+          <v-col cols="2">
             <v-text-field
-              v-model="event.text"
+              v-model="event.schedule"
+              label="Čas"
+              outlined
+              class="mr-2"
+            />
+          </v-col>
+
+          <!-- Description text field column -->
+          <v-col cols="9">
+            <v-text-field
+              v-model="event.description"
               label="Bod programu"
               outlined
               class="mr-2"
@@ -62,13 +112,25 @@ export default defineComponent({
 
           <!-- Delete button column -->
           <v-col cols="1" class="d-flex justify-end">
-            <v-btn color="#BC463A" @click="removeEvent(index)">
+            <v-btn color="#BC463A" @click="removeEvent(event._id)">
               <v-icon>mdi-delete</v-icon>
             </v-btn>
           </v-col>
         </v-row>
       </v-list-item>
     </v-list>
+    <v-divider class="my-4"></v-divider>
+    <!-- File input for uploading program PDF -->
+    <v-row class="mt-3" justify="center">
+      <v-col cols="6" class="d-flex justify-center">
+        <v-file-input
+          v-model="programFile"
+          label="Vyberte programový súbor"
+          accept=".pdf,.docx,.txt"
+          outlined
+        />
+      </v-col>
+    </v-row>
 
     <!-- Save Button -->
     <v-card-actions>
@@ -78,5 +140,5 @@ export default defineComponent({
 </template>
 
 <style scoped lang="scss">
-/* Add custom styles here if needed */
+
 </style>

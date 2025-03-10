@@ -1,15 +1,29 @@
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from 'vue'
+import { defineComponent, ref, computed, onMounted, inject } from 'vue'
 import { usePaperStore } from '@/stores/paperStore';
 import { useReviewStore } from '@/stores/reviewStore';
 import { useQuestionStore } from '@/stores/questionStore';
 import { useUserStore } from '@/stores/userStore';
 import { format } from 'date-fns'
 import type { ReviewerPaper } from '@/types/paper.ts'
+import type { Review, ReviewResponse } from '@/types/review.ts'
 
 export default defineComponent({
   name: 'AssignedPapersTable',
   setup() {
+    //Access the global showSnackbar function
+    const showSnackbar = inject('showSnackbar') as ({
+                                                      message,
+                                                      color,
+                                                    }: {
+      message: string
+      color?: string
+    }) => void
+
+    if (!showSnackbar) {
+      console.error('showSnackbar is not provided')
+    }
+
     const paperStore = usePaperStore();
     const reviewStore = useReviewStore();
     const questionStore = useQuestionStore();
@@ -24,7 +38,14 @@ export default defineComponent({
       ]);
     };
 
-    const papers = computed(() => paperStore.reviewerPapers);
+    const papers = computed(() => {
+      const submittedReviewPapers = new Set(reviewStore.reviewerReviews.map(review => review.paper));
+      const draftReviewPapers = new Set(reviewStore.draftReviews.map(draft => draft.paper));
+      return paperStore.reviewerPapers.filter(paper =>
+        !submittedReviewPapers.has(paper._id) && !draftReviewPapers.has(paper._id)
+      );
+    });
+
     const questions = computed(() => questionStore.reviewerQuestions);
     const reviews = computed(() => reviewStore.reviewerReviews);
 
@@ -33,16 +54,17 @@ export default defineComponent({
     const confirmationDialog = ref(false);
 
     const selectedPaper = ref<any>(null);
+    const selectedReview = ref<any>(null);
     const reviewResponses = ref<Record<string, string | number | null>>({});
     const recommendation = ref<'Publikovať' | 'Publikovať_so_zmenami' | 'Odmietnuť'>('Publikovať');
     const comments = ref<string>('');
 
     const headers = [
       { title: '', value: 'actions' },
-      { title: 'Konferencia', value: 'conference' },
+      { title: 'Sekcia', key: 'category' },
+      { title: 'Konferencia', key: 'conference' },
       { title: 'Názov', value: 'title' },
-      { title: 'Sekcia', value: 'category' },
-      { title: '', value: 'download' },
+      { title: '', value: 'actions' },
     ];
 
     const grades = [
@@ -66,30 +88,10 @@ export default defineComponent({
     );
 
     const openReviewDialog = (paper: ReviewerPaper) => {
-      // Set selected paper
       selectedPaper.value = paper;
-
-      //Check if draft review exists for this paper
-      const draftReview = reviewStore.draftReviews.find(
-        (review) => review.paper === paper._id
-      );
-      console.log('draft -> ',draftReview);
-
-      if (draftReview) {
-        reviewResponses.value = draftReview.responses.reduce((acc: any, response: any) => {
-          acc[response.question] = response.answer;
-          return acc;
-        }, {});
-
-        recommendation.value = draftReview.recommendation || 'Publikovať';
-        comments.value = draftReview.comments;
-      } else {
-        // No draft exists, initialize an empty form
-        reviewResponses.value = {};
-        recommendation.value = 'Publikovať';
-        comments.value = '';
-      }
-
+      reviewResponses.value = {};
+      recommendation.value = 'Publikovať';
+      comments.value = '';
       reviewDialog.value = true;
     };
 
@@ -101,15 +103,31 @@ export default defineComponent({
     const saveDraft = async () => {
       if (!selectedPaper.value) return;
 
-      await reviewStore.submitReview({
+      const reviewData: Review = {
         created_at: new Date(),
         paper: selectedPaper.value._id,
         reviewer: userStore.userProfile._id,
         responses: formatResponses(),
         recommendation: recommendation.value,
         comments: comments.value,
-        isDraft: true
-      });
+        isDraft: true,
+      };
+
+      try {
+        if (selectedReview.value) {
+          await reviewStore.updateReview(selectedReview.value._id, reviewData);
+          showSnackbar?.({ message: "Návrh recenzie bol aktualizovaný.", color: "success" });
+        } else {
+          await reviewStore.createReview(reviewData);
+          showSnackbar?.({ message: "Návrh recenzie bol uložený.", color: "success" });
+        }
+
+        await reviewStore.fetchAllReviews();
+        await paperStore.getAssignedPapers();
+      } catch (error) {
+        console.error("Error saving review:", error);
+        showSnackbar?.({ message: "Chyba pri ukladaní recenzie.", color: "error" });
+      }
 
       reviewDialog.value = false;
     };
@@ -119,29 +137,29 @@ export default defineComponent({
     };
 
     const confirmSubmission = async () => {
-      confirmationDialog.value = false;
+      if (!selectedReview.value) return;
 
-      await reviewStore.submitReview({
-        created_at: new Date(),
-        paper: selectedPaper.value._id,
-        reviewer: userStore.userProfile._id,
-        responses: formatResponses(),
-        recommendation: recommendation.value,
-        comments: comments.value,
-        isDraft: false
-      });
+      await reviewStore.sendReview(selectedReview.value._id);
+      showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
 
       reviewDialog.value = false;
     };
 
-    const downloadPaper = async (paperId: string) => {
-      await paperStore.downloadPaperForReview(paperId);
+
+    const downloadPaper = async (paper: ReviewerPaper) => {
+      if (!paper.conference?._id) {
+        console.error("Conference ID is missing for paper:", paper);
+        return;
+      }
+
+      await paperStore.downloadPaperReviewer(paper.conference._id, paper._id);
     };
 
-    const formatResponses = () => {
-      return questions.value.map((question: any) => ({
+    const formatResponses = (): ReviewResponse[] => {
+      return questions.value.map((question) => ({
+        _id: question._id,
         question: question._id,
-        answer: reviewResponses.value[question._id],
+        answer: reviewResponses.value[question._id] || null,
       }));
     };
 
@@ -163,6 +181,7 @@ export default defineComponent({
       paperDetailsDialog,
       confirmationDialog,
       selectedPaper,
+      selectedReview,
       reviewResponses,
       recommendation,
       ratingQuestions,
@@ -185,7 +204,6 @@ export default defineComponent({
       <v-card-title>
         <h2>Pridelené práce</h2>
       </v-card-title>
-      <v-card-text>
         <v-data-table
           :headers="headers"
           :items="papers"
@@ -200,25 +218,25 @@ export default defineComponent({
             <tr v-for="paper in items" :key="paper._id" class="custom-row">
               <td>
                 <v-icon
-                  size="24"
+                  size="30"
                   color="primary"
                   @click="openPaperDetailsDialog(paper)"
                   style="cursor: pointer"
-                  title="View details"
+                  title="Zobraziť podrobnosti"
                 >
                   mdi-eye
                 </v-icon>
               </td>
+              <td>{{ paper.category?.name }}</td>
               <td>{{ paper.conference?.year }} - {{ formatDate(paper.conference?.date) }}</td>
               <td>{{ paper.title }}</td>
-              <td>{{ paper.category?.name }}</td>
               <td class="d-flex justify-end align-center">
                 <v-btn
                   color="tertiary"
-                  @click="downloadPaper(paper._id)"
+                  @click="downloadPaper(paper)"
                   title="Sťahnuť prácu"
                 >
-                  <v-icon size="26">mdi-download</v-icon>
+                  <v-icon size="25">mdi-download</v-icon>
                 </v-btn>
                 <v-btn
                   :disabled="paper.hasSubmittedReview"
@@ -226,13 +244,12 @@ export default defineComponent({
                   @click="openReviewDialog(paper)"
                   title="Recenzovať prácu"
                 >
-                  <v-icon size="30">mdi-message-draw</v-icon>
+                  <v-icon size="25">mdi-message-draw</v-icon>
                 </v-btn>
               </td>
             </tr>
           </template>
         </v-data-table>
-      </v-card-text>
     </v-card>
 
     <!-- Review Dialog -->
@@ -310,7 +327,7 @@ export default defineComponent({
                 <v-col cols="12">
                   <v-select
                     v-model="recommendation"
-                    :items="['Publikovať', 'Publikovať so zmenami', 'Odmietnuť']"
+                    :items="['Publikovať', 'Publikovať_so_zmenami', 'Odmietnuť']"
                     label="Odporúčanie"
                     dense
                     outlined
@@ -321,7 +338,7 @@ export default defineComponent({
               </v-row>
 
               <!-- Conditional Comments -->
-              <v-row v-if="['Publikovať so zmenami', 'Odmietnuť'].includes(recommendation)">
+              <v-row v-if="['Publikovať_so_zmenami', 'Odmietnuť'].includes(recommendation)">
                 <v-col cols="12">
                   <label>Komentáre (voliteľné)</label>
                   <v-textarea
@@ -370,14 +387,6 @@ export default defineComponent({
               <td>{{ selectedPaper?.keywords?.join(', ') }}</td>
             </tr>
             <tr>
-              <td><strong>Autory:</strong></td>
-              <td>
-                <span v-for="(author, index) in selectedPaper?.authors" :key="index">
-                  {{ author.firstName }} {{ author.lastName }}<span v-if="index < selectedPaper.authors.length - 1">, </span>
-                </span>
-              </td>
-            </tr>
-            <tr>
               <td><strong>Abstrakt:</strong></td>
               <td><em>{{ selectedPaper?.abstract }}</em></td>
             </tr>
@@ -385,11 +394,17 @@ export default defineComponent({
           </v-table>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="primary" @click="downloadPaper(selectedPaper?._id)">
+          <v-btn
+            color="primary"
+            @click="downloadPaper(selectedPaper?._id)">
+            <v-icon size="36">mdi-download-box</v-icon>
             Stiahnuť
           </v-btn>
-          <v-btn color="secondary" @click="paperDetailsDialog = false">Zrušiť</v-btn>
+          <v-btn color="tertiary" @click="paperDetailsDialog = false"
+          >Zrušiť</v-btn
+          >
         </v-card-actions>
+
       </v-card>
     </v-dialog>
 

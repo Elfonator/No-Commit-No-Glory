@@ -1,242 +1,6 @@
-<template>
-  <v-container class="cards-section">
-    <v-row justify="space-between">
-      <!-- Card 1 -->
-      <v-col cols="12" sm="4" class="card-item">
-        <v-card class="modal-card">
-          <v-card-title class="d-flex flex-column align-center text-center">
-            <v-icon class="card-icon" size="40">mdi-file-document-outline</v-icon>
-            <span>POKYNY PRE AUTOROV</span>
-          </v-card-title>
-          <v-card-text>
-            Konferencia je určená pre študentov, alebo kolektívy študentov 1.,
-            2. a 3. stupňa vysokoškolského štúdia pod vedením školiteľa.
-          </v-card-text>
-          <v-card-actions class="card-actions">
-            <v-btn @click="openModal('authorInstructions')">Podrobnosti</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-
-      <!-- Card 2 -->
-      <v-col cols="12" sm="4" class="card-item">
-        <v-card class="modal-card">
-          <v-card-title class="d-flex flex-column align-center text-center">
-            <v-icon class="card-icon" left>mdi-account-group-outline</v-icon>
-            <span>VÝBORY KONFERENCIE</span>
-          </v-card-title>
-          <v-card-text>
-            Zoznámte sa s odbornými výbormi konferencie z univerzít, ktoré sa
-            podieľajú na organizácii a hodnotení prác.
-          </v-card-text>
-          <v-card-actions class="card-actions">
-            <v-btn @click="openModal('conferenceCommittees')"
-              >Podrobnosti</v-btn
-            >
-          </v-card-actions>
-        </v-card>
-      </v-col>
-
-      <!-- Card 3 -->
-      <v-col cols="12" sm="4" class="card-item">
-        <v-card class="modal-card">
-          <v-card-title class="d-flex flex-column align-center text-center">
-            <v-icon class="card-icon" left>mdi-clock-outline</v-icon>
-            <span>MINULÉ PRÁCE</span>
-          </v-card-title>
-          <v-card-text>
-            Objavte úspechy a zaujímavé práce z aktuálného a tiež
-            predchádzajúcich ročníkov konferencie.
-          </v-card-text>
-          <v-card-actions class="card-actions">
-            <v-btn @click="openModal('awardedWorks')">Ocenené</v-btn>
-            <v-btn @click="openModal('pastConferences')">Všetko</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <!-- Modals -->
-    <v-dialog v-model="modal.authorInstructions" max-width="1000px">
-      <v-card class="modal-card">
-        <v-card-text>
-          <h4>Pokyny pre autorov</h4>
-          <p>
-            Konferencia je určená pre študentov, alebo kolektívy študentov 1.,
-            2. a 3. stupňa vysokoškolského štúdia. Účastník konferencie pripraví
-            vedeckú prácu pod vedením školiteľa.
-          </p>
-          <br />
-          <ul>
-            <li>
-              <ins>Rozsah:</ins> <strong>4 - 8 strán</strong> vrátane tabuliek,
-              obrázkov a príloh.
-            </li>
-            <li><ins>Abstrakt:</ins> <strong>100 - 150 slov</strong>.</li>
-            <li><ins>Jazyk:</ins> Slovenský alebo Anglický.</li>
-          </ul>
-          <p>
-            Použite jednu z uvedených šablón:
-            <a
-              href="/docs/sablona_SVK_2023.docx"
-              target="_blank"
-              rel="noopener noreferrer"
-              >MS Word</a
-            >
-            alebo
-            <a
-              href="/docs/Tex_sablona_SVK_2023.zip"
-              target="_blank"
-              rel="noopener noreferrer"
-              >LaTeX</a
-            >. Šablóny prosím inak neupravujte a
-            <ins>nevkladajte čísla strán</ins>.
-          </p>
-
-          <h4>Prezentácia práce</h4>
-          Autor(i) prácu prezentujú pred odbornou komisiou:
-          <ul>
-            <li>Formát: <strong>PowerPoint</strong></li>
-            <li>Dĺžka prezentácie: <strong>10 min</strong>.</li>
-            <li>Diskusia: <strong>cca 5 min</strong>.</li>
-          </ul>
-          <p class="note">
-            !Prezentácia a obhajoba práce sú podmienkou jej zaradenia do
-            zborníka vedeckých prác!
-          </p>
-
-          <h4>Postup na vloženie práce:</h4>
-          <ol>
-            <li>
-              Prihláste sa do systému
-              <a href="/homepage">SciSubmit</a>.
-            </li>
-            <li>
-              Zadajte údaje o autoroch, názve práce, abstrakte a kľúčových
-              slovách.
-            </li>
-            <li>Vyberte sekciu podľa zamerania práce.</li>
-            <li>Vyplňte príslušnosť (napr. katedra, fakulta, univerzita).</li>
-            <li>Vložte prácu vo formáte <strong>PDF</strong>.</li>
-            <li>Potvrďte proces a počkajte na výsledok recenzie.</li>
-            <li>
-              Upravte prácu na základe odporúčaní a nahrajte finálnu verziu.
-            </li>
-          </ol>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn @click="closeModal('authorInstructions')">Zatvoriť</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="modal.conferenceCommittees" max-width="1000px">
-      <v-card class="modal-card">
-        <v-card-text>
-          <!-- FPVaI UKF Committee -->
-          <h4>Organizačný výbor konferencie na FPVaI UKF v Nitre:</h4>
-          <ul>
-            <li>prof. RNDr. Radoslav Omelka, PhD.</li>
-            <li>PaedDr. Katarína Zverková</li>
-            <li>RNDr. Gabriela Repaská, PhD.</li>
-            <li>Ing. Michal Levický, PhD.</li>
-            <li>Mgr. Mária Pappová</li>
-            <li>Mgr. Matúš Valko</li>
-            <li>Mgr. Veronika Kubová</li>
-            <li>Mgr. Barbora Loncová</li>
-            <li>Mgr. Silvia Haringová</li>
-            <li>Mgr. Tibor Kovács</li>
-            <li>Mgr. Marcel Cvik</li>
-            <li>Mgr. Silvia Čajková</li>
-          </ul>
-
-          <!-- FPV UMB Committee -->
-          <h4>Organizačný výbor konferencie na FPV UMB v Banskej Bystrici:</h4>
-          <ul>
-            <li>doc. RNDr. Ingrid Turisová, PhD.</li>
-            <li>Ing. Slavka Račáková, PhD.</li>
-            <li>doc. RNDr. Zuzana Melichová, PhD.</li>
-            <li>doc. Ing. Ján Tomaškin, PhD.</li>
-            <li>doc. PaedDr. Ján Stebila, PhD.</li>
-            <li>RNDr. Miroslav Melicherčík, PhD.</li>
-            <li>prof. RNDr. Vladimír Janiš, CSc.</li>
-            <li>doc. Ing. Juraj Švajda, PhD.</li>
-            <li>prof. Dr. Boris Tomášik</li>
-            <li>Mgr. Lenka Balážovičová, PhD.</li>
-            <li>Mgr. Tomáš Valent</li>
-          </ul>
-
-          <!-- FPV UCM Committee -->
-          <h4>Organizačný výbor konferencie na FPV UCM v Trnave:</h4>
-          <ul>
-            <li>Mgr. Dominika Vešelényiová, PhD.</li>
-            <li>doc. Ing. Jozef Sokol, CSc.</li>
-            <li>doc. Mgr. Daniel Mihálik, PhD.</li>
-            <li>Mgr. Martin Valica, PhD.</li>
-            <li>Ing. Eva Ürgeová, PhD.</li>
-            <li>Ing. Jana Jurinová, PhD.</li>
-          </ul>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn @click="closeModal('conferenceCommittees')">Zatvoriť</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="modal.awardedWorks" max-width="1000px">
-      <v-card class="modal-card">
-        <v-card-text>
-          <!-- Dynamic Section Blocks -->
-          <div
-            v-for="(category, index) in awardedWorks"
-            :key="index"
-            class="category-block"
-          >
-            <h4>{{ category.name }}</h4>
-            <ul>
-              <li v-for="(work, idx) in category.works" :key="idx">
-                <strong>{{ work.title }}</strong>
-                <br />
-                Autori: {{ work.authors.join(', ') }}
-              </li>
-            </ul>
-          </div>
-        </v-card-text>
-        <v-card-actions class="card-actions">
-          <v-btn @click="closeModal('awardedWorks')">Zatvoriť</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="modal.pastConferences" max-width="1000px">
-      <v-card class="modal-card">
-        <v-card-text>
-          <div
-            v-for="(edition, index) in pastConferences"
-            :key="index"
-            class="edition-block"
-          >
-            <h4>{{ edition.year }}</h4>
-            <p><strong>Dátum:</strong> {{ edition.date }}</p>
-            <ul>
-              <li v-for="(doc, idx) in edition.documents" :key="idx">
-                <a :href="doc.link" target="_blank" rel="noopener noreferrer">{{
-                  doc.name
-                }}</a>
-              </li>
-            </ul>
-          </div>
-        </v-card-text>
-        <v-card-actions class="card-actions">
-          <v-btn @click="closeModal('pastConferences')">Zatvoriť</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </v-container>
-</template>
-
 <script lang="ts">
-import { defineComponent, reactive, ref } from 'vue'
+import { computed, defineComponent, onMounted, reactive, ref } from 'vue'
+import { useHomepageStore } from '@/stores/homepageStore.ts'
 
 export default defineComponent({
   name: 'CardsSection',
@@ -247,6 +11,8 @@ export default defineComponent({
       pastConferences: false,
       awardedWorks: false,
     })
+
+    const homepageStore = useHomepageStore()
 
     const awardedWorks = ref([
       {
@@ -475,6 +241,26 @@ export default defineComponent({
       },
     ])
 
+    // Mapping universities to full names with location
+    const universityNames: Record<string, string> = {
+      UKF: "FPVaI UKF v Nitre:",
+      UMB: "FPV UMB v Banskej Bystrici:",
+      UCM: "FPV UCM v Trnave:",
+    }
+
+    // Group committees by university
+    const groupedCommittees = computed(() => {
+      return homepageStore.committees.length > 0
+        ? homepageStore.committees.reduce((acc: Record<string, any[]>, member) => {
+          if (!acc[member.university]) {
+            acc[member.university] = [];
+          }
+          acc[member.university].push(member);
+          return acc;
+        }, {})
+        : {};
+    });
+
     const openModal = (modalName: keyof typeof modal) => {
       modal[modalName] = true
     }
@@ -483,16 +269,227 @@ export default defineComponent({
       modal[modalName] = false
     }
 
+    onMounted(async () => {
+      await homepageStore.fetchHomepageData()
+      console.log(homepageStore.fetchHomepageData())
+    })
+
     return {
       modal,
       awardedWorks,
       pastConferences,
+      groupedCommittees,
+      universityNames,
       openModal,
       closeModal,
     }
   },
 })
 </script>
+
+<template>
+  <v-container class="cards-section">
+    <v-row justify="space-between">
+      <!-- Card 1 -->
+      <v-col cols="12" sm="4" class="card-item">
+        <v-card class="modal-card">
+          <v-card-title class="d-flex flex-column align-center text-center">
+            <v-icon class="card-icon" size="40">mdi-file-document-outline</v-icon>
+            <span>POKYNY PRE AUTOROV</span>
+          </v-card-title>
+          <v-card-text>
+            Konferencia je určená pre študentov, alebo kolektívy študentov 1.,
+            2. a 3. stupňa vysokoškolského štúdia pod vedením školiteľa.
+          </v-card-text>
+          <v-card-actions class="card-actions">
+            <v-btn @click="openModal('authorInstructions')">Podrobnosti</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+
+      <!-- Card 2 -->
+      <v-col cols="12" sm="4" class="card-item">
+        <v-card class="modal-card">
+          <v-card-title class="d-flex flex-column align-center text-center">
+            <v-icon class="card-icon" left>mdi-account-group-outline</v-icon>
+            <span>VÝBORY KONFERENCIE</span>
+          </v-card-title>
+          <v-card-text>
+            Zoznámte sa s odbornými výbormi konferencie z univerzít, ktoré sa
+            podieľajú na organizácii a hodnotení prác.
+          </v-card-text>
+          <v-card-actions class="card-actions">
+            <v-btn @click="openModal('conferenceCommittees')"
+              >Podrobnosti</v-btn
+            >
+          </v-card-actions>
+        </v-card>
+      </v-col>
+
+      <!-- Card 3 -->
+      <v-col cols="12" sm="4" class="card-item">
+        <v-card class="modal-card">
+          <v-card-title class="d-flex flex-column align-center text-center">
+            <v-icon class="card-icon" left>mdi-clock-outline</v-icon>
+            <span>MINULÉ PRÁCE</span>
+          </v-card-title>
+          <v-card-text>
+            Objavte úspechy a zaujímavé práce z aktuálného a tiež
+            predchádzajúcich ročníkov konferencie.
+          </v-card-text>
+          <v-card-actions class="card-actions">
+            <v-btn @click="openModal('awardedWorks')">Ocenené</v-btn>
+            <v-btn @click="openModal('pastConferences')">Všetko</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Modals -->
+    <v-dialog v-model="modal.authorInstructions" max-width="1000px">
+      <v-card class="modal-card">
+        <v-card-text>
+          <h4>Pokyny pre autorov</h4>
+          <p>
+            Konferencia je určená pre študentov, alebo kolektívy študentov 1.,
+            2. a 3. stupňa vysokoškolského štúdia. Účastník konferencie pripraví
+            vedeckú prácu pod vedením školiteľa.
+          </p>
+          <br />
+          <ul>
+            <li>
+              <ins>Rozsah:</ins> <strong>4 - 8 strán</strong> vrátane tabuliek,
+              obrázkov a príloh.
+            </li>
+            <li><ins>Abstrakt:</ins> <strong>100 - 150 slov</strong>.</li>
+            <li><ins>Jazyk:</ins> Slovenský alebo Anglický.</li>
+          </ul>
+          <p>
+            Použite jednu z uvedených šablón:
+            <a
+              href="/docs/sablona_SVK_2023.docx"
+              target="_blank"
+              rel="noopener noreferrer"
+              >MS Word</a
+            >
+            alebo
+            <a
+              href="/docs/Tex_sablona_SVK_2023.zip"
+              target="_blank"
+              rel="noopener noreferrer"
+              >LaTeX</a
+            >. Šablóny prosím inak neupravujte a
+            <ins>nevkladajte čísla strán</ins>.
+          </p>
+
+          <h4>Prezentácia práce</h4>
+          Autor(i) prácu prezentujú pred odbornou komisiou:
+          <ul>
+            <li>Formát: <strong>PowerPoint</strong></li>
+            <li>Dĺžka prezentácie: <strong>10 min</strong>.</li>
+            <li>Diskusia: <strong>cca 5 min</strong>.</li>
+          </ul>
+          <p class="note">
+            !Prezentácia a obhajoba práce sú podmienkou jej zaradenia do
+            zborníka vedeckých prác!
+          </p>
+
+          <h4>Postup na vloženie práce:</h4>
+          <ol>
+            <li>
+              Prihláste sa do systému
+              <a href="/homepage">SciSubmit</a>.
+            </li>
+            <li>
+              Zadajte údaje o autoroch, názve práce, abstrakte a kľúčových
+              slovách.
+            </li>
+            <li>Vyberte sekciu podľa zamerania práce.</li>
+            <li>Vyplňte príslušnosť (napr. katedra, fakulta, univerzita).</li>
+            <li>Vložte prácu vo formáte <strong>PDF</strong>.</li>
+            <li>Potvrďte proces a počkajte na výsledok recenzie.</li>
+            <li>
+              Upravte prácu na základe odporúčaní a nahrajte finálnu verziu.
+            </li>
+          </ol>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="closeModal('authorInstructions')">Zatvoriť</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Conference Committees Modal -->
+    <v-dialog v-model="modal.conferenceCommittees" max-width="800px">
+      <v-card class="modal-card">
+        <v-card-text>
+          <h4 style="color: #116466;">Organizačný výbor konferencie</h4>
+
+          <!-- Loop through universities and display their members -->
+          <div v-for="(members, university) in groupedCommittees" :key="university">
+            <h4>{{ universityNames[university] }}</h4>
+            <ul>
+              <li v-for="member in members" :key="member._id">{{ member.fullName }}</li>
+            </ul>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="closeModal('conferenceCommittees')">Zatvoriť</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="modal.awardedWorks" max-width="1000px">
+      <v-card class="modal-card">
+        <v-card-text>
+          <!-- Dynamic Section Blocks -->
+          <div
+            v-for="(category, index) in awardedWorks"
+            :key="index"
+            class="category-block"
+          >
+            <h4>{{ category.name }}</h4>
+            <ul>
+              <li v-for="(work, idx) in category.works" :key="idx">
+                <strong>{{ work.title }}</strong>
+                <br />
+                Autori: {{ work.authors.join(', ') }}
+              </li>
+            </ul>
+          </div>
+        </v-card-text>
+        <v-card-actions class="card-actions">
+          <v-btn @click="closeModal('awardedWorks')">Zatvoriť</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="modal.pastConferences" max-width="1000px">
+      <v-card class="modal-card">
+        <v-card-text>
+          <div
+            v-for="(edition, index) in pastConferences"
+            :key="index"
+            class="edition-block"
+          >
+            <h4>{{ edition.year }}</h4>
+            <p><strong>Dátum:</strong> {{ edition.date }}</p>
+            <ul>
+              <li v-for="(doc, idx) in edition.documents" :key="idx">
+                <a :href="doc.link" target="_blank" rel="noopener noreferrer">{{
+                  doc.name
+                }}</a>
+              </li>
+            </ul>
+          </div>
+        </v-card-text>
+        <v-card-actions class="card-actions">
+          <v-btn @click="closeModal('pastConferences')">Zatvoriť</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
+</template>
 
 <style lang="scss">
 .cards-section {

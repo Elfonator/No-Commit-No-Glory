@@ -1,26 +1,60 @@
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from 'vue';
+import { defineComponent, ref, computed, onMounted, inject, reactive, nextTick } from 'vue'
 import { useReviewStore } from '@/stores/reviewStore';
 import { format } from 'date-fns'
 import { usePaperStore } from '@/stores/paperStore.ts'
-import type { Review } from '@/types/review.ts'
+import type { Review, ReviewResponse } from '@/types/review.ts'
+import { useQuestionStore } from '@/stores/questionStore.ts'
+import type { Question } from '@/types/question.ts'
 
 export default defineComponent({
   name: 'ReviewTable',
   setup() {
+    //Access the global showSnackbar function
+    const showSnackbar = inject('showSnackbar') as ({
+                                                      message,
+                                                      color,
+                                                    }: {
+      message: string
+      color?: string
+    }) => void
+
+    if (!showSnackbar) {
+      console.error('showSnackbar is not provided')
+    }
+
     const reviewStore = useReviewStore();
     const paperStore = usePaperStore();
+    const questionStore = useQuestionStore();
+
     const viewReviewDialog = ref(false);
-    const selectedReview = ref<any>(null);
+    const reviewDialog = ref(false);
+    const confirmationDialog = ref(false);
+
+    const selectedReview = reactive<Review>({
+      _id: '',
+      paper: '',
+      reviewer: '',
+      responses: [],
+      recommendation: 'Publikovať',
+      comments: '',
+      isDraft: true,
+      created_at: new Date(),
+    });
+
+    const reviewResponses = ref<Record<string, string | number | null>>({});
+    //const recommendation = ref<'Publikovať' | 'Publikovať_so_zmenami' | 'Odmietnuť'>('Publikovať');
+    //const comments = ref<string>('');
+
     const submittedReviews = computed(() => reviewStore.reviewerReviews);
+    const questions = computed(() => questionStore.reviewerQuestions);
 
     const headers = [
-      { title: 'Draft', value: 'draft' },
-      { title: 'Odporúčanie', value: 'recommendation' },
-      { title: 'ŠVK', value: 'conference'},
-      { title: 'Dátum', value: 'created_at' },
-      { title: 'Názov práce', value: 'title' },
-      { title: '', value: 'actions' },
+      { title: 'Odporúčanie', key: 'recommendation', width: '50px' },
+      { title: 'ŠVK', key: 'conference', width: '180px'},
+      { title: 'Dátum', key: 'created_at', width: '130px' },
+      { title: 'Názov práce', key: 'title', sortable: false },
+      { title: '', key: 'actions', sortable: false },
     ];
 
     const papers = computed(() =>
@@ -32,11 +66,7 @@ export default defineComponent({
       )
     );
 
-    const filters = ref({
-      title: '',
-      conferenceYear: '',
-      recommendation: '',
-    });
+    const filters = ref({ title: '', conferenceYear: '', recommendation: ''});
 
     const recommendations = [
       { text: 'Publikovať', value: 'Publikovať' },
@@ -44,21 +74,12 @@ export default defineComponent({
       { text: 'Odmietnuť', value: 'Odmietnuť' },
     ];
 
-    // Filtered reviews
+    // Filtered Reviews
     const filteredReviews = computed(() => {
       return reviewStore.reviewerReviews.filter((review) => {
-        const matchesTitle =
-          !filters.value.title ||
-          review.paper.title
-            .toLowerCase()
-            .includes(filters.value.title.toLowerCase());
-        const matchesConferenceYear =
-          !filters.value.conferenceYear ||
-          review.paper.conference?.year === filters.value.conferenceYear;
-        const matchesRecommendation =
-          !filters.value.recommendation ||
-          review.recommendation === filters.value.recommendation;
-
+        const matchesTitle = !filters.value.title || review.paper.title.toLowerCase().includes(filters.value.title.toLowerCase());
+        const matchesConferenceYear = !filters.value.conferenceYear || review.paper.conference?.year === filters.value.conferenceYear;
+        const matchesRecommendation = !filters.value.recommendation || review.recommendation === filters.value.recommendation;
         return matchesTitle && matchesConferenceYear && matchesRecommendation;
       });
     });
@@ -71,29 +92,170 @@ export default defineComponent({
       };
     };
 
+    // Categorize questions
+    const ratingQuestions = computed(() => questionStore.reviewerQuestions.filter(q => q.type === 'rating'));
+    const yesNoQuestions = computed(() => questionStore.reviewerQuestions.filter(q => q.type === 'yes_no'));
+    const textQuestions = computed(() => questionStore.reviewerQuestions.filter(q => q.type === 'text'));
+
     const viewReview = (review: Review) => {
-      selectedReview.value = review;
+      if (!review) return;
+
+      Object.assign(selectedReview, review);
+
+      // Populate reviewResponses for displaying answers
+      reviewResponses.value = review.responses.reduce((acc: Record<string, string | number | null>, response) => {
+        acc[response.question] = response.answer;
+        return acc;
+      }, {});
+
       viewReviewDialog.value = true;
     };
+
+    // Helper function to get question ID
+    const getQuestionId = (question: Question | string): string =>
+      typeof question === 'object' ? question._id : question;
+
+    // Edit an existing review
+    const editReview = (review: Review) => {
+      if (!review.isDraft) return;
+
+      Object.assign(selectedReview, review);
+
+      reviewResponses.value = {};
+
+      if (review.responses?.length) {
+        review.responses.forEach(response => {
+          try {
+            // Use helper function to determine question ID
+            let questionId = getQuestionId(response.question);
+
+            reviewResponses.value[questionId] = response.answer;
+
+            console.log(`Setting response for question ${questionId} to:`, response.answer);
+          } catch (error) {
+            console.error("Error processing response:", error, response);
+          }
+        });
+      }
+
+      console.log("Populated reviewResponses:", reviewResponses.value);
+
+      nextTick(() => {
+        reviewDialog.value = true;
+      });
+    };
+
+    // Format responses for submission
+    const formatResponses = (): ReviewResponse[] => {
+      return questionStore.reviewerQuestions.map((question) => ({
+        _id: question._id,  // Ensure _id is included
+        question: question._id,
+        answer: reviewResponses.value[question._id] ?? null,
+      }));
+    };
+
+    const saveDraft = async () => {
+      if (!selectedReview._id) return;
+
+      await reviewStore.updateReview(selectedReview._id, {
+        paper: selectedReview.paper,
+        reviewer: selectedReview.reviewer,
+        responses: formatResponses(),
+        recommendation: selectedReview.recommendation,
+        comments: selectedReview.comments,
+        isDraft: true,
+      });
+
+      showSnackbar?.({ message: "Návrh recenzie bol uložený.", color: "success" });
+      reviewDialog.value = false;
+    };
+
+    const sendReview = async (review: Review) => {
+      if (!review._id) {
+        showSnackbar?.({ message: "Chyba: Recenzia nemá ID!", color: "error" });
+        return;
+      }
+
+      await reviewStore.sendReview(review._id);
+      showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
+      reviewDialog.value = false;
+    };
+
+    //Delete review
+    const isDeleteDialogOpen = ref(false);
+    const reviewToDelete = ref<Review | null>(null);
+
+    const confirmDeleteReview = (review: Review) => {
+      reviewToDelete.value = review;
+      isDeleteDialogOpen.value = true;
+    };
+
+    const closeDeleteDialog = () => {
+      isDeleteDialogOpen.value = false;
+      reviewToDelete.value = null;
+    };
+
+    const deleteReview = async () => {
+      if (!reviewToDelete.value || !reviewToDelete.value._id) {
+        console.error("Review ID is missing!");
+        return;
+      }
+
+      try {
+        await reviewStore.deleteReview(reviewToDelete.value._id);
+        showSnackbar?.({
+          message: "Recenzia bola úspešne odstránená.",
+          color: "success",
+        });
+
+        await reviewStore.fetchAllReviews(); // Refresh the list
+      } catch (error) {
+        console.error("Error deleting review:", error);
+        showSnackbar?.({
+          message: "Nepodarilo sa odstrániť recenziu.",
+          color: "error",
+        });
+      } finally {
+        closeDeleteDialog();
+      }
+    };
+
 
     const formatDate = (date: Date | string) =>
       format(new Date(date), 'dd.MM.yyyy')
 
-    onMounted(() => {
-      reviewStore.fetchAllReviews();
+    onMounted(async () => {
+      await reviewStore.fetchAllReviews();
+      await questionStore.fetchReviewerQuestions();
     });
 
     return {
       papers,
+      recommendations,
+      questions,
       headers,
       submittedReviews,
       viewReviewDialog,
       selectedReview,
       filters,
-      recommendations,
       filteredReviews,
+      reviewDialog,
+      confirmationDialog,
+      reviewResponses,
+      ratingQuestions,
+      yesNoQuestions,
+      textQuestions,
+      isDeleteDialogOpen,
+      reviewToDelete,
+      closeDeleteDialog,
+      deleteReview,
+      editReview,
+      saveDraft,
+      sendReview,
+      confirmDeleteReview,
       resetFilters,
       formatDate,
+      formatResponses,
       viewReview,
     };
   },
@@ -141,68 +303,130 @@ export default defineComponent({
           </v-col>
         </v-row>
       </v-card-subtitle>
-      <v-card-text>
-        <v-data-table
-          :headers="headers"
-          :items="filteredReviews"
-          :items-per-page="10"
-          dense
-          class="custom-table"
-        >
-          <template v-slot:body="{ items }">
-            <tr v-for="review in items" :key="review._id">
-              <td>
-                <v-icon
-                  v-if="review.isDraft"
-                  title="Draft"
-                  size="26"
-                  color="orange"
-                  class="mr-2"
-                >
-                  mdi-alert-outline
-                </v-icon>
-              </td>
-              <td>
-                <v-chip
-                  :color="
+      <!-- Data Table -->
+      <v-data-table
+        :headers="headers"
+        :items="submittedReviews"
+        :items-per-page="10"
+        :pageText="'{0}-{1} z {2}'"
+        items-per-page-text="Recenzie na stránku"
+        dense
+        class="custom-table">
+        <template v-slot:body="{ items }">
+          <tr v-for="review in items" :key="review._id">
+            <td>
+              <v-chip
+                :color="
                   review.recommendation === 'Publikovať'? 'green'
                   : review.recommendation === 'Publikovať_so_zmenami'? 'E7B500'
                   : review.recommendation === 'Odmietnuť'? 'red': 'grey'"
-                  outlined
-                  small
-                  class="d-flex justify-center custom-chip rounded"
-                >
-                  {{ review.recommendation }}
-                </v-chip>
-              </td>
-              <td>{{ review.paper.conference?.year }} - {{ formatDate(review.paper.conference?.date) }}</td>
-              <td>{{ formatDate(review.created_at )}}</td>
-              <td>{{ review.paper.title }}</td>
-              <td class="d-flex justify-end align-center">
-                <v-btn color="primary" @click="viewReview(review)">
-                  <v-icon size="26">mdi-eye</v-icon>
-                </v-btn>
-              </td>
-            </tr>
-          </template>
-        </v-data-table>
-      </v-card-text>
+                outlined
+                small
+                class="d-flex justify-center custom-chip rounded"
+              >
+                {{ review.recommendation }}
+              </v-chip>
+            </td>
+            <td>{{ review.paper.conference?.year }} - {{ formatDate(review.paper.conference?.date) }}</td>
+            <td>{{ formatDate(review.created_at) }}</td>
+            <td>{{ review.paper.title }}</td>
+            <td class="d-flex justify-end align-center">
+              <v-btn
+                :disabled="!review.isDraft"
+                color="#FFCD16"
+                @click="editReview(review)">
+                <v-icon size="24">mdi-pencil</v-icon>
+              </v-btn>
+              <v-btn
+                :disabled="!review.isDraft"
+                color="primary"
+                @click="sendReview(review)">
+                <v-icon size="24">mdi-send</v-icon>
+              </v-btn>
+              <v-btn
+                :disabled="!review.isDraft"
+                color="#BC463A"
+                @click="confirmDeleteReview(review)">
+                <v-icon size="24" color="white">mdi-delete</v-icon>
+              </v-btn>
+            </td>
+          </tr>
+        </template>
+      </v-data-table>
     </v-card>
 
-    <!-- View Review Dialog -->
-    <v-dialog v-model="viewReviewDialog" max-width="1200px">
-      <v-card>
-        <v-card-title>Podrobnosti recenzie</v-card-title>
-        <v-card-text>
-          <p><strong>Odporúčanie:</strong> {{ selectedReview?.recommendation }}</p>
-          <p><strong>Názov práce:</strong> {{ selectedReview?.paper?.title }}</p>
-          <p><strong>Komentáre:</strong> {{ selectedReview?.comments || 'N/A' }}</p>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn color="secondary" @click="viewReviewDialog = false">Close</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+  <!-- Edit Review Dialog -->
+  <v-dialog v-model="reviewDialog" max-width="1200px">
+    <v-card>
+      <v-card-title>Upraviť recenziu</v-card-title>
+      <v-card-text>
+        <!-- Rating Questions -->
+        <v-row v-for="question in ratingQuestions" :key="question._id" align="center">
+          <v-col cols="8"><p>{{ question.text }}</p></v-col>
+          <v-col cols="4">
+            <v-select
+              v-model="reviewResponses[question._id]"
+              :items="[
+                { text: 'A', value: 6 },
+                { text: 'B', value: 5 },
+                { text: 'C', value: 4 },
+                { text: 'D', value: 3 },
+                { text: 'E', value: 2 },
+                { text: 'Fx', value: 1 }
+              ]"
+              item-title="text"
+              item-value="value"
+              dense
+              outlined
+              placeholder="Vyberte hodnotenie"
+            />
+          </v-col>
+        </v-row>
+
+        <!-- Yes/No Questions -->
+        <v-row v-for="question in yesNoQuestions" :key="question._id" align="center">
+          <v-col cols="8"><p>{{ question.text }}</p></v-col>
+          <v-col cols="4">
+            <v-radio-group v-model="reviewResponses[question._id]" row>
+              <v-radio label="Áno" value="yes"></v-radio>
+              <v-radio label="Nie" value="no"></v-radio>
+            </v-radio-group>
+          </v-col>
+        </v-row>
+
+        <!-- Text Questions -->
+        <v-row v-for="question in textQuestions" :key="question._id" align="center">
+          <v-col cols="5"><p>{{ question.text }}</p></v-col>
+          <v-col cols="7">
+            <v-textarea v-model="reviewResponses[question._id]" placeholder="Vložte odpoveď" dense outlined />
+          </v-col>
+        </v-row>
+
+        <v-select v-model="selectedReview.recommendation" :items="['Publikovať', 'Publikovať_so_zmenami', 'Odmietnuť']" label="Odporúčanie" />
+        <v-textarea v-model="selectedReview.comments" label="Komentáre" outlined dense />
+      </v-card-text>
+      <v-card-actions>
+        <v-btn color="primary" @click="saveDraft">Uložiť</v-btn>
+        <v-btn color="error" @click="sendReview">Odoslať</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="isDeleteDialogOpen" max-width="500px">
+    <v-card>
+      <v-card-title>Potvrdenie odstránenia</v-card-title>
+      <v-card-text>
+        <p>
+          Ste si istí, že chcete odstrániť recenziu na prácu
+          <strong>{{ reviewToDelete?.paper?.title }}</strong>?
+        </p>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn color="secondary" @click="closeDeleteDialog">Zrušiť</v-btn>
+        <v-btn color="red" @click="deleteReview">Odstrániť</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style lang="scss">
