@@ -88,7 +88,7 @@ export default defineComponent({
 
     <!-- List of program events -->
     <v-list>
-      <v-list-item v-for="(event, index) in program.items" :key="event._id">
+      <v-list-item v-for="(event, index) in program" :key="event._id">
         <v-row class="w-100">
           <!-- Schedule text field column -->
           <v-col cols="2">

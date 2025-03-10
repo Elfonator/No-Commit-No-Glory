@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import axiosInstance from "@/config/axiosConfig";
 import type { ActiveCategory } from '@/types/conference.ts'
+import { format } from 'date-fns'
+import { sk } from 'date-fns/locale'
 
 export const useHomepageStore = defineStore("homepage", () => {
   const program = ref<{ _id: string; schedule: string; description: string; fileLink: string }[]>([]);
@@ -11,18 +13,6 @@ export const useHomepageStore = defineStore("homepage", () => {
   const committees = ref<{ _id: string; fullName: string; university: string }[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
-
-  // Computed Property: Deadlines extracted from ongoingConference
-  const deadlines = computed(() => {
-    if (!ongoingConference.value) return {};
-    return {
-      submissionDeadline: new Date(ongoingConference.value.deadline_submission).toLocaleDateString("sk-SK"),
-      submissionConfirmation: new Date(ongoingConference.value.submission_confirmation).toLocaleDateString("sk-SK"),
-      reviewDeadline: new Date(ongoingConference.value.deadline_review).toLocaleDateString("sk-SK"),
-      correctionDeadline: new Date(ongoingConference.value.deadline_correction).toLocaleDateString("sk-SK"),
-      conferenceDate: new Date(ongoingConference.value.date).toLocaleDateString("sk-SK"),
-    };
-  });
 
   // Actions
   const fetchHomepageData = async () => {
@@ -53,6 +43,37 @@ export const useHomepageStore = defineStore("homepage", () => {
     }
   };
 
+  // Helper function to format dates
+  const formatDate = (date: string | Date | null): string => {
+    if (!date) return 'Neurčený'
+    try {
+      const parsedDate = typeof date === 'string' ? new Date(date) : date
+      if (isNaN(parsedDate.getTime())) return 'Neurčený'
+      return format(parsedDate, 'dd.MM.yyyy', { locale: sk })
+    } catch {
+      return 'Neurčený'
+    }
+  }
+
+  const deadlines = computed(() => {
+    if (!ongoingConference.value) {
+      return {
+        submissionDeadline: 'Neurčený',
+        submissionConfirmation: 'Neurčený',
+        reviewDeadline: 'Neurčený',
+        correctionDeadline: 'Neurčený',
+        conferenceDate: 'Neurčený',
+      }
+    }
+
+    return {
+      submissionDeadline: formatDate(ongoingConference.value.deadline_submission),
+      submissionConfirmation: formatDate(ongoingConference.value.submission_confirmation),
+      reviewDeadline: formatDate(ongoingConference.value.deadline_review),
+      correctionDeadline: formatDate(ongoingConference.value.deadline_correction),
+      conferenceDate: `${formatDate(ongoingConference.value.date)}`,
+    }
+  })
 
   const updateProgram = async (newProgram: any) => {
     try {
@@ -121,6 +142,7 @@ export const useHomepageStore = defineStore("homepage", () => {
     try {
       const response = await axiosInstance.get("/auth/admin/program");
       program.value = response.data.program || [];
+      programDocumentUrl.value = response.data.program.fileLink || "";
     } catch (err) {
       console.error("Error fetching conference program:", err);
       error.value = "Nepodarilo sa načítať program konferencie.";
@@ -152,8 +174,6 @@ export const useHomepageStore = defineStore("homepage", () => {
     }
   };
 
-
-
 // Delete a program item using its index
   const deleteProgramItem = async (itemId: string) => {
     try {
@@ -174,7 +194,7 @@ export const useHomepageStore = defineStore("homepage", () => {
       const response = await axiosInstance.post("/auth/admin/program/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      await fetchProgram(); // Refresh after upload
+      programDocumentUrl.value = response.data.program.fileLink;
       return response.data;
     } catch (err) {
       console.error("Error uploading program file:", err);

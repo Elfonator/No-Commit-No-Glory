@@ -216,9 +216,9 @@ export default defineComponent({
 
     const menu = reactive({
       date: false,
-      deadline_submission: false,
       start_date: false,
       end_date: false,
+      deadline_submission: false,
       submission_confirmation: false,
       deadline_review: false,
       deadline_correction: false,
@@ -432,7 +432,7 @@ export default defineComponent({
         <v-card-text>
           <v-form ref="formRef" v-model="valid">
             <v-row>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="4">
                 <v-select
                   v-model="currentConference.status"
                   :items="statusOptions"
@@ -443,7 +443,7 @@ export default defineComponent({
                   :rules="[v => !!v || 'Stav je povinný']"
                 />
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="4">
                 <v-text-field
                   v-model="currentConference.year"
                   label="Rok"
@@ -458,7 +458,7 @@ export default defineComponent({
               ]"
                 />
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="4">
                 <v-menu
                   v-model="menu.date"
                   :close-on-content-click="false"
@@ -487,7 +487,7 @@ export default defineComponent({
                   />
                 </v-menu>
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="12">
                 <v-text-field
                   v-model="currentConference.university"
                   label="Univerzita"
@@ -498,7 +498,7 @@ export default defineComponent({
                   :rules="[v => !!v || 'Univerzita je povinná']"
                 />
               </v-col>
-              <v-col cols="12" md="6">
+              <v-col cols="12" md="12">
                 <v-text-field
                   v-model="currentConference.location"
                   label="Miesto"
@@ -510,36 +510,6 @@ export default defineComponent({
                 />
               </v-col>
 
-              <v-col cols="12" md="6">
-                <v-menu
-                  v-model="menu.deadline_submission"
-                  :close-on-content-click="false"
-                  transition="scale-transition"
-                  attach
-                  :disabled="dialogMode === 'view'"
-                >
-                  <template v-slot:activator="{ props }">
-                    <v-text-field
-                      v-model="formattedDialogForm.deadline_submission"
-                      label="Deadline"
-                      readonly
-                      dense
-                      outlined
-                      v-bind="props.attrs"
-                      v-on="props.on"
-                      append-inner-icon="mdi-calendar"
-                      @click:append-inner="menu.deadline_submission = true"
-                      class="large-text-field"
-                      :disabled="dialogMode === 'view'"
-                    />
-                  </template>
-                  <v-date-picker
-                    v-model="currentConference.deadline_submission"
-                    @update:modelValue="menu.deadline_submission = false"
-                    :color="'primary'"
-                  />
-                </v-menu>
-              </v-col>
               <v-col cols="12" md="6">
                 <v-menu
                   v-model="menu.start_date"
@@ -599,6 +569,37 @@ export default defineComponent({
                 </v-menu>
               </v-col>
 
+
+              <v-col cols="12" md="6">
+                <v-menu
+                  v-model="menu.deadline_submission"
+                  :close-on-content-click="false"
+                  transition="scale-transition"
+                  attach
+                  :disabled="dialogMode === 'view'"
+                >
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="formattedDialogForm.deadline_submission"
+                      label="Konečný termín odovzdania"
+                      readonly
+                      dense
+                      outlined
+                      v-bind="props.attrs"
+                      v-on="props.on"
+                      append-inner-icon="mdi-calendar"
+                      @click:append-inner="menu.deadline_submission = true"
+                      class="large-text-field"
+                      :disabled="dialogMode === 'view'"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="currentConference.deadline_submission"
+                    @update:modelValue="menu.deadline_submission = false"
+                    :color="'primary'"
+                  />
+                </v-menu>
+              </v-col>
               <v-col cols="12" md="6">
                 <v-menu v-model="menu.submission_confirmation" :close-on-content-click="false" transition="scale-transition" attach>
                   <template v-slot:activator="{ props }">
