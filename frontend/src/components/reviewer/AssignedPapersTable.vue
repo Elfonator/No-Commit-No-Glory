@@ -1,15 +1,29 @@
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from 'vue'
+import { defineComponent, ref, computed, onMounted, inject } from 'vue'
 import { usePaperStore } from '@/stores/paperStore';
 import { useReviewStore } from '@/stores/reviewStore';
 import { useQuestionStore } from '@/stores/questionStore';
 import { useUserStore } from '@/stores/userStore';
 import { format } from 'date-fns'
 import type { ReviewerPaper } from '@/types/paper.ts'
+import type { Review, ReviewResponse } from '@/types/review.ts'
 
 export default defineComponent({
   name: 'AssignedPapersTable',
   setup() {
+    //Access the global showSnackbar function
+    const showSnackbar = inject('showSnackbar') as ({
+                                                      message,
+                                                      color,
+                                                    }: {
+      message: string
+      color?: string
+    }) => void
+
+    if (!showSnackbar) {
+      console.error('showSnackbar is not provided')
+    }
+
     const paperStore = usePaperStore();
     const reviewStore = useReviewStore();
     const questionStore = useQuestionStore();
@@ -40,6 +54,7 @@ export default defineComponent({
     const confirmationDialog = ref(false);
 
     const selectedPaper = ref<any>(null);
+    const selectedReview = ref<any>(null);
     const reviewResponses = ref<Record<string, string | number | null>>({});
     const recommendation = ref<'Publikovať' | 'Publikovať_so_zmenami' | 'Odmietnuť'>('Publikovať');
     const comments = ref<string>('');
@@ -73,30 +88,10 @@ export default defineComponent({
     );
 
     const openReviewDialog = (paper: ReviewerPaper) => {
-      // Set selected paper
       selectedPaper.value = paper;
-
-      //Check if draft review exists for this paper
-      const draftReview = reviewStore.draftReviews.find(
-        (review) => review.paper === paper._id
-      );
-      console.log('draft -> ',draftReview);
-
-      if (draftReview) {
-        reviewResponses.value = draftReview.responses.reduce((acc: any, response: any) => {
-          acc[response.question] = response.answer;
-          return acc;
-        }, {});
-
-        recommendation.value = draftReview.recommendation || 'Publikovať';
-        comments.value = draftReview.comments;
-      } else {
-        // No draft exists, initialize an empty form
-        reviewResponses.value = {};
-        recommendation.value = 'Publikovať';
-        comments.value = '';
-      }
-
+      reviewResponses.value = {};
+      recommendation.value = 'Publikovať';
+      comments.value = '';
       reviewDialog.value = true;
     };
 
@@ -108,15 +103,31 @@ export default defineComponent({
     const saveDraft = async () => {
       if (!selectedPaper.value) return;
 
-      await reviewStore.submitReview({
+      const reviewData: Review = {
         created_at: new Date(),
         paper: selectedPaper.value._id,
         reviewer: userStore.userProfile._id,
         responses: formatResponses(),
         recommendation: recommendation.value,
         comments: comments.value,
-        isDraft: true
-      });
+        isDraft: true,
+      };
+
+      try {
+        if (selectedReview.value) {
+          await reviewStore.updateReview(selectedReview.value._id, reviewData);
+          showSnackbar?.({ message: "Návrh recenzie bol aktualizovaný.", color: "success" });
+        } else {
+          await reviewStore.createReview(reviewData);
+          showSnackbar?.({ message: "Návrh recenzie bol uložený.", color: "success" });
+        }
+
+        await reviewStore.fetchAllReviews();
+        await paperStore.getAssignedPapers();
+      } catch (error) {
+        console.error("Error saving review:", error);
+        showSnackbar?.({ message: "Chyba pri ukladaní recenzie.", color: "error" });
+      }
 
       reviewDialog.value = false;
     };
@@ -126,20 +137,14 @@ export default defineComponent({
     };
 
     const confirmSubmission = async () => {
-      confirmationDialog.value = false;
+      if (!selectedReview.value) return;
 
-      await reviewStore.submitReview({
-        created_at: new Date(),
-        paper: selectedPaper.value._id,
-        reviewer: userStore.userProfile._id,
-        responses: formatResponses(),
-        recommendation: recommendation.value,
-        comments: comments.value,
-        isDraft: false
-      });
+      await reviewStore.sendReview(selectedReview.value._id);
+      showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
 
       reviewDialog.value = false;
     };
+
 
     const downloadPaper = async (paper: ReviewerPaper) => {
       if (!paper.conference?._id) {
@@ -150,10 +155,11 @@ export default defineComponent({
       await paperStore.downloadPaperReviewer(paper.conference._id, paper._id);
     };
 
-    const formatResponses = () => {
-      return questions.value.map((question: any) => ({
+    const formatResponses = (): ReviewResponse[] => {
+      return questions.value.map((question) => ({
+        _id: question._id,
         question: question._id,
-        answer: reviewResponses.value[question._id],
+        answer: reviewResponses.value[question._id] || null,
       }));
     };
 
@@ -175,6 +181,7 @@ export default defineComponent({
       paperDetailsDialog,
       confirmationDialog,
       selectedPaper,
+      selectedReview,
       reviewResponses,
       recommendation,
       ratingQuestions,

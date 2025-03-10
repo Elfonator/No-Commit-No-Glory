@@ -6,7 +6,6 @@ import { sendEmail } from "../utils/emailService";
 import User from "../models/User";
 import Question from "../models/Question";
 import path from "path";
-import fs from "fs/promises";
 import {config} from "../config";
 
 //Assigned papers
@@ -95,62 +94,135 @@ export const getQuestions = async (
   }
 };
 
-// Create or submit review
-export const submitReview = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createReview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    console.log("Received Payload:", req.body);
     const { paper, reviewer, responses, recommendation, comments, isDraft } = req.body;
 
-    if (!paper) {
-      res.status(400).json({ message: 'Chýbajú povinné polia.' });
-      return;
-    }
-
-    // Check if a review already exists
-    const existingReview = await Review.findOne({
-      paper: paper,
-      reviewer: reviewer,
-    });
-
-    if (existingReview) {
-      // Update the existing review
-      existingReview.responses = responses;
-      existingReview.recommendation = recommendation;
-      existingReview.comments = comments;
-      existingReview.isDraft = isDraft;
-      await existingReview.save();
-
-      // Update paper status if not a draft
-      if (!isDraft) {
-        const paperStatus = getPaperStatusFromRecommendation(recommendation);
-        await Paper.findByIdAndUpdate(paper, { status: paperStatus });
-      }
-
-      res.status(200).json({ message: 'Recenzia bola úspešne aktualizovaná.', review: existingReview });
+    // Validate required fields
+    if (!paper || !reviewer || !responses || !recommendation) {
+      res.status(400).json({ message: "Missing required fields." });
       return;
     }
 
     // Create a new review
     const newReview = new Review({
-      paper: paper,
-      reviewer: reviewer,
+      paper,
+      reviewer,
       responses,
       recommendation,
-      comments: comments || '',
-      isDraft,
+      comments,
+      isDraft: isDraft ?? true, // Default to draft if not provided
+      created_at: new Date(),
     });
+
+    // Save to DB
     await newReview.save();
 
-    // Update paper status if not a draft
-    if (!isDraft) {
-      const paperStatus = getPaperStatusFromRecommendation(recommendation);
-      await Paper.findByIdAndUpdate(paper, { status: paperStatus });
+    res.status(201).json({ message: "Review created successfully", review: newReview });
+  } catch (error) {
+    console.error("Error creating review:", error);
+    res.status(500).json({ message: "Failed to create review." });
+  }
+};
+
+// Function to update an existing review
+export const updateReview = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { reviewId } = req.params;
+    const { responses, recommendation, comments, isDraft } = req.body;
+
+    if (!reviewId) {
+      res.status(400).json({ message: 'Review ID is required.' });
+      return;
     }
 
-    res.status(201).json({ message: 'Recenzia bola úspešne vytvorená.', review: newReview });
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      res.status(404).json({ message: 'Review not found.' });
+      return;
+    }
+
+    // Update review fields
+    review.responses = responses;
+    review.recommendation = recommendation;
+    review.comments = comments;
+    review.isDraft = isDraft;
+    await review.save();
+
+    res.status(200).json({ message: 'Recenzia bola aktualizovaná.', review });
   } catch (error) {
-    console.error('Error submitting review:', error);
-    res.status(500).json({ message: 'Nepodarilo sa uložiť recenziu.' });
+    console.error("Error updating review:", error);
+    res.status(500).json({ message: "Nepodarilo sa aktualizovať recenziu." });
+  }
+};
+
+// Function to submit a review (change draft to final submission)
+export const sendReview = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { reviewId } = req.params;
+
+    if (!reviewId) {
+      res.status(400).json({ message: 'Review ID is required.' });
+      return;
+    }
+
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      res.status(404).json({ message: 'Review not found.' });
+      return;
+    }
+
+    if (!review.isDraft) {
+      res.status(400).json({ message: 'Review has already been submitted.' });
+      return;
+    }
+
+    review.isDraft = false; // Mark as final submission
+    await review.save();
+
+    res.status(200).json({ message: 'Recenzia bola odoslaná.', review });
+
+    appendReview(
+      Object.assign(req, { params: { paperId: review.paper }, body: { reviewId: review._id } }),
+      res
+    ).catch(error => console.error("Error appending review:", error));
+
+    // Update paper status based on recommendation
+    const paperStatus = getPaperStatusFromRecommendation(review.recommendation);
+    await Paper.findByIdAndUpdate(review.paper, { status: paperStatus });
+
+  } catch (error) {
+    console.error("Error submitting review:", error);
+    res.status(500).json({ message: "Nepodarilo sa odoslať recenziu." });
+  }
+};
+
+// Function to delete a draft review
+export const deleteReview = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { reviewId } = req.params;
+
+    if (!reviewId) {
+      res.status(400).json({ message: 'Review ID is required.' });
+      return;
+    }
+
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      res.status(404).json({ message: 'Review not found.' });
+      return;
+    }
+
+    if (!review.isDraft) {
+      res.status(400).json({ message: 'Only draft reviews can be deleted.' });
+      return;
+    }
+
+    await Review.findByIdAndDelete(reviewId);
+    res.status(200).json({ message: 'Recenzia bola vymazaná.' });
+  } catch (error) {
+    console.error("Error deleting review:", error);
+    res.status(500).json({ message: "Nepodarilo sa vymazať recenziu." });
   }
 };
 
@@ -193,36 +265,6 @@ export const appendReview = async (req: AuthRequest,
     res.status(500).json({ message: 'Failed to append review to paper' });
   }
 }
-
-//Get only submitted reviews
-export const getSubmittedReviews = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const reviewerId = req.user?.userId;
-
-    if (!reviewerId) {
-      res.status(400).json({ message: 'Reviewer ID is required.' });
-      return;
-    }
-
-    // Fetch only submitted reviews by the reviewer
-    const submittedReviews = await Review.find({ reviewer: reviewerId, isDraft: false })
-      .populate({
-        path: 'paper',
-        select: 'title category conference abstract keywords authors submission_date',
-        populate: [
-          { path: 'category', select: 'name' },
-          { path: 'conference', select: 'year location date' },
-        ],
-      })
-      .populate('responses.question', 'text')
-      .sort({ created_at: -1 }); //Sort by most recent
-
-    res.status(200).json(submittedReviews);
-  } catch (error) {
-    console.error('Error fetching submitted reviews:', error);
-    res.status(500).json({ message: 'Failed to fetch submitted reviews.' });
-  }
-};
 
 //Get review by ID
 export const getReviewById = async (req: AuthRequest, res: Response): Promise<void> => {

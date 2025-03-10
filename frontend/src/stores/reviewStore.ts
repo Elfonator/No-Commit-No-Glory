@@ -12,26 +12,42 @@ export const useReviewStore = defineStore('reviews', () => {
   const error = ref<string | null>(null)
 
   //Actions
-  //Save and submit a new review
-  const submitReview = async (review: Review) => {
+  const createReview = async (review: Review) => {
     try {
       const response = await axiosInstance.post('/auth/reviewer/reviews', review);
+      const newReview: Review = response.data.review;
+      reviewerReviews.value.push(newReview);
+      return newReview;
+    } catch (err) {
+      console.error('Failed to create review:', err);
+      throw err;
+    }
+  };
+
+  //Update an existing review
+  const updateReview = async (reviewId: string, updatedData: Partial<Review>) => {
+    try {
+      const response = await axiosInstance.patch(`/auth/reviewer/reviews/${reviewId}`, updatedData)
+      const updatedReview: Review = response.data.review
+
+      await fetchAllReviews()
+
+      return updatedReview
+    } catch (err) {
+      console.error('Failed to update review:', err);
+      throw err;
+    }
+  };
+
+  //Submit a review
+  const sendReview = async (reviewId: string) => {
+    try {
+      const response = await axiosInstance.patch(`/auth/reviewer/reviews/${reviewId}`, { isDraft: false });
       const updatedReview: Review = response.data.review;
 
-      //Update the local state
-      const existingIndex = reviewerReviews.value.findIndex(
-        (r) => r._id === updatedReview._id
-      );
-
-      if (existingIndex !== -1) {
-        //Replace the existing review
-        reviewerReviews.value.splice(existingIndex, 1, updatedReview);
-      } else {
-        //Add the new review
-        reviewerReviews.value.push(updatedReview);
-      }
-
-      await fetchAllReviews();
+      // Update local state
+      const index = reviewerReviews.value.findIndex(r => r._id === reviewId);
+      if (index !== -1) reviewerReviews.value.splice(index, 1, updatedReview);
 
       return updatedReview;
     } catch (err) {
@@ -40,18 +56,18 @@ export const useReviewStore = defineStore('reviews', () => {
     }
   };
 
-  const appendReviewToPaper = async (paperId: string, reviewId: string) => {
+  // Delete a review
+  const deleteReview = async (reviewId: string) => {
     try {
-      const response = await axiosInstance.patch(`auth/reviewer/papers/${paperId}`, {
-        reviewId,
-      });
-      return response.data;
+      await axiosInstance.delete(`/auth/reviewer/reviews/${reviewId}`);
+      reviewerReviews.value = reviewerReviews.value.filter(r => r._id !== reviewId);
     } catch (err) {
-      console.error('Failed to append review to paper:', err);
+      console.error('Failed to delete review:', err);
       throw err;
     }
   };
 
+  // Fetch all reviews by reviewer
   const fetchAllReviews = async () => {
     try {
       const response = await axiosInstance.get('/auth/reviewer/reviews');
@@ -84,15 +100,17 @@ export const useReviewStore = defineStore('reviews', () => {
   );
 
   // Participant: Fetch reviews for participant papers
-  const getParticipantReviews = async () => {
+  const fetchParticipantReviewById = async (paperId: string) => {
     loading.value = true
     error.value = null
     try {
-      const response = await axiosInstance.get('/auth/participant/papers')
-      participantReviews.value = response.data // Papers with populated reviews
+      const response = await axiosInstance.get(`/auth/participant/papers/${paperId}/review`);
+      participantReviews.value = response.data
+      return response.data
     } catch (err) {
       error.value = 'Failed to fetch reviews for participant papers.'
       console.error(err)
+      throw err
     } finally {
       loading.value = false
     }
@@ -107,11 +125,13 @@ export const useReviewStore = defineStore('reviews', () => {
     error,
 
     //Actions
-    submitReview,
+    createReview,
+    updateReview,
+    sendReview,
+    deleteReview,
     fetchReview,
-    appendReviewToPaper,
     fetchAllReviews,
-    getParticipantReviews,
+    fetchParticipantReviewById,
 
     //Computed
     draftReviews,

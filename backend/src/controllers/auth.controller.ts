@@ -26,9 +26,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     //Verify password
     const isPasswordValid = await argon2.verify(user.password, password);
-    console.log("Stored Password:", user.password);
-    console.log("Entered Password:", password);
-    console.log("Password Match:", isPasswordValid);
+
     if (!isPasswordValid) {
       res.status(401).json({ message: "Neplatné prihlasovacie údaje" });
       return;
@@ -111,7 +109,7 @@ export const refreshToken = async (
   res: Response,
 ): Promise<void> => {
   try {
-    console.log("Request Body:", req.body);
+    //console.log("Request Body:", req.body);
     const { refreshToken } = req.body as { refreshToken: string };
 
     if (!refreshToken) {

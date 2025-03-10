@@ -190,11 +190,11 @@ export const usePaperStore = defineStore('papers', () => {
 
   // Create a shared utility function
   const extractFilenameFromResponse = (response: AxiosResponse): string => {
-    console.log("Raw Headers:", response.headers);
+    //console.log("Raw Headers:", response.headers);
 
     // Extract filename from headers
     const contentDisposition = response.headers["content-disposition"] || response.headers["Content-Disposition"];
-    console.log("Final C-D:", contentDisposition);
+    //console.log("Final C-D:", contentDisposition);
 
     let filename = "paper.pdf"; // Default fallback
 
@@ -205,7 +205,6 @@ export const usePaperStore = defineStore('papers', () => {
       }
     }
 
-    console.log("Final Downloaded filename:", filename);
     return filename;
   }
 
@@ -250,7 +249,7 @@ export const usePaperStore = defineStore('papers', () => {
     error.value = null
     try {
       const response = await axiosInstance.get('/auth/admin/papers')
-      console.log('Raw API Response:', response.data) // Log raw response
+      //console.log('Raw API Response:', response.data) // Log raw response
       adminPapers.value = response.data
     } catch (err) {
       error.value = 'Failed to fetch papers.'

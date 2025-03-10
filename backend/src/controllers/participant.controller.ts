@@ -8,6 +8,7 @@ import User from "../models/User";
 import path from "path";
 import fs from "fs";
 import {config} from "../config";
+import Review from '../models/Review'
 
 // Submit a new paper
 export const createPaper = async (
@@ -134,7 +135,11 @@ export const getPaperById = async (
     const { paperId } = req.params;
     const paper = await Paper.findById(paperId)
       .populate("category", "name")
-      .populate("conference", "year location date");
+      .populate("conference", "year location date")
+      .populate({
+      path: "review",
+      select: "recommendation comments responses"
+    });
 
     if (!paper) {
       res.status(404).json({ message: "Práca nebola nájdená." });
@@ -227,6 +232,25 @@ export const editPaper = async (
     res
       .status(500)
       .json({ message: "Nepodarilo sa aktualizovať prácu.", error });
+  }
+};
+
+export const getReviewByPaperId = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { paperId } = req.params;
+    const review = await Review.findOne({ paper: paperId })
+      .populate("responses.question")
+      .select("recommendation comments responses");
+
+    if (!review) {
+      res.status(404).json({ message: "Recenzia pre túto prácu nebola nájdená." });
+      return;
+    }
+
+    res.status(200).json(review);
+  } catch (error) {
+    console.error("Error fetching review by paper ID:", error);
+    res.status(500).json({ message: "Nepodarilo sa načítať recenziu.", error });
   }
 };
 

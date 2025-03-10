@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  submitReview,
   getReviewById,
   getAssignedPapers,
   contactAdmin,
@@ -9,7 +8,7 @@ import {
   appendReview,
   getAllReviews,
   getAdmins,
-  downloadPaperForReview,
+  downloadPaperForReview, deleteReview, sendReview, updateReview, createReview
 
 } from '../controllers/reviewer.controller'
 import { authenticateToken } from "../middleware/authenticateToken";
@@ -24,12 +23,14 @@ router.post('/papers/:paperId', appendReview);
 
 router.get('/reviews', getAllReviews)
 router.get("/reviews/:reviewId", getReviewById);
-router.post("/reviews", submitReview);
-router.patch("/reviews/:reviewId", submitReview);
+router.post("/reviews", createReview);
+router.patch("/reviews/:reviewId", sendReview);
+router.patch("/reviews/:reviewId", updateReview);
+router.delete("/reviews/:reviewId", deleteReview)
 
 router.get("/questions", getQuestions);
 router.get("/admins", getAdmins);
 router.post("/contact-admin", contactAdmin);
-router.post("/notify-reviewer", notifyReviewer);0
+router.post("/notify-reviewer", notifyReviewer);
 
 export default router;
