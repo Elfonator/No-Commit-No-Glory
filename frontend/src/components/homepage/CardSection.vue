@@ -367,7 +367,7 @@ export default defineComponent({
           <p>
             Použite jednu z uvedených šablón:
             <a
-              href="/docs/sablona_SVK_2023.docx"
+              href="/docs/sablona_SVK_2025_final.docx"
               target="_blank"
               rel="noopener noreferrer"
               >MS Word</a
@@ -398,7 +398,7 @@ export default defineComponent({
           <ol>
             <li>
               Prihláste sa do systému
-              <a href="/homepage">SciSubmit</a>.
+              <a href="https://svk-ukf.sk/">SciSubmit</a>.
             </li>
             <li>
               Zadajte údaje o autoroch, názve práce, abstrakte a kľúčových

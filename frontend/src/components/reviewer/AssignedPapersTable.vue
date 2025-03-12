@@ -56,7 +56,7 @@ export default defineComponent({
     const selectedPaper = ref<any>(null);
     const selectedReview = ref<any>(null);
     const reviewResponses = ref<Record<string, string | number | null>>({});
-    const recommendation = ref<'Publikovať' | 'Publikovať_so_zmenami' | 'Odmietnuť'>('Publikovať');
+    const recommendation = ref<'Publikovať' | 'Publikovať so zmenami' | 'Odmietnuť'>('Publikovať');
     const comments = ref<string>('');
 
     const headers = [
@@ -148,11 +148,16 @@ export default defineComponent({
           responses: formatResponses(),
           recommendation: recommendation.value,
           comments: comments.value,
-          isDraft: false, // Not a draft since we're submitting
+          isDraft: true,
         };
 
         // Create the review
-        await reviewStore.createReview(reviewData);
+        const newReview = await reviewStore.createReview(reviewData);
+
+        // Now send the review using the same method as ReviewTable
+        if (newReview && newReview._id) {
+          await reviewStore.sendReview(newReview._id);
+        }
 
         showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
         reviewDialog.value = false;
@@ -349,7 +354,7 @@ export default defineComponent({
                 <v-col cols="12">
                   <v-select
                     v-model="recommendation"
-                    :items="['Publikovať', 'Publikovať_so_zmenami', 'Odmietnuť']"
+                    :items="['Publikovať', 'Publikovať so zmenami', 'Odmietnuť']"
                     label="Odporúčanie"
                     dense
                     outlined
@@ -360,7 +365,7 @@ export default defineComponent({
               </v-row>
 
               <!-- Conditional Comments -->
-              <v-row v-if="['Publikovať_so_zmenami', 'Odmietnuť'].includes(recommendation)">
+              <v-row v-if="['Publikovať so zmenami', 'Odmietnuť'].includes(recommendation)">
                 <v-col cols="12">
                   <label>Komentáre (voliteľné)</label>
                   <v-textarea

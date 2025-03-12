@@ -10,7 +10,7 @@ export interface IReview extends Document {
   reviewer: mongoose.Schema.Types.ObjectId;
   responses: IReviewResponse[];
   comments: string;
-  recommendation: "Publikovať" | "Publikovať_so_zmenami" | "Odmietnuť";
+  recommendation: "Publikovať" | "Publikovať so zmenami" | "Odmietnuť";
   created_at: Date;
   isDraft: boolean;
 }
@@ -40,7 +40,7 @@ const ReviewSchema: Schema = new Schema(
     comments: { type: String, required: false },
     recommendation: {
       type: String,
-      enum: ["Publikovať", "Publikovať_so_zmenami", "Odmietnuť"],
+      enum: ["Publikovať", "Publikovať so zmenami", "Odmietnuť"],
       required: true,
     },
     created_at: { type: Date, default: Date.now },

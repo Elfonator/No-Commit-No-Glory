@@ -118,13 +118,19 @@ export default defineComponent({
       try {
         const response = await axiosInstance.post('/forgot-password', {
           email: forgotPasswordEmail.value,
-        })
-        console.log('Password recovery email sent:', response.data)
-        activeTab.value = 'login'
-      } catch (error) {
-        console.error('Password recovery failed:', error)
+        });
+        showSnackbar({
+          message: 'Inštrukcie na obnovenie hesla boli odoslané na váš email',
+          color: 'success'
+        });
+        activeTab.value = 'login';
+      } catch (error: any) {
+        showSnackbar({
+          message: error.response?.data?.message || 'Nepodarilo sa odoslať email na obnovenie hesla',
+          color: 'error'
+        });
       }
-    }
+    };
 
     //Registration modal
     const handleRegister = async () => {

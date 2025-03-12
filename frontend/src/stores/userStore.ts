@@ -36,7 +36,7 @@ export const useUserStore = defineStore('users', () => {
         ...user,
         role: reverseRoleMapping[user.role] || user.role, //Map role to Slovak
       }))
-      console.log("adminUsers.value",adminUsers.value)
+      console.log("adminUsers.value", adminUsers.value)
     } catch (err) {
       error.value = 'Failed to fetch users.'
       console.error(err)

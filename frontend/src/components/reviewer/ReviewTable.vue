@@ -31,6 +31,11 @@ export default defineComponent({
       return new Date() > deadline;
     };
 
+    const canEditReview = (review: Review): boolean => {
+      // Can only edit if it's a draft AND review deadline hasn't passed
+      return review.isDraft && !isReviewDeadlinePassed(review);
+    };
+
     const reviewStore = useReviewStore();
     const paperStore = usePaperStore();
     const questionStore = useQuestionStore();
@@ -51,13 +56,12 @@ export default defineComponent({
     });
 
     const reviewResponses = ref<Record<string, string | number | null>>({});
-    //const recommendation = ref<'Publikovať' | 'Publikovať_so_zmenami' | 'Odmietnuť'>('Publikovať');
-    //const comments = ref<string>('');
 
     const submittedReviews = computed(() => reviewStore.reviewerReviews);
     const questions = computed(() => questionStore.reviewerQuestions);
 
     const headers = [
+      { title: '', key: 'view', sortable: false },
       { title: 'Odporúčanie', key: 'recommendation', width: '50px' },
       { title: 'ŠVK', key: 'conference', width: '180px'},
       { title: 'Dátum', key: 'created_at', width: '130px' },
@@ -78,7 +82,7 @@ export default defineComponent({
 
     const recommendations = [
       { text: 'Publikovať', value: 'Publikovať' },
-      { text: 'Publikovať so zmenami', value: 'Publikovať_so_zmenami' },
+      { text: 'Publikovať so zmenami', value: 'Publikovať so zmenami' },
       { text: 'Odmietnuť', value: 'Odmietnuť' },
     ];
 
@@ -105,18 +109,35 @@ export default defineComponent({
     const yesNoQuestions = computed(() => questionStore.reviewerQuestions.filter(q => q.type === 'yes_no'));
     const textQuestions = computed(() => questionStore.reviewerQuestions.filter(q => q.type === 'text'));
 
+    const isViewMode = computed(() => {
+      return !selectedReview.isDraft || isReviewDeadlinePassed(selectedReview);
+    });
+
+    // View review details
     const viewReview = (review: Review) => {
       if (!review) return;
 
       Object.assign(selectedReview, review);
 
       // Populate reviewResponses for displaying answers
-      reviewResponses.value = review.responses.reduce((acc: Record<string, string | number | null>, response) => {
-        acc[response.question] = response.answer;
-        return acc;
-      }, {});
+      reviewResponses.value = {};
 
-      viewReviewDialog.value = true;
+      if (review.responses?.length) {
+        review.responses.forEach(response => {
+          try {
+            // Use helper function to determine question ID
+            let questionId = getQuestionId(response.question);
+            reviewResponses.value[questionId] = response.answer;
+            console.log(`Setting response for question ${questionId} to:`, response.answer);
+          } catch (error) {
+            console.error("Error processing response:", error, response);
+          }
+        });
+      }
+
+      console.log("Populated reviewResponses for view:", reviewResponses.value);
+
+      reviewDialog.value = true;
     };
 
     // Helper function to get question ID
@@ -170,6 +191,12 @@ export default defineComponent({
     const saveDraft = async () => {
       if (!selectedReview._id) return;
 
+      // Check if deadline has passed
+      if (isReviewDeadlinePassed(selectedReview)) {
+        showSnackbar?.({ message: "Termín na úpravu recenzie už vypršal!", color: "error" });
+        return;
+      }
+
       await reviewStore.updateReview(selectedReview._id, {
         paper: selectedReview.paper,
         reviewer: selectedReview.reviewer,
@@ -184,7 +211,7 @@ export default defineComponent({
     };
 
     const sendReview = async (review: Review) => {
-      console.log("Sending review:", review);
+      //console.log("Sending review:", review);
 
       if (!review._id) {
         showSnackbar?.({ message: "Chyba: Recenzia nemá ID!", color: "error" });
@@ -226,7 +253,7 @@ export default defineComponent({
         await reviewStore.fetchAllReviews();
       } catch (error) {
         console.error("Error sending review:", error);
-        showSnackbar?.({ message: "Nepodarilo sa odoslať recenziu.", color: "error" });
+        showSnackbar?.({ message: "Nepodarilo sa odoslať recenziu", color: "error" });
       }
     };
 
@@ -296,7 +323,9 @@ export default defineComponent({
       textQuestions,
       isDeleteDialogOpen,
       reviewToDelete,
+      isViewMode,
       isReviewDeadlinePassed,
+      canEditReview,
       closeDeleteDialog,
       deleteReview,
       editReview,
@@ -365,10 +394,21 @@ export default defineComponent({
         <template v-slot:body="{ items }">
           <tr v-for="review in items" :key="review._id">
             <td>
+              <v-icon
+                size="30"
+                color="primary"
+                @click="viewReview(review)"
+                style="cursor: pointer"
+                title="Zobraziť podrobnosti"
+              >
+                mdi-eye
+              </v-icon>
+            </td>
+            <td>
               <v-chip
                 :color="
                   review.recommendation === 'Publikovať'? 'green'
-                  : review.recommendation === 'Publikovať_so_zmenami'? 'E7B500'
+                  : review.recommendation === 'Publikovať so zmenami'? 'E7B500'
                   : review.recommendation === 'Odmietnuť'? 'red': 'grey'"
                 outlined
                 small
@@ -384,19 +424,22 @@ export default defineComponent({
               <!-- :disabled="!review.isDraft" -->
               <v-btn
                 color="#FFCD16"
-                @click="editReview(review)">
+                @click="editReview(review)"
+                :disabled="!canEditReview(review)">
                 <v-icon size="24">mdi-pencil</v-icon>
               </v-btn>
               <!-- :disabled="!review.isDraft" -->
               <v-btn
                 color="primary"
-                @click="sendReview(review)">
+                @click="sendReview(review)"
+                :disabled="!canEditReview(review)">
                 <v-icon size="24">mdi-send</v-icon>
               </v-btn>
               <!-- :disabled="!review.isDraft" -->
               <v-btn
                 color="#BC463A"
-                @click="confirmDeleteReview(review)">
+                @click="confirmDeleteReview(review)"
+                :disabled="!canEditReview(review)">
                 <v-icon size="24" color="white">mdi-delete</v-icon>
               </v-btn>
             </td>
@@ -405,10 +448,10 @@ export default defineComponent({
       </v-data-table>
     </v-card>
 
-  <!-- Edit Review Dialog -->
+  <!-- View/Edit Review Dialog -->
   <v-dialog v-model="reviewDialog" max-width="1200px">
     <v-card>
-      <v-card-title>Upraviť recenziu</v-card-title>
+      <v-card-title>{{ isViewMode ? 'Zobraziť recenziu' : 'Upraviť recenziu' }}</v-card-title>
       <v-card-text>
         <!-- Rating Questions -->
         <v-row v-for="question in ratingQuestions" :key="question._id" align="center">
@@ -429,6 +472,7 @@ export default defineComponent({
               dense
               outlined
               placeholder="Vyberte hodnotenie"
+              :disabled="isViewMode"
             />
           </v-col>
         </v-row>
@@ -437,7 +481,8 @@ export default defineComponent({
         <v-row v-for="question in yesNoQuestions" :key="question._id" align="center">
           <v-col cols="8"><p>{{ question.text }}</p></v-col>
           <v-col cols="4">
-            <v-radio-group v-model="reviewResponses[question._id]" row>
+            <v-radio-group v-model="reviewResponses[question._id]" row
+                           :disabled="isViewMode">
               <v-radio label="Áno" value="yes"></v-radio>
               <v-radio label="Nie" value="no"></v-radio>
             </v-radio-group>
@@ -448,16 +493,32 @@ export default defineComponent({
         <v-row v-for="question in textQuestions" :key="question._id" align="center">
           <v-col cols="5"><p>{{ question.text }}</p></v-col>
           <v-col cols="7">
-            <v-textarea v-model="reviewResponses[question._id]" placeholder="Vložte odpoveď" dense outlined />
+            <v-textarea
+              v-model="reviewResponses[question._id]"
+              placeholder="Vložte odpoveď"
+              dense
+              outlined
+              :disabled="isViewMode"
+            />
           </v-col>
         </v-row>
 
-        <v-select v-model="selectedReview.recommendation" :items="['Publikovať', 'Publikovať_so_zmenami', 'Odmietnuť']" label="Odporúčanie" />
-        <v-textarea v-model="selectedReview.comments" label="Komentáre" outlined dense />
+        <v-select
+          v-model="selectedReview.recommendation"
+          :items="['Publikovať', 'Publikovať_so_zmenami', 'Odmietnuť']"
+          label="Odporúčanie"
+          :disabled="isViewMode"/>
+        <v-textarea
+          v-model="selectedReview.comments"
+          label="Komentáre"
+          outlined
+          dense
+          :disabled="isViewMode"/>
       </v-card-text>
       <v-card-actions>
-        <v-btn color="primary" @click="saveDraft">Uložiť</v-btn>
-        <v-btn color="error" @click="sendReview(selectedReview)">Odoslať</v-btn>
+        <v-btn color="secondary" @click="reviewDialog = false">{{ isViewMode ? 'Zavrieť' : 'Zrušiť' }}</v-btn>
+        <v-btn v-if="!isViewMode" color="primary" @click="saveDraft">Uložiť</v-btn>
+        <v-btn v-if="!isViewMode" color="error" @click="sendReview(selectedReview)">Odoslať</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

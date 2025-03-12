@@ -219,12 +219,46 @@ export const sendReview = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
-    //review.isDraft = false; // Mark as final submission
+    review.isDraft = false;
+
     await review.save();
 
     // Update paper status based on recommendation
     const paperStatus = getPaperStatusFromRecommendation(review.recommendation);
-    await Paper.findByIdAndUpdate(review.paper, { status: paperStatus });
+    const paper = await Paper.findByIdAndUpdate(review.paper, { status: paperStatus });
+
+    if (paper) {
+      // Get the participant/author
+      const participant = await User.findById(paper.user);
+
+      if (participant) {
+        // Copy-pasted email notification code
+        let emailContent = `
+          <p>Dobrý deň, ${participant.first_name},</p>
+          <p>Stav váše práce "<strong>${paper.title}</strong>" bol aktualizovaný na "<strong>${paperStatus}</strong>".</p>
+        `;
+
+        if (paperStatus === PaperStatus.AcceptedWithChanges) {
+          emailContent += `
+            <p>Prosím, prihláste sa do svojho účtu a aktualizujte svoju prácu podľa požadovaných zmien.</p>
+          `;
+        } else if (paperStatus === PaperStatus.Rejected) {
+          emailContent += `<p>S ľútosťou vám oznamujeme, že váša práca nebola prijatá.</p>`;
+        }
+
+        // Add the website link
+        emailContent += `
+          <p>Pre viac informácií navštívte <a href="https://svk-ukf.sk/">svk-ukf.sk</a>.</p>
+          <p>S pozdravom,<br />tím SciSubmit</p>
+        `;
+
+        await sendEmail({
+          to: participant.email,
+          subject: `Aktualizácia stavu práce: ${paperStatus}`,
+          html: emailContent,
+        });
+      }
+    }
 
     // Append review to paper using the helper function
     const success = await appendReviewToPaper(review.paper.toString(), reviewId);
@@ -255,13 +289,6 @@ export const deleteReview = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    /*
-    if (!review.isDraft) {
-      res.status(400).json({ message: 'Only draft reviews can be deleted.' });
-      return;
-    }
-     */
-
     await Review.findByIdAndDelete(reviewId);
     res.status(200).json({ message: 'Recenzia bola vymazaná.' });
   } catch (error) {
@@ -279,7 +306,7 @@ const getPaperStatusFromRecommendation = (
       return PaperStatus.Accepted;
     case "Odmietnuť":
       return PaperStatus.Rejected;
-    case "Publikovať_so_zmenami":
+    case "Publikovať so zmenami":
       return PaperStatus.AcceptedWithChanges;
     default:
       return PaperStatus.UnderReview;
