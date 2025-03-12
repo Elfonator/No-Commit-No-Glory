@@ -172,7 +172,7 @@ export const validateReviewSubmission = [
   body("recommendation")
     .notEmpty()
     .withMessage("Recommendation is required.")
-    .isIn(["Publikovať", "Publikovať_so_zmenami", "Odmietnuť"])
+    .isIn(["Publikovať", "Publikovať so zmenami", "Odmietnuť"])
     .withMessage("Invalid recommendation value."),
   body("comments")
     .optional()
@@ -208,9 +208,9 @@ export const validateReviewUpdate = [
     .withMessage("Comments must be a string."),
   body("recommendation")
     .optional()
-    .isIn(["Publikovať", "Publikovať_so_zmenami", "Odmietnuť"])
+    .isIn(["Publikovať", "Publikovať so zmenami", "Odmietnuť"])
     .withMessage(
-      "Recommendation must be one of: 'Publikovať', 'Publikovať_so_zmenami', 'Odmietnuť'.",
+      "Recommendation must be one of: 'Publikovať', 'Publikovať so zmenami', 'Odmietnuť'.",
     ),
 ];
 

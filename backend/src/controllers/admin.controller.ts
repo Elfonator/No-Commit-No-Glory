@@ -720,7 +720,7 @@ export const assignReviewer = async (
         paperId,
         {
           reviewer: reviewerId,
-          status: "Posudzovanie",
+          status: PaperStatus.UnderReview,
         },
         { new: true, runValidators: true },
     ).populate("reviewer", "first_name last_name email university"); // Populate the reviewer data

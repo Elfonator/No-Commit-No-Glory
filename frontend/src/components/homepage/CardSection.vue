@@ -398,7 +398,7 @@ export default defineComponent({
           <ol>
             <li>
               Prihláste sa do systému
-              <a href="/homepage">SciSubmit</a>.
+              <a href="https://svk-ukf.sk/">SciSubmit</a>.
             </li>
             <li>
               Zadajte údaje o autoroch, názve práce, abstrakte a kľúčových

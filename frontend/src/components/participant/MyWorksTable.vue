@@ -128,7 +128,7 @@ export default defineComponent({
     const dialogMode = ref<'add' | 'edit' | 'view'>('add')
 
     const tableHeaders = [
-      { title: '', key: 'actions' },
+      { title: '', key: 'actions', width: '15px' },
       { title: 'Status', key: 'status' },
       { title: 'Konferencia', key: 'conference.year' },
       { title: 'Názov práce', key: 'title' },
@@ -332,6 +332,57 @@ export default defineComponent({
 
     const submitPaper = async () => {
       try {
+
+        if (!currentPaper.file_link) {
+          showSnackbar?.({
+            message: 'Súbor je povinný pre uloženie práce.',
+            color: 'error',
+          })
+          return
+        }
+
+        // Create a payload that explicitly includes the Submitted status
+        const payload = {
+          title: currentPaper.title,
+          abstract: currentPaper.abstract,
+          keywords: currentPaper.keywords,
+          isFinal: currentPaper.isFinal,
+          status: PaperStatus.Submitted,
+          conference: currentPaper.conference?._id,
+          category: currentPaper.category?._id,
+          authors: Array.isArray(currentPaper.authors)
+            ? currentPaper.authors.map(author => ({
+              firstName: author.firstName,
+              lastName: author.lastName,
+            }))
+            : [],
+        };
+
+        if (currentPaper._id) {
+          // For existing papers - update with new status
+          await paperStore.updatePaper(currentPaper._id, payload, currentPaper.file_link,);
+        } else {
+          // For new papers - create with Submitted status
+          await paperStore.createPaper(payload, currentPaper.file_link);
+        }
+
+        showSnackbar?.({
+          message: 'Práca bola úspešne odoslaná.',
+          color: 'success',
+        });
+        closeDialog();
+      } catch (err) {
+        console.error(err);
+        showSnackbar?.({
+          message: 'Nepodarilo sa odoslať prácu.',
+          color: 'error',
+        });
+      }
+    };
+
+    /*
+    const submitPaper = async () => {
+      try {
         if (!currentPaper._id) {
           showSnackbar?.({
             message: 'Práca nemá ID. Uložiť ju najprv ako koncept.',
@@ -356,6 +407,7 @@ export default defineComponent({
         })
       }
     }
+    */
 
     const reviewDialog = ref(false);
     const selectedReview = reactive<ParticipantReview>({

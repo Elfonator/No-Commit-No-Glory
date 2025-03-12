@@ -6,7 +6,7 @@ export enum PaperStatus {
   Submitted = "Odovzdaná",
   UnderReview = "Posudzovanie",
   Accepted = "Prijatá",
-  AcceptedWithChanges = "Prijatá_so_zmenami",
+  AcceptedWithChanges = "Prijatá so zmenami",
   Rejected = "Odmietnutá",
 }
 

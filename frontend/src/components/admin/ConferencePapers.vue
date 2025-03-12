@@ -13,7 +13,6 @@ import { sk } from 'date-fns/locale'
 import { useUserStore } from '@/stores/userStore.ts'
 import { type AdminPaper, PaperStatus } from '@/types/paper'
 import axios from 'axios'
-import { ConferenceStatus } from '@/types/conference.ts'
 
 export default defineComponent({
   name: 'ConferencePapers',
@@ -34,11 +33,9 @@ export default defineComponent({
 
     //Table headers for papers
     const tableHeaders = [
-      { title: '', value: 'view', sortable: false },
+      { title: '', value: 'view', width: '10px', sortable: false },
       { title: 'Status', value: 'status', width: '50px' },
       { title: 'Autor', value: 'user' },
-      { title: 'Názov', value: 'status' },
-      { title: 'Sekcia', value: 'category' },
       { title: 'Recenzent', value: 'reviewer' },
       { title: 'Deadline', value: 'deadline_date' },
       { title: '', value: 'actions', sortable: false },
@@ -245,14 +242,14 @@ export default defineComponent({
           selectedPaper.value._id,
           newDeadline.value,
         ) // Send Date object directly
-        console.log('Deadline updated successfully!')
+
         isDeadlineDialogOpen.value = false
         showSnackbar?.({
           message: 'Deadline bol úspešne aktualizovaný.',
           color: 'success',
         })
       } catch (error) {
-        console.error('Error updating deadline:', error)
+
         showSnackbar?.({
           message: 'Nepodarilo sa aktualizovať deadline.',
           color: 'error',
@@ -592,8 +589,6 @@ export default defineComponent({
                     <td>
                       {{ paper.user?.first_name }} {{ paper.user?.last_name }}
                     </td>
-                    <td>{{ paper.title }}</td>
-                    <td>{{ paper.category?.name }}</td>
                     <td :class="{ 'text-red': !paper.reviewer }">
                       {{ paper.reviewer?.email || 'potrebné priradiť' }}
                     </td>

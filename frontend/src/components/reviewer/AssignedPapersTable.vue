@@ -56,7 +56,7 @@ export default defineComponent({
     const selectedPaper = ref<any>(null);
     const selectedReview = ref<any>(null);
     const reviewResponses = ref<Record<string, string | number | null>>({});
-    const recommendation = ref<'Publikovať' | 'Publikovať_so_zmenami' | 'Odmietnuť'>('Publikovať');
+    const recommendation = ref<'Publikovať' | 'Publikovať so zmenami' | 'Odmietnuť'>('Publikovať');
     const comments = ref<string>('');
 
     const headers = [
@@ -354,7 +354,7 @@ export default defineComponent({
                 <v-col cols="12">
                   <v-select
                     v-model="recommendation"
-                    :items="['Publikovať', 'Publikovať_so_zmenami', 'Odmietnuť']"
+                    :items="['Publikovať', 'Publikovať so zmenami', 'Odmietnuť']"
                     label="Odporúčanie"
                     dense
                     outlined
@@ -365,7 +365,7 @@ export default defineComponent({
               </v-row>
 
               <!-- Conditional Comments -->
-              <v-row v-if="['Publikovať_so_zmenami', 'Odmietnuť'].includes(recommendation)">
+              <v-row v-if="['Publikovať so zmenami', 'Odmietnuť'].includes(recommendation)">
                 <v-col cols="12">
                   <label>Komentáre (voliteľné)</label>
                   <v-textarea

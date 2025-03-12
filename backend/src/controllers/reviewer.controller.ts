@@ -219,6 +219,8 @@ export const sendReview = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
+    review.isDraft = false;
+
     await review.save();
 
     // Update paper status based on recommendation
@@ -233,15 +235,15 @@ export const sendReview = async (req: AuthRequest, res: Response): Promise<void>
         // Copy-pasted email notification code
         let emailContent = `
           <p>Dobrý deň, ${participant.first_name},</p>
-          <p>Stav vášho príspevku "<strong>${paper.title}</strong>" bol aktualizovaný na "<strong>${paperStatus}</strong>".</p>
+          <p>Stav váše práce "<strong>${paper.title}</strong>" bol aktualizovaný na "<strong>${paperStatus}</strong>".</p>
         `;
 
         if (paperStatus === PaperStatus.AcceptedWithChanges) {
           emailContent += `
-            <p>Prosím, prihláste sa do svojho účtu a aktualizujte svoj príspevok podľa požadovaných zmien.</p>
+            <p>Prosím, prihláste sa do svojho účtu a aktualizujte svoju prácu podľa požadovaných zmien.</p>
           `;
         } else if (paperStatus === PaperStatus.Rejected) {
-          emailContent += `<p>S ľútosťou vám oznamujeme, že váš príspevok nebol prijatý.</p>`;
+          emailContent += `<p>S ľútosťou vám oznamujeme, že váša práca nebola prijatá.</p>`;
         }
 
         // Add the website link
@@ -304,7 +306,7 @@ const getPaperStatusFromRecommendation = (
       return PaperStatus.Accepted;
     case "Odmietnuť":
       return PaperStatus.Rejected;
-    case "Publikovať_so_zmenami":
+    case "Publikovať so zmenami":
       return PaperStatus.AcceptedWithChanges;
     default:
       return PaperStatus.UnderReview;

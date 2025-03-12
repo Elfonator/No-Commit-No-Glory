@@ -10,7 +10,7 @@ export interface Review {
   reviewer: string
   responses: ReviewResponse[]
   comments: string
-  recommendation: 'Publikovať' | 'Publikovať_so_zmenami' | 'Odmietnuť'
+  recommendation: 'Publikovať' | 'Publikovať so zmenami' | 'Odmietnuť'
   created_at: Date
   isDraft: boolean
 }
@@ -36,5 +36,5 @@ export interface ParticipantReview {
   _id: string;
   responses: ReviewForParticipant[];
   comments: string;
-  recommendation: 'Publikovať' | 'Publikovať_so_zmenami' | 'Odmietnuť';
+  recommendation: 'Publikovať' | 'Publikovať so zmenami' | 'Odmietnuť';
 }

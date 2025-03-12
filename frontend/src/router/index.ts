@@ -33,7 +33,12 @@ const routes = [
         component: () =>
           import('@/views/verification/EmailVerifiedFailure.vue'),
       },
-    ],
+      {
+        path: 'reset-password',
+        name: 'ResetPassword',
+        component: () => import('@/views/verification/ResetPassword.vue')
+      }
+    ]
   },
 
   // Authenticated Routes

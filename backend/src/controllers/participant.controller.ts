@@ -32,10 +32,8 @@ export const createPaper = async (
       conference,
       authors,
       isFinal,
+      status,
     } = req.body;
-
-    console.log('Conference ->', conference);
-    console.log('Body ->', req.body);
 
     //Validate conference
     const selectedConference = await Conference.findOne({
@@ -43,7 +41,7 @@ export const createPaper = async (
       status: ConferenceStatus.Ongoing,
     });
 
-    console.log('SelectedConfernce id ->', selectedConference);
+    //console.log('SelectedConfernce id ->', selectedConference);
 
     if (!selectedConference) {
       res.status(400).json({ message: "Konferencia neexistuje alebo nie je aktuálna." });
@@ -84,6 +82,7 @@ export const createPaper = async (
       submission_date: new Date(),
       isFinal: isFinal === "true" || isFinal === true,
       deadline_date: selectedConference.deadline_submission,
+      status: isFinal ? PaperStatus.Submitted : PaperStatus.Draft,
     });
 
     const savedPaper = await paper.save();
