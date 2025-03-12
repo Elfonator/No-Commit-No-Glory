@@ -148,11 +148,16 @@ export default defineComponent({
           responses: formatResponses(),
           recommendation: recommendation.value,
           comments: comments.value,
-          isDraft: false, // Not a draft since we're submitting
+          isDraft: true,
         };
 
         // Create the review
-        await reviewStore.createReview(reviewData);
+        const newReview = await reviewStore.createReview(reviewData);
+
+        // Now send the review using the same method as ReviewTable
+        if (newReview && newReview._id) {
+          await reviewStore.sendReview(newReview._id);
+        }
 
         showSnackbar?.({ message: "Recenzia bola odoslaná.", color: "success" });
         reviewDialog.value = false;
