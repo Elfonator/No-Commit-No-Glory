@@ -7,6 +7,8 @@ import User from "../models/User";
 import Question from "../models/Question";
 import path from "path";
 import {config} from "../config";
+import { setEndOfDay } from '../utils/dateUtils'
+import { IConference } from '../models/Conference'
 
 //Assigned papers
 export const getAssignedPapers = async (
@@ -56,7 +58,7 @@ export const getAllReviews = async (req: AuthRequest, res: Response): Promise<vo
         select: 'title category conference abstract keywords authors',
         populate: [
           { path: 'category', select: 'name' },
-          { path: 'conference', select: 'year location date' },
+          { path: 'conference', select: 'year location date deadline_review' },
         ],
       })
       .populate('responses.question', 'text') // Populate question text
@@ -65,7 +67,7 @@ export const getAllReviews = async (req: AuthRequest, res: Response): Promise<vo
     res.status(200).json(reviews);
   } catch (error) {
     console.error('Error fetching reviews:', error);
-    res.status(500).json({ message: 'Failed to fetch reviews.' });
+    res.status(500).json({ message: 'Nepodarilo sa načítať recenzie' });
   }
 };
 
@@ -95,7 +97,21 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
 
     // Validate required fields
     if (!paper || !reviewer || !responses || !recommendation) {
-      res.status(400).json({ message: "Missing required fields." });
+      res.status(400).json({ message: "Chýbajú povinné polia" });
+      return;
+    }
+
+    // Deadline check
+    const paperDoc = await Paper.findById(paper).populate('conference');
+    if (!paperDoc || !paperDoc.conference) {
+      res.status(400).json({ message: 'Práca alebo konferencia sa nenašli' });
+      return;
+    }
+    const conference = paperDoc?.conference as unknown as IConference;
+    const deadline = setEndOfDay(new Date(conference.deadline_review));
+
+    if (new Date() > deadline) {
+      res.status(403).json({ message: 'Termín na vytvorenie recenzie už vypršal' });
       return;
     }
 
@@ -113,10 +129,10 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
     // Save to DB
     await newReview.save();
 
-    res.status(201).json({ message: "Review created successfully", review: newReview });
+    res.status(201).json({ message: "Recenzia bola úspešne vytvorená", review: newReview });
   } catch (error) {
     console.error("Error creating review:", error);
-    res.status(500).json({ message: "Failed to create review." });
+    res.status(500).json({ message: "Vytvorenie recenzie zlyhalo" });
   }
 };
 
@@ -131,10 +147,32 @@ export const updateReview = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    const review = await Review.findById(reviewId);
+    // Populate paper and conference with review
+    const review = await Review.findById(reviewId).populate({
+      path: 'paper',
+      populate: { path: 'conference' }
+    });
+
     if (!review) {
       res.status(404).json({ message: 'Review not found.' });
       return;
+    }
+
+    // Already submitted
+    if (review.isDraft === false) {
+      res.status(403).json({ message: 'Odoslanú recenziu nie je možné upravovať.' });
+    }
+
+    // Deadline check
+    const paper = review.paper as unknown as IPaper;
+    if (!paper || !paper.conference) {
+      res.status(400).json({ message: 'Práca alebo konferencia sa nenašli' });
+    }
+
+    const conference = paper.conference as unknown as IConference;
+    const deadline = setEndOfDay(new Date(conference.deadline_review));
+    if (new Date() > deadline) {
+      res.status(403).json({ message: 'Termín na úpravu recenzie už vypršal' });
     }
 
     // Update review fields
@@ -196,10 +234,10 @@ export const appendReview = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    res.status(200).json({ message: 'Review appended to paper' });
+    res.status(200).json({ message: 'Recenzia pripojená k práci' });
   } catch (error) {
-    console.error('Error appending review to paper:', error);
-    res.status(500).json({ message: 'Failed to append review to paper' });
+    //console.error('Error appending review to paper:', error);
+    res.status(500).json({ message: 'Nepodarilo sa pripojiť recenziu k práci' });
   }
 };
 

@@ -14,6 +14,7 @@ import Review from '../models/Review'
 import {config} from "../config";
 import Homepage from '../models/Homepage'
 import multer from 'multer'
+import { setEndOfDay } from '../utils/dateUtils'
 
 /** USERS**/
 //Get all users
@@ -159,38 +160,6 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ message: "Nepodarilo sa vymazať používateľa", error });
   }
 };
-
-/*
-export const deleteUser = async (
-    req: Request,
-    res: Response
-): Promise<void> => {
-  try {
-    const { userId } = req.params;
-
-    const deletedUser = await User.findByIdAndDelete(userId);
-    if (!deletedUser) {
-      res.status(404).json({ message: "Používateľ nebol nájdený" });
-      return;
-    }
-    await Paper.deleteMany({ user: userId });
-    await Paper.updateMany(
-        { reviewer: userId },
-        {
-          $unset: { reviewer: "" },
-          $set: { status: "Odovzdaná" }
-        }
-    );
-    res.status(200).json({
-      message: "Používateľ bol úspešne vymazaný",
-      user: deletedUser,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Nepodarilo sa vymazať používateľa", error });
-  }
-};
- */
 
 /** CATEGORIES **/
 //Get all categories
@@ -355,11 +324,11 @@ export const createConference = async (
       university,
       status: ConferenceStatus.Upcoming,
       start_date,
-      end_date,
-      deadline_submission,
-      submission_confirmation,
-      deadline_review,
-      deadline_correction,
+      end_date: setEndOfDay(new Date(end_date)),
+      deadline_submission: setEndOfDay(new Date(deadline_submission)),
+      submission_confirmation: setEndOfDay(new Date(submission_confirmation)),
+      deadline_review: setEndOfDay(new Date(deadline_review)),
+      deadline_correction: setEndOfDay(new Date(deadline_correction)),
       created_at: new Date(),
     });
 
@@ -412,6 +381,12 @@ export const updateConference = async (
   try {
     const { conferenceId } = req.params;
     const updates = req.body;
+
+    ['end_date', 'deadline_submission', 'submission_confirmation', 'deadline_review', 'deadline_correction'].forEach(field => {
+      if (updates[field]) {
+        updates[field] = setEndOfDay(new Date(updates[field]));
+      }
+    });
 
     const updatedConference = await Conference.findByIdAndUpdate(
         conferenceId,
@@ -773,18 +748,22 @@ export const adminDeletePaper = async (
   try {
     const { paperId } = req.params;
 
-    // Find and delete the paper
-    const paper = await Paper.findByIdAndDelete(paperId);
-
+    // Check if the paper exists
+    const paper = await Paper.findById(paperId);
     if (!paper) {
-      res.status(404).json({ message: 'Paper not found' });
+      res.status(404).json({ message: 'Práca sa nenašla' });
       return;
     }
 
-    res.status(200).json({ message: 'Paper deleted successfully' });
+    // Delete associated reviews
+    await Review.deleteMany({ paper: paperId });
+
+    // Delete the paper itself
+    await Paper.findByIdAndDelete(paperId);
+    res.status(200).json({ message: 'Práca bola úspešne odstránená' });
   } catch (error) {
     console.error('Error deleting paper:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Chyba pri odstraňovaní práce' });
   }
 };
 

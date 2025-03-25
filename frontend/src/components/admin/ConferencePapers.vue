@@ -683,7 +683,7 @@ export default defineComponent({
                           <td>{{ selectedPaper?.keywords?.join(', ') }}</td>
                         </tr>
                         <tr class="spaced-row">
-                          <td><strong>Autory:</strong></td>
+                          <td><strong>Autori:</strong></td>
                           <td>
                             {{
                               selectedPaper?.authors

@@ -17,7 +17,7 @@ export default defineComponent({
 
     const sendMessage = async () => {
       if (!subject.value || !message.value) {
-        snackbar.value = { show: true, message: 'Vyplňte všetky polia!', color: 'error' };
+        snackbar.value = { show: true, message: 'Vyplňte všetky polia', color: 'error' };
         return;
       }
 

@@ -28,6 +28,12 @@ export default defineComponent({
       console.error('showSnackbar is not provided')
     }
 
+    const setEndOfDay = (date: Date) => {
+      const d = new Date(date)
+      d.setHours(23, 59, 59, 999)
+      return d
+    }
+
     const valid = ref(false)
 
     // Initialize the conference store and router
@@ -130,8 +136,13 @@ export default defineComponent({
           })
           return
         }
-
         if (dialogMode.value === 'add') {
+          currentConference.end_date = setEndOfDay(currentConference.end_date as Date)
+          currentConference.deadline_submission = setEndOfDay(currentConference.deadline_submission as Date)
+          currentConference.submission_confirmation = setEndOfDay(currentConference.submission_confirmation as Date)
+          currentConference.deadline_review = setEndOfDay(currentConference.deadline_review as Date)
+          currentConference.deadline_correction = setEndOfDay(currentConference.deadline_correction as Date)
+
           await conferenceStore.addConference(currentConference)
           showSnackbar?.({
             message: 'Konferencia bola úspešne pridaná.',
@@ -139,6 +150,12 @@ export default defineComponent({
           })
         } else if (dialogMode.value === 'edit') {
           if ('_id' in currentConference && currentConference._id) {
+            currentConference.end_date = setEndOfDay(currentConference.end_date as Date)
+            currentConference.deadline_submission = setEndOfDay(currentConference.deadline_submission as Date)
+            currentConference.submission_confirmation = setEndOfDay(currentConference.submission_confirmation as Date)
+            currentConference.deadline_review = setEndOfDay(currentConference.deadline_review as Date)
+            currentConference.deadline_correction = setEndOfDay(currentConference.deadline_correction as Date)
+
             await conferenceStore.updateConference(
               currentConference._id,
               currentConference,

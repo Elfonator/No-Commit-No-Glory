@@ -9,6 +9,7 @@ import path from "path";
 import fs from "fs";
 import {config} from "../config";
 import Review from '../models/Review'
+import { setEndOfDay } from '../utils/dateUtils'
 
 // Submit a new paper
 export const createPaper = async (
@@ -44,24 +45,24 @@ export const createPaper = async (
     //console.log('SelectedConfernce id ->', selectedConference);
 
     if (!selectedConference) {
-      res.status(400).json({ message: "Konferencia neexistuje alebo nie je aktuálna." });
+      res.status(400).json({ message: "Konferencia neexistuje alebo nie je aktuálna" });
       return;
     }
 
     //Validate submission deadline
-    if (selectedConference.deadline_submission < new Date()) {
+    if (new Date() > setEndOfDay(new Date(selectedConference.deadline_submission))) {
       res
         .status(400)
         .json({
           message:
-            "Deadline na odoslanie prác pre túto konferenciu už vypršal.",
+            "Deadline na odoslanie prác pre túto konferenciu už vypršal",
         });
       return;
     }
 
     //Ensure the uploaded file exists
     if (!req.file) {
-      res.status(400).json({ message: "Chýba súbor na odoslanie." });
+      res.status(400).json({ message: "Chýba súbor na odoslanie" });
       return;
     }
 
