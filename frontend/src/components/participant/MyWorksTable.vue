@@ -751,7 +751,7 @@ export default defineComponent({
               <template v-slot:activator="{ props }">
                 <v-text-field
                   v-bind="props"
-                  label="Category"
+                  label="Kategória"
                   v-model="selectedCategory"
                   outlined
                   dense
@@ -783,7 +783,7 @@ export default defineComponent({
 
                 <v-text-field
                   v-bind="props"
-                  label="Conference"
+                  label="Konferencia"
                   v-model="selectedConference"
                   outlined
                   dense

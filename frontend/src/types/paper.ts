@@ -40,6 +40,7 @@ export interface AdminPaper {
     email: string
   }
   category: {
+    _id: string;
     name: string
   }
   conference: {
