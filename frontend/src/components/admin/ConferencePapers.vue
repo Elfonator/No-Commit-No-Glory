@@ -11,8 +11,10 @@ import { usePaperStore } from '@/stores/paperStore'
 import { format } from 'date-fns'
 import { sk } from 'date-fns/locale'
 import { useUserStore } from '@/stores/userStore.ts'
-import { type AdminPaper, PaperStatus } from '@/types/paper'
+import {type AdminPaper, type Paper, PaperStatus} from '@/types/paper'
 import axios from 'axios'
+import type {ActiveCategory} from "@/types/conference.ts";
+import {useCategoryStore} from "@/stores/categoryStore.ts";
 
 export default defineComponent({
   name: 'ConferencePapers',
@@ -24,12 +26,17 @@ export default defineComponent({
   setup() {
     const paperStore = usePaperStore()
     const userStore = useUserStore()
+    const categoryStore = useCategoryStore()
     const expandedConferenceId = ref<string | null>(null)
+    const isEditDialogOpen = ref(false)
     const isPaperViewDialogOpen = ref(false)
     const isAssignReviewerDialogOpen = ref(false)
     const isDropdownOpen = ref(false)
     const selectedPaper = ref<AdminPaper | null>(null)
     const selectedReviewer = ref<any>(null)
+    const menuCatOpen = ref(false)
+
+
 
     //Table headers for papers
     const tableHeaders = [
@@ -257,6 +264,81 @@ export default defineComponent({
       }
     }
 
+
+    /** Dialog for editing submission information **/
+    const addAuthor = () => {
+      if (selectedPaper.value && !selectedPaper.value.authors) {
+        selectedPaper.value.authors = [];
+      }
+      selectedPaper.value?.authors.push({ firstName: '', lastName: '' });
+    }
+
+    const removeAuthor = (index: number) => {
+      if (selectedPaper.value?.authors) {
+        selectedPaper.value.authors.splice(index, 1);
+      }
+    }
+
+
+
+    const openEditDialog = async (paper: AdminPaper) => {
+      try {
+        selectedPaper.value = await paperStore.getPaperById(paper._id);
+        isEditDialogOpen.value = true;
+      } catch (error) {
+        console.error('Error fetching paper details:', error);
+        showSnackbar?.({
+          message: 'Nepodarilo sa načítať detaily práce.',
+          color: 'error',
+        });
+      }
+    };
+
+
+    const closeEditDialog = () => {
+      isEditDialogOpen.value = false;
+    };
+
+    const saveEditedPaper = async () => {
+      if (!selectedPaper.value) return;
+
+      try {
+        const id = selectedPaper.value._id;
+        const updates = {
+          authors: selectedPaper.value.authors,
+          category: selectedPaper.value.category?._id,
+        };
+        const file_link = selectedPaper.value.file_link instanceof File ? selectedPaper.value.file_link : undefined;
+
+        await paperStore.updatePaper(id, updates, file_link);
+
+        await paperStore.getAllPapers();
+
+        showSnackbar?.({
+          message: 'Paper successfully updated.',
+          color: 'success',
+        });
+        closeEditDialog();
+      } catch (error) {
+        console.error('Error updating paper:', error);
+        showSnackbar?.({
+          message: 'Failed to update paper.',
+          color: 'error',
+        });
+      }
+    };
+
+    const selectCategory = (category: ActiveCategory) => {
+      if (selectedPaper.value) {
+        selectedPaper.value.category = { _id: category._id, name: category.name };
+        menuCatOpen.value = false;
+      }
+    };
+
+    const selectedCategory = computed(() =>
+      selectedPaper?.value?.category ? `${selectedPaper?.value.category.name}` : '',
+    )
+
     /** Dialog for assigning a reviewer**/
     //Preprocess reviewers to include fullName
     const availableReviewers = computed(() =>
@@ -379,6 +461,7 @@ export default defineComponent({
       userStore.fetchReviewers().then(() => {
         console.log('Reviewers:', userStore.reviewers)
       })
+      categoryStore.fetchParticipantCategories()
     })
 
     return {
@@ -389,9 +472,11 @@ export default defineComponent({
       isAssignReviewerDialogOpen,
       selectedPaper,
       selectedReviewer,
+      categoryStore,
       userStore,
       availableReviewers,
       isDropdownOpen,
+      isEditDialogOpen,
       isPaperViewDialogOpen,
       isDeadlineDialogOpen,
       newDeadline,
@@ -405,6 +490,14 @@ export default defineComponent({
       filteredPapers,
       PaperStatus,
       isDeletePaperDialogOpen,
+      menuCatOpen,
+      selectedCategory,
+      addAuthor,
+      removeAuthor,
+      saveEditedPaper,
+      openEditDialog,
+      closeEditDialog,
+      selectCategory,
       confirmDeletePaper,
       deletePaper,
       closeDeletePaperDialog,
@@ -594,6 +687,11 @@ export default defineComponent({
                     </td>
                     <td>{{ formatDate(paper.deadline_date) }}</td>
                     <td class="d-flex justify-end align-center">
+
+                      <v-btn color="tertiary" @click="openEditDialog(paper)" title="Upraviť prácu">
+                        <v-icon size="25">mdi-pencil</v-icon>
+                      </v-btn>
+
                       <!-- Assign Reviewer -->
                       <v-btn
                         :disabled="isReviewerDisabled(paper)"
@@ -758,6 +856,93 @@ export default defineComponent({
               <v-card-actions>
                 <v-btn color="secondary" @click="closeDeletePaperDialog">Zrušiť</v-btn>
                 <v-btn color="red" @click="deletePaper">Odstrániť</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <v-dialog v-model="isEditDialogOpen" max-width="600px">
+            <v-card>
+              <v-card-title>Úprava práce</v-card-title>
+              <v-card-subtitle>
+                <v-row>
+<!--                  <v-col cols="12" md="6">-->
+<!--                    <v-text-field-->
+<!--                      v-model="selectedPaper?.title || ''"-->
+<!--                      label="Title"-->
+<!--                      outlined-->
+<!--                      dense-->
+<!--                    />-->
+<!--                  </v-col>-->
+                  <!-- Category Edit -->
+                  <v-col cols="12" md="6">
+                    <v-menu
+                      v-model="menuCatOpen"
+                      close-on-content-click
+                      offset-y
+                      class="custom-menu"
+                    >
+                      <template v-slot:activator="{ props }">
+                        <v-text-field
+                          v-bind="props"
+                          label="Kategória"
+                          v-model="selectedCategory"
+                          outlined
+                          dense
+                          readonly
+                          append-inner-icon="mdi-chevron-down"
+                          class="large-text-field"
+                          :rules="[() => !!selectedPaper?.category || 'Vyberte kategóriu']"
+                        />
+                      </template>
+                      <v-list>
+                        <v-list-item
+                          v-for="category in categoryStore.participantCategories"
+                          :key="category._id"
+                          @click="selectCategory(category)"
+                        >
+                          <v-list-item-title>
+                            {{ category.name }}
+                          </v-list-item-title>
+                        </v-list-item>
+                      </v-list>
+                    </v-menu>
+                  </v-col>
+                </v-row>
+              </v-card-subtitle>
+
+              <!-- Authors Edit -->
+              <v-card-subtitle>
+                <v-row class="row_height" v-for="(author, index) in selectedPaper?.authors || []" :key="index">
+                  <v-col cols="5" md="5">
+                    <v-text-field
+                      v-model="author.firstName"
+                      label="Meno"
+                      outlined
+                      dense
+                    />
+                  </v-col>
+                  <v-col cols="5" md="6">
+                    <v-text-field
+                      v-model="author.lastName"
+                      label="Priezvisko"
+                      outlined
+                      dense
+                    />
+                  </v-col>
+                  <v-col cols="2" md="1" class="d-flex justify-end">
+                    <v-btn color="#BC463A" @click="removeAuthor(index)">
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+                <v-btn color="primary" @click="addAuthor">
+                  <v-icon icon="mdi-plus-circle" start></v-icon>Ďalší autor
+                </v-btn>
+              </v-card-subtitle>
+
+              <!-- Dialog Actions -->
+              <v-card-actions>
+                <v-btn @click="closeEditDialog">Zrušiť</v-btn>
+                <v-btn color="primary" @click="saveEditedPaper">Uložiť zmeny</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
