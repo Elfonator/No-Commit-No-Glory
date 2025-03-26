@@ -4,7 +4,7 @@ import User, { IUser, UserStatus } from '../models/User'
 import Conference, { ConferenceStatus } from "../models/Conference";
 import { AuthRequest } from "../middleware/authenticateToken";
 import Category from "../models/Category";
-import Paper, { PaperStatus } from '../models/Paper'
+import Paper, { IPaper, PaperStatus } from '../models/Paper'
 import Question from "../models/Question";
 import path from "path";
 import { promises as fs } from "fs";
@@ -663,6 +663,33 @@ export const changeSubmissionDeadline = async (
     res
         .status(500)
         .json({ message: "Nepodarilo sa aktualizovať termín odovzdania", error });
+  }
+};
+
+export const adminUpdatePaper = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { paperId } = req.params;
+    const { authors, category } = req.body;
+
+    const updates: Partial<IPaper> = {};
+    if (authors) updates.authors = authors;
+    if (category) updates.category = category;
+
+    const updatedPaper = await Paper.findByIdAndUpdate(
+      paperId,
+      { $set: updates },
+      { new: true },
+    );
+
+    if (!updatedPaper) {
+      res.status(404).json({ message: 'Paper not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Paper updated successfully', paper: updatedPaper });
+  } catch (error) {
+    console.error('Error updating paper:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 

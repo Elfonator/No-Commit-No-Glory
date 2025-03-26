@@ -9,11 +9,12 @@ import vuetify from './plugins/vuetify'
 const app = createApp(App)
 
 // Use plugins
-app.use(vuetify)
-app.use(router)
 app.use(createPinia())
 
 const authStore = useAuthStore()
+
+app.use(vuetify)
+app.use(router)
 
 // Mount the app to the DOM
 authStore.loadAuthState().then(() => {

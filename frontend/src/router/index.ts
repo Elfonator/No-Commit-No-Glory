@@ -177,14 +177,14 @@ router.beforeEach((to, from, next) => {
 
   //Handle redirection from /auth to role-specific subpaths
   if (to.path === '/auth') {
-    if (authStore.isAdmin) {
+    if (authStore.isAdmin()) {
       return next('/auth/admin')
-    } else if (authStore.isParticipant) {
+    } else if (authStore.isParticipant()) {
       return next('/auth/participant')
-    } else if (authStore.isReviewer) {
+    } else if (authStore.isReviewer()) {
       return next('/auth/reviewer')
     } else {
-      return next('/auth/profile') // Default to profile
+      return next('/auth/profile') // Fallback
     }
   }
 

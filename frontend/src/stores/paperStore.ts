@@ -269,6 +269,16 @@ export const usePaperStore = defineStore('papers', () => {
     }
   }
 
+  const updatePaperAdmin = async (paperId: string, updates: { authors?: any[]; category?: string }) => {
+    try {
+      const response = await axiosInstance.patch(`/auth/admin/papers/${paperId}`, updates);
+      return response.data.paper;
+    } catch (error) {
+      console.error('Failed to update paper:', error);
+      throw error;
+    }
+  };
+
   const updateDeadline = async (paperId: string, newDeadline: Date) => {
     try {
       await axiosInstance.patch(`/auth/admin/papers/${paperId}/deadline`, {
@@ -403,6 +413,7 @@ export const usePaperStore = defineStore('papers', () => {
     //Admin Actions
     getAllPapers,
     getPaperById,
+    updatePaperAdmin,
     updateDeadline,
     assignReviewerToPaper,
     downloadPaperAdmin,

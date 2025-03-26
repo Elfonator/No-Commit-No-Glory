@@ -11,7 +11,7 @@ import { usePaperStore } from '@/stores/paperStore'
 import { format } from 'date-fns'
 import { sk } from 'date-fns/locale'
 import { useUserStore } from '@/stores/userStore.ts'
-import {type AdminPaper, type Paper, PaperStatus} from '@/types/paper'
+import {type AdminPaper, PaperStatus} from '@/types/paper'
 import axios from 'axios'
 import type {ActiveCategory} from "@/types/conference.ts";
 import {useCategoryStore} from "@/stores/categoryStore.ts";
@@ -279,8 +279,6 @@ export default defineComponent({
       }
     }
 
-
-
     const openEditDialog = async (paper: AdminPaper) => {
       try {
         selectedPaper.value = await paperStore.getPaperById(paper._id);
@@ -308,21 +306,19 @@ export default defineComponent({
           authors: selectedPaper.value.authors,
           category: selectedPaper.value.category?._id,
         };
-        const file_link = selectedPaper.value.file_link instanceof File ? selectedPaper.value.file_link : undefined;
 
-        await paperStore.updatePaper(id, updates, file_link);
-
+        await paperStore.updatePaperAdmin(id, updates);
         await paperStore.getAllPapers();
 
         showSnackbar?.({
-          message: 'Paper successfully updated.',
+          message: 'Práca bola úspešne aktualizovaná',
           color: 'success',
         });
         closeEditDialog();
       } catch (error) {
         console.error('Error updating paper:', error);
         showSnackbar?.({
-          message: 'Failed to update paper.',
+          message: 'Aktualizácia práce zlyhala',
           color: 'error',
         });
       }
@@ -687,11 +683,6 @@ export default defineComponent({
                     </td>
                     <td>{{ formatDate(paper.deadline_date) }}</td>
                     <td class="d-flex justify-end align-center">
-
-                      <v-btn color="tertiary" @click="openEditDialog(paper)" title="Upraviť prácu">
-                        <v-icon size="25">mdi-pencil</v-icon>
-                      </v-btn>
-
                       <!-- Assign Reviewer -->
                       <v-btn
                         :disabled="isReviewerDisabled(paper)"
@@ -701,9 +692,16 @@ export default defineComponent({
                       >
                         <v-icon size="25">mdi-account-plus</v-icon>
                       </v-btn>
+                      <!-- Edit Paper -->
+                      <v-btn
+                        color="#FFCD16"
+                        @click="openEditDialog(paper)"
+                        title="Upraviť prácu">
+                        <v-icon size="25">mdi-pencil</v-icon>
+                      </v-btn>
                       <v-btn
                         :disabled="isDeadlineDisabled(paper.conference)"
-                        color="#FFCD16"
+                        color="tertiary"
                         @click="openDeadlineDialog(paper)"
                         title="Upraviť termín"
                       >
@@ -859,10 +857,12 @@ export default defineComponent({
               </v-card-actions>
             </v-card>
           </v-dialog>
+
+          <!-- Paper Edit -->
           <v-dialog v-model="isEditDialogOpen" max-width="600px">
             <v-card>
               <v-card-title>Úprava práce</v-card-title>
-              <v-card-subtitle>
+              <v-card-text>
                 <v-row>
 <!--                  <v-col cols="12" md="6">-->
 <!--                    <v-text-field-->
@@ -873,7 +873,7 @@ export default defineComponent({
 <!--                    />-->
 <!--                  </v-col>-->
                   <!-- Category Edit -->
-                  <v-col cols="12" md="6">
+                  <v-col cols="12" md="12">
                     <v-menu
                       v-model="menuCatOpen"
                       close-on-content-click
@@ -907,10 +907,7 @@ export default defineComponent({
                     </v-menu>
                   </v-col>
                 </v-row>
-              </v-card-subtitle>
 
-              <!-- Authors Edit -->
-              <v-card-subtitle>
                 <v-row class="row_height" v-for="(author, index) in selectedPaper?.authors || []" :key="index">
                   <v-col cols="5" md="5">
                     <v-text-field
@@ -929,7 +926,7 @@ export default defineComponent({
                     />
                   </v-col>
                   <v-col cols="2" md="1" class="d-flex justify-end">
-                    <v-btn color="#BC463A" @click="removeAuthor(index)">
+                    <v-btn @click="removeAuthor(index)" color="#BC463A" variant="flat">
                       <v-icon>mdi-delete</v-icon>
                     </v-btn>
                   </v-col>
@@ -937,12 +934,12 @@ export default defineComponent({
                 <v-btn color="primary" @click="addAuthor">
                   <v-icon icon="mdi-plus-circle" start></v-icon>Ďalší autor
                 </v-btn>
-              </v-card-subtitle>
+              </v-card-text>
 
               <!-- Dialog Actions -->
               <v-card-actions>
-                <v-btn @click="closeEditDialog">Zrušiť</v-btn>
-                <v-btn color="primary" @click="saveEditedPaper">Uložiť zmeny</v-btn>
+                <v-btn @click="closeEditDialog" color="#BC463A">Zrušiť</v-btn>
+                <v-btn @click="saveEditedPaper" color="primary">Uložiť zmeny</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>

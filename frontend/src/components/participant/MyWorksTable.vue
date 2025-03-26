@@ -291,7 +291,7 @@ export default defineComponent({
           abstract: currentPaper.abstract,
           keywords: currentPaper.keywords,
           isFinal: currentPaper.isFinal,
-          status: currentPaper.status,
+          status: PaperStatus.Draft,
           conference: currentPaper.conference?._id,
           category: currentPaper.category?._id,
           authors: Array.isArray(currentPaper.authors)
@@ -318,7 +318,7 @@ export default defineComponent({
           //Create new paper
           await paperStore.createPaper(payload, currentPaper.file_link)
           showSnackbar?.({
-            message: 'Práca uložená ako koncept.',
+            message: 'Práca uložená ako koncept',
             color: 'success',
           })
         }
@@ -326,7 +326,7 @@ export default defineComponent({
         closeDialog();
       } catch (err: any) {
         console.error(err);
-        const errorMessage = err?.response?.data?.message || 'Uloženie práce zlyhalo.';
+        const errorMessage = err?.response?.data?.message || 'Uloženie práce zlyhalo';
         showSnackbar?.({ message: errorMessage, color: 'error' });
       }
     }
@@ -459,7 +459,7 @@ export default defineComponent({
       } catch (err) {
         console.error('Failed to delete paper:', err)
         showSnackbar?.({
-          message: 'Nepodarilo sa vymazať prácu.',
+          message: 'Nepodarilo sa vymazať prácu',
           color: 'error',
         })
       } finally {

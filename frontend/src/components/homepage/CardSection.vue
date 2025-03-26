@@ -367,7 +367,7 @@ export default defineComponent({
           <p>
             Použite jednu z uvedených šablón:
             <a
-              href="/docs/sablona_SVK_2025_final.docx"
+              href="/docs/sablona_SVK_2025-final.docx"
               target="_blank"
               rel="noopener noreferrer"
               >MS Word</a

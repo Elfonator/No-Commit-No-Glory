@@ -30,7 +30,15 @@ import {
   deleteConference,
   getCommittees,
   addCommittee,
-  updateCommittee, deleteCommittee, getProgram, deleteProgramItem, uploadProgramFile, addProgramItem, updateProgramItem, updateProgram
+  updateCommittee,
+  deleteCommittee,
+  getProgram,
+  deleteProgramItem,
+  uploadProgramFile,
+  addProgramItem,
+  updateProgramItem,
+  updateProgram,
+  adminUpdatePaper
 } from '../controllers/admin.controller'
 import { authenticateToken } from "../middleware/authenticateToken";
 import { upload } from '../controllers/user.controller'
@@ -71,6 +79,7 @@ router.delete("/questions/:questionId", deleteQuestion);
 //Papers by conference
 router.get("/papers", getAllPapers);
 router.get("/papers/:paperId", getPaperById);
+router.patch('/papers/:paperId', adminUpdatePaper);
 router.get("/papers/download/:conferenceId/:paperId", downloadSinglePaper);
 router.get("/papers/download/:conferenceId", downloadPapersByConference);
 router.patch("/papers/:paperId/reviewer", assignReviewer);
