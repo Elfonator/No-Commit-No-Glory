@@ -164,9 +164,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   //Getters
-  const isParticipant = computed(() => role.value === 'participant')
-  const isAdmin = computed(() => role.value === 'admin')
-  const isReviewer = computed(() => role.value === 'reviewer')
+  const isParticipant = () => role.value === 'participant'
+  const isAdmin = () => role.value === 'admin'
+  const isReviewer = () => role.value === 'reviewer'
 
   return {
     user,

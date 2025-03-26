@@ -24,6 +24,11 @@ export default defineComponent({
       console.error('showSnackbar is not provided')
     }
 
+    const isReviewDeadlineActive = (paper: ReviewerPaper): boolean => {
+      const deadline = new Date(paper.conference?.deadline_review || '');
+      return new Date() <= deadline;
+    };
+
     const paperStore = usePaperStore();
     const reviewStore = useReviewStore();
     const questionStore = useQuestionStore();
@@ -103,6 +108,14 @@ export default defineComponent({
     const saveDraft = async () => {
       if (!selectedPaper.value) return;
 
+      if (!isReviewDeadlineActive(selectedPaper.value)) {
+        showSnackbar?.({
+          message: 'Termín na recenzie už vypršal.',
+          color: 'error',
+        });
+        return;
+      }
+
       const reviewData: Review = {
         created_at: new Date(),
         paper: selectedPaper.value._id,
@@ -114,6 +127,7 @@ export default defineComponent({
       };
 
       try {
+
         if (selectedReview.value) {
           await reviewStore.updateReview(selectedReview.value._id, reviewData);
           showSnackbar?.({ message: "Návrh recenzie bol aktualizovaný.", color: "success" });
@@ -124,9 +138,10 @@ export default defineComponent({
 
         await reviewStore.fetchAllReviews();
         await paperStore.getAssignedPapers();
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error saving review:", error);
-        showSnackbar?.({ message: "Chyba pri ukladaní recenzie.", color: "error" });
+        const msg = error?.response?.data?.message || 'Chyba pri ukladaní recenzie.';
+        showSnackbar?.({ message: msg, color: 'error' });
       }
 
       reviewDialog.value = false;
@@ -138,6 +153,14 @@ export default defineComponent({
 
     const confirmSubmission = async () => {
       if (!selectedPaper.value) return;
+
+      if (!isReviewDeadlineActive(selectedPaper.value)) {
+        showSnackbar?.({
+          message: 'Termín na recenzie už vypršal.',
+          color: 'error',
+        });
+        return;
+      }
 
       try {
         // Create the review data
@@ -166,9 +189,10 @@ export default defineComponent({
         // Refresh the data
         await reviewStore.fetchAllReviews();
         await paperStore.getAssignedPapers();
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error submitting review:", error);
-        showSnackbar?.({ message: "Chyba pri odosielaní recenzie.", color: "error" });
+        const msg = error?.response?.data?.message || 'Chyba pri odosielaní recenzie.';
+        showSnackbar?.({ message: msg, color: 'error' });
       }
     };
 
@@ -214,6 +238,7 @@ export default defineComponent({
       ratingQuestions,
       yesNoQuestions,
       textQuestions,
+      isReviewDeadlineActive,
       formatDate,
       openReviewDialog,
       openPaperDetailsDialog,
@@ -266,7 +291,7 @@ export default defineComponent({
                   <v-icon size="25">mdi-download</v-icon>
                 </v-btn>
                 <v-btn
-                  :disabled="paper.hasSubmittedReview"
+                  :disabled="!isReviewDeadlineActive(paper)"
                   color="primary"
                   @click="openReviewDialog(paper)"
                   title="Recenzovať prácu"
@@ -381,8 +406,14 @@ export default defineComponent({
         </v-card-text>
         <v-card-actions>
           <v-btn color="secondary" @click="reviewDialog = false">Zrušiť</v-btn>
-          <v-btn color="primary" @click="saveDraft">Uložiť</v-btn>
-          <v-btn color="error" @click="submitReviewConfirmation">Odoslať</v-btn>
+          <v-btn
+            color="primary"
+            @click="saveDraft"
+            :disabled="!isReviewDeadlineActive || selectedReview?.isDraft === false">Uložiť</v-btn>
+          <v-btn
+            color="error"
+            @click="submitReviewConfirmation"
+            :disabled="!isReviewDeadlineActive || selectedReview?.isDraft === false">Odoslať</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -440,7 +471,7 @@ export default defineComponent({
       <v-card>
         <v-card-title>Potvrdiť odoslanie</v-card-title>
         <v-card-text>
-          Naozaj chcete odoslať túto recenziu? Po odoslaní ho nie je možné upravovať.
+          Naozaj chcete odoslať túto recenziu? Po odoslaní ju nie je možné opravovať.
         </v-card-text>
         <v-card-actions>
           <v-btn color="red" @click="confirmationDialog = false">Zrušiť</v-btn>

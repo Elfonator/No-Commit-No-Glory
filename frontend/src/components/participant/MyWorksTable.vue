@@ -291,7 +291,7 @@ export default defineComponent({
           abstract: currentPaper.abstract,
           keywords: currentPaper.keywords,
           isFinal: currentPaper.isFinal,
-          status: currentPaper.status,
+          status: PaperStatus.Draft,
           conference: currentPaper.conference?._id,
           category: currentPaper.category?._id,
           authors: Array.isArray(currentPaper.authors)
@@ -318,15 +318,16 @@ export default defineComponent({
           //Create new paper
           await paperStore.createPaper(payload, currentPaper.file_link)
           showSnackbar?.({
-            message: 'Práca uložená ako koncept.',
+            message: 'Práca uložená ako koncept',
             color: 'success',
           })
         }
 
         closeDialog();
-      } catch (err) {
-        console.error(err)
-        showSnackbar?.({ message: 'Uloženie práce zlyhalo.', color: 'error' })
+      } catch (err: any) {
+        console.error(err);
+        const errorMessage = err?.response?.data?.message || 'Uloženie práce zlyhalo';
+        showSnackbar?.({ message: errorMessage, color: 'error' });
       }
     }
 
@@ -371,43 +372,12 @@ export default defineComponent({
           color: 'success',
         });
         closeDialog();
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        showSnackbar?.({
-          message: 'Nepodarilo sa odoslať prácu.',
-          color: 'error',
-        });
+        const errorMessage = err?.response?.data?.message || 'Nepodarilo sa odoslať prácu.';
+        showSnackbar?.({ message: errorMessage, color: 'error' });
       }
     };
-
-    /*
-    const submitPaper = async () => {
-      try {
-        if (!currentPaper._id) {
-          showSnackbar?.({
-            message: 'Práca nemá ID. Uložiť ju najprv ako koncept.',
-            color: 'error',
-          })
-          return
-        }
-
-        const payload = { status: PaperStatus.Submitted,  file_link: currentPaper.file_link }
-        await paperStore.updatePaper(currentPaper._id, payload)
-
-        showSnackbar?.({
-          message: 'Práca bola úspešne odoslaná.',
-          color: 'success',
-        })
-        closeDialog()
-      } catch (err) {
-        console.error(err)
-        showSnackbar?.({
-          message: 'Nepodarilo sa odoslať prácu.',
-          color: 'error',
-        })
-      }
-    }
-    */
 
     const reviewDialog = ref(false);
     const selectedReview = reactive<ParticipantReview>({
@@ -489,7 +459,7 @@ export default defineComponent({
       } catch (err) {
         console.error('Failed to delete paper:', err)
         showSnackbar?.({
-          message: 'Nepodarilo sa vymazať prácu.',
+          message: 'Nepodarilo sa vymazať prácu',
           color: 'error',
         })
       } finally {
@@ -781,7 +751,7 @@ export default defineComponent({
               <template v-slot:activator="{ props }">
                 <v-text-field
                   v-bind="props"
-                  label="Category"
+                  label="Kategória"
                   v-model="selectedCategory"
                   outlined
                   dense
@@ -813,7 +783,7 @@ export default defineComponent({
 
                 <v-text-field
                   v-bind="props"
-                  label="Conference"
+                  label="Konferencia"
                   v-model="selectedConference"
                   outlined
                   dense
@@ -919,13 +889,17 @@ export default defineComponent({
         </v-card-text>
         <v-card-actions>
           <v-btn @click="closeDialog" color="#BC463A" variant="flat">Zrušiť</v-btn>
-          <v-btn @click="savePaper" color="secondary" variant="flat">Uložiť</v-btn>
+          <v-btn
+            v-if="!currentPaper.isFinal"
+            @click="savePaper"
+            color="secondary"
+            variant="flat"
+            >Uložiť</v-btn>
           <v-btn
             v-if="currentPaper.isFinal"
             @click="submitPaper"
             color="primary" variant="flat"
-            :disabled="!isFormValid"
-            >Odoslať</v-btn
+            :disabled="!isFormValid">Odoslať</v-btn
           >
         </v-card-actions>
       </v-card>

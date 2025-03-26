@@ -1,3 +1,5 @@
+
+/*
 import Conference, { ConferenceStatus } from "../models/Conference";
 import Paper, { PaperStatus } from "../models/Paper";
 
@@ -28,3 +30,4 @@ export const updatePaperStatus = async (): Promise<void> => {
     console.error("Error updating paper statuses:", error);
   }
 };
+*/

@@ -13,13 +13,13 @@
 
     <!-- Role-Based Links -->
     <template v-if="roleSpecificLinks.length">
-      <v-list-subheader  style="justify-self: center" v-if="authStore.isParticipant">
+      <v-list-subheader  style="justify-self: center" v-if="authStore.isParticipant()">
         ÚČASTNÍK
       </v-list-subheader>
-      <v-list-subheader style="justify-self: center" v-if="authStore.isReviewer">
+      <v-list-subheader style="justify-self: center" v-if="authStore.isReviewer()">
         RECENZENT
       </v-list-subheader>
-      <v-list-subheader style="justify-self: center" v-if="authStore.isAdmin">
+      <v-list-subheader style="justify-self: center" v-if="authStore.isAdmin()">
         ADMINISTRÁTOR
       </v-list-subheader
       >
@@ -36,7 +36,7 @@
 
             <!-- Badge for admin notifications -->
             <v-badge
-              v-if="authStore.isAdmin && link.name === 'Používatelia'"
+              v-if="authStore.isAdmin() && link.name === 'Používatelia'"
               :content="notificationStore.newUserCount"
               color="#bc4639"
               overlap
@@ -44,7 +44,7 @@
               class="badge-position"
             ></v-badge>
             <v-badge
-              v-if="authStore.isAdmin && link.name === 'Práce'"
+              v-if="authStore.isAdmin() && link.name === 'Práce'"
               :content="notificationStore.newPaperCount"
               color="#bc4639"
               overlap
@@ -56,7 +56,7 @@
 
       </v-list>
     </template>
-    <template v-if="authStore.isAdmin">
+    <template v-if="authStore.isAdmin()">
       <v-divider class="my-4"></v-divider>
       <v-list-subheader>Úprava Homepage</v-list-subheader>
       <v-list>
@@ -140,9 +140,9 @@ const adminLinks: Link[] = [
 
 //Filter links dynamically based on role using authStore getters
 const roleSpecificLinks = computed(() => {
-  if (authStore.isParticipant) return participantLinks
-  if (authStore.isReviewer) return reviewerLinks
-  if (authStore.isAdmin) return adminLinks
+  if (authStore.isParticipant()) return participantLinks
+  if (authStore.isReviewer()) return reviewerLinks
+  if (authStore.isAdmin()) return adminLinks
   return []
 })
 

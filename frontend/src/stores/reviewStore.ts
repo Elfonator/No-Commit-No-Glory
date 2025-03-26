@@ -30,7 +30,10 @@ export const useReviewStore = defineStore('reviews', () => {
       const response = await axiosInstance.patch(`/auth/reviewer/reviews/${reviewId}`, updatedData)
       const updatedReview: Review = response.data.review
 
-      await fetchAllReviews()
+      const index = reviewerReviews.value.findIndex(r => r._id === reviewId)
+      if (index !== -1) {
+        reviewerReviews.value[index] = updatedReview
+      }
 
       return updatedReview
     } catch (err) {
@@ -71,6 +74,7 @@ export const useReviewStore = defineStore('reviews', () => {
   const fetchAllReviews = async () => {
     try {
       const response = await axiosInstance.get('/auth/reviewer/reviews');
+      console.log("Fetched reviewer reviews:", response.data);
       reviewerReviews.value = response.data;
       return response.data;
     } catch (err) {

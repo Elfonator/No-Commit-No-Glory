@@ -1,6 +1,12 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
+let authStore: ReturnType<typeof import('@/stores/auth').useAuthStore>
+
+export const setAuthStore = (store: typeof authStore) => {
+  authStore = store
+}
+
 // Create an Axios instance
 const axiosInstance = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api`,
@@ -11,41 +17,34 @@ const axiosInstance = axios.create({
 // Axios request interceptor to set the Authorization header
 axiosInstance.interceptors.request.use(
   config => {
-    const authStore = useAuthStore()
-    if (authStore.token) {
+    if (authStore?.token) {
       config.headers['Authorization'] = `Bearer ${authStore.token}`
     }
     return config
   },
-  error => {
-    return Promise.reject(error)
-  },
+  error => Promise.reject(error),
 )
 
-// Axios response interceptor to handle errors and token refresh
+// Response interceptor to handle errors and token refresh
 axiosInstance.interceptors.response.use(
   response => response,
   async error => {
-    const authStore = useAuthStore()
+    if (!authStore) return Promise.reject(error)
 
     if (error.response?.status === 401) {
-      const errorMessage = error.response?.data?.message
-
-      if (errorMessage === 'Token expired') {
-        console.log('Token expired, setting isTokenExpired to true')
-        authStore.isTokenExpired = true // Trigger modal in layout
-        return Promise.reject(error) // Let frontend handle it
+      const message = error.response?.data?.message
+      if (message === 'Token expired') {
+        authStore.isTokenExpired = true
+        return Promise.reject(error)
       }
-
-      if (errorMessage === 'Invalid token') {
-        console.log('Invalid token, logging out')
+      if (message === 'Invalid token') {
         await authStore.logout()
-        return Promise.reject(error) // Let frontend handle it
+        return Promise.reject(error)
       }
     }
 
-    return Promise.reject(error) // Other errors
-  },
+    return Promise.reject(error)
+  }
 )
 
 export default axiosInstance

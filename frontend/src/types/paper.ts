@@ -40,6 +40,7 @@ export interface AdminPaper {
     email: string
   }
   category: {
+    _id: string;
     name: string
   }
   conference: {
@@ -70,6 +71,7 @@ export interface ReviewerPaper {
     _id: string
     year: number
     location: string
+    deadline_review: Date
   }
   file_link: string | File;
   reviewer: string

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted, inject, reactive, nextTick } from 'vue'
+import { defineComponent, ref, computed, onMounted, inject, reactive, nextTick, watch } from 'vue'
 import { useReviewStore } from '@/stores/reviewStore';
 import { format } from 'date-fns'
 import { usePaperStore } from '@/stores/paperStore.ts'
@@ -90,8 +90,12 @@ export default defineComponent({
     const filteredReviews = computed(() => {
       return reviewStore.reviewerReviews.filter((review) => {
         const matchesTitle = !filters.value.title || review.paper.title.toLowerCase().includes(filters.value.title.toLowerCase());
-        const matchesConferenceYear = !filters.value.conferenceYear || review.paper.conference?.year === filters.value.conferenceYear;
-        const matchesRecommendation = !filters.value.recommendation || review.recommendation === filters.value.recommendation;
+        const matchesConferenceYear =
+          !filters.value.conferenceYear ||
+          (review.paper?.conference?.year && review.paper.conference.year === filters.value.conferenceYear);
+        const matchesRecommendation =
+          !filters.value.recommendation ||
+          review.recommendation === filters.value.recommendation;
         return matchesTitle && matchesConferenceYear && matchesRecommendation;
       });
     });
@@ -109,12 +113,17 @@ export default defineComponent({
     const yesNoQuestions = computed(() => questionStore.reviewerQuestions.filter(q => q.type === 'yes_no'));
     const textQuestions = computed(() => questionStore.reviewerQuestions.filter(q => q.type === 'text'));
 
-    const isViewMode = computed(() => {
-      return !selectedReview.isDraft || isReviewDeadlinePassed(selectedReview);
+    const reviewMode = ref<'view' | 'edit'>('view');
+
+    watch(reviewDialog, (val) => {
+      if (!val) reviewMode.value = 'view';
     });
 
+    const isViewMode = computed(() => reviewMode.value === 'view');
+
     // View review details
-    const viewReview = (review: Review) => {
+    const viewReview = async (review: Review) => {
+      reviewMode.value = 'view';
       if (!review) return;
 
       Object.assign(selectedReview, review);
@@ -134,9 +143,7 @@ export default defineComponent({
           }
         });
       }
-
-      console.log("Populated reviewResponses for view:", reviewResponses.value);
-
+      await nextTick();
       reviewDialog.value = true;
     };
 
@@ -146,7 +153,7 @@ export default defineComponent({
 
     // Edit an existing review
     const editReview = (review: Review) => {
-      //if (!review.isDraft) return;
+      reviewMode.value = 'edit';
 
       if (isReviewDeadlinePassed(review)) {
         showSnackbar?.({ message: "Recenziu už nie je možné upraviť po termíne.", color: "error" });
@@ -296,7 +303,6 @@ export default defineComponent({
       }
     };
 
-
     const formatDate = (date: Date | string) =>
       format(new Date(date), 'dd.MM.yyyy')
 
@@ -417,7 +423,10 @@ export default defineComponent({
                 {{ review.recommendation }}
               </v-chip>
             </td>
-            <td>{{ review.paper.conference?.year }} - {{ formatDate(review.paper.conference?.date) }}</td>
+            <td>
+              {{ review.paper.conference?.year ?? '—' }} -
+              {{ review.paper.conference?.date ? formatDate(review.paper.conference.date) : '—' }}
+            </td>
             <td>{{ formatDate(review.created_at) }}</td>
             <td>{{ review.paper.title }}</td>
             <td class="d-flex justify-end align-center">
@@ -505,7 +514,7 @@ export default defineComponent({
 
         <v-select
           v-model="selectedReview.recommendation"
-          :items="['Publikovať', 'Publikovať_so_zmenami', 'Odmietnuť']"
+          :items="['Publikovať', 'Publikovať so zmenami', 'Odmietnuť']"
           label="Odporúčanie"
           :disabled="isViewMode"/>
         <v-textarea
@@ -516,9 +525,20 @@ export default defineComponent({
           :disabled="isViewMode"/>
       </v-card-text>
       <v-card-actions>
-        <v-btn color="secondary" @click="reviewDialog = false">{{ isViewMode ? 'Zavrieť' : 'Zrušiť' }}</v-btn>
-        <v-btn v-if="!isViewMode" color="primary" @click="saveDraft">Uložiť</v-btn>
-        <v-btn v-if="!isViewMode" color="error" @click="sendReview(selectedReview)">Odoslať</v-btn>
+        <v-btn
+          color="#BC463A"
+          @click="reviewDialog = false"
+        variant="flat">{{ isViewMode ? 'Zavrieť' : 'Zrušiť' }}</v-btn>
+        <v-btn
+          v-if="!isViewMode"
+          color="secondary"
+          @click="saveDraft"
+          variant="flat">Uložiť</v-btn>
+        <v-btn
+          v-if="!isViewMode"
+          color="primary"
+          @click="sendReview(selectedReview)"
+        variant="flat">Odoslať</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -533,8 +553,8 @@ export default defineComponent({
         </p>
       </v-card-text>
       <v-card-actions>
-        <v-btn color="secondary" @click="closeDeleteDialog">Zrušiť</v-btn>
-        <v-btn color="red" @click="deleteReview">Odstrániť</v-btn>
+        <v-btn color="secondary" @click="closeDeleteDialog" variant="flat">Zrušiť</v-btn>
+        <v-btn color="red" @click="deleteReview" variant="flat">Odstrániť</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
