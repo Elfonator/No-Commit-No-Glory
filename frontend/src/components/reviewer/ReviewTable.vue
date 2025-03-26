@@ -526,24 +526,25 @@ export default defineComponent({
       </v-card-text>
       <v-card-actions>
         <v-btn
+          variant="outlined"
           color="#BC463A"
           @click="reviewDialog = false"
-        variant="flat">{{ isViewMode ? 'Zavrieť' : 'Zrušiť' }}</v-btn>
+        >{{ isViewMode ? 'Zavrieť' : 'Zrušiť' }}</v-btn>
         <v-btn
+          variant="outlined"
           v-if="!isViewMode"
-          color="secondary"
-          @click="saveDraft"
-          variant="flat">Uložiť</v-btn>
+          color="tertiary"
+          @click="saveDraft">Uložiť</v-btn>
         <v-btn
+          variant="outlined"
           v-if="!isViewMode"
           color="primary"
-          @click="sendReview(selectedReview)"
-        variant="flat">Odoslať</v-btn>
+          @click="sendReview(selectedReview)">Odoslať</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 
-  <v-dialog v-model="isDeleteDialogOpen" max-width="500px">
+  <v-dialog v-model="isDeleteDialogOpen" max-width="700px">
     <v-card>
       <v-card-title>Potvrdenie odstránenia</v-card-title>
       <v-card-text>
@@ -553,8 +554,8 @@ export default defineComponent({
         </p>
       </v-card-text>
       <v-card-actions>
-        <v-btn color="secondary" @click="closeDeleteDialog" variant="flat">Zrušiť</v-btn>
-        <v-btn color="red" @click="deleteReview" variant="flat">Odstrániť</v-btn>
+        <v-btn variant="outlined" color="primary" @click="closeDeleteDialog">Zrušiť</v-btn>
+        <v-btn variant="outlined" color="#BC463A" @click="deleteReview">Odstrániť</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

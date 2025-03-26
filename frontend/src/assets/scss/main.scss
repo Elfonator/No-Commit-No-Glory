@@ -58,20 +58,21 @@ $border-radius-8: 8px;
     padding: 16px;
 
     .v-btn {
-      font-size: 1rem !important;
+      font-size: 1em !important;
     }
 
     /* Align actions at the bottom */
     .v-card-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 8px;
+      gap: 3px;
     }
 
     .v-card-title {
       font-size: 2rem;
       font-weight: bold;
       text-align: center;
+
     }
   }
 }

@@ -376,7 +376,7 @@ export default defineComponent({
           <td>{{ user.last_name }}</td>
           <td>{{ user.first_name }}</td>
           <td>{{ user.email }}</td>
-          <td>{{ user.university }}</td>
+          <td class="truncate-cell">{{ user.university }}</td>
           <td>{{ user.faculty }}</td>
           <td>
             <v-chip
@@ -492,8 +492,8 @@ export default defineComponent({
         </v-form>
       </v-card-text>
       <v-card-actions>
-        <v-btn color="secondary" @click="closeDialog">Zrušiť</v-btn>
-        <v-btn :disabled="!valid" color="primary" @click="saveUser">Uložiť</v-btn>
+        <v-btn variant="outlined" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
+        <v-btn variant="outlined" :disabled="!valid" color="primary" @click="saveUser">Uložiť</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -509,11 +509,18 @@ export default defineComponent({
         </p>
       </v-card-text>
       <v-card-actions>
-        <v-btn color="secondary" @click="closeDeleteDialog">Zrušiť</v-btn>
-        <v-btn color="red" @click="deleteUser">Odstrániť</v-btn>
+        <v-btn variant="outlined" color="primary" @click="closeDeleteDialog">Zrušiť</v-btn>
+        <v-btn variant="outlined" color="#BC463A" @click="deleteUser">Odstrániť</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
-<style></style>
+<style lang="scss">
+.truncate-cell {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>

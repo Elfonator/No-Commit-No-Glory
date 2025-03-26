@@ -210,9 +210,10 @@ export default defineComponent({
   .custom-table thead th {
     font-size: 1.2rem;
     font-weight: bold !important;
-    background-color: rgba(16, 100, 102, 0.2);
+    background-color: rgba(16, 100, 102, 0.1);
     color: #2c3531;
     padding-left: 20px !important;
+
   }
   .custom-table td {
     font-size: 1.1rem;

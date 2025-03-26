@@ -151,6 +151,15 @@ export default defineComponent({
       }
     }
 
+    const downloadExcel = async (conferenceId: string) => {
+      try {
+        await paperStore.downloadExcel(conferenceId)
+        showSnackbar?.({ message: 'Excel bol úspešne stiahnutý.', color: 'success' })
+      } catch {
+        showSnackbar?.({ message: 'Nepodarilo sa stiahnuť Excel.', color: 'error' })
+      }
+    }
+
     /** Filters for papers **/
     const paperFilters = reactive({
       selectedStatus: null as PaperStatus | null,
@@ -498,6 +507,7 @@ export default defineComponent({
       deletePaper,
       closeDeletePaperDialog,
       downloadPaper,
+      downloadExcel,
       isReviewerDisabled,
       isDeadlineDisabled,
       resetConferenceFilters,
@@ -545,7 +555,7 @@ export default defineComponent({
             dense
           />
         </v-col>
-        <v-col cols="12" md="2">
+        <v-col cols="12" md="3">
           <v-btn color="primary" small @click="resetConferenceFilters"
             >Zrušiť filter</v-btn
           >
@@ -564,16 +574,20 @@ export default defineComponent({
           <v-card-title>
             <v-row class="align-center">
               <!-- Conference Title Section -->
-              <v-col cols="9">
+              <v-col cols="8">
                 <h4>{{ conference.year }} - {{ conference.location }}</h4>
-                <p>Dátum: {{ formatDate(conference.date) }}</p>
+              </v-col>
+              <v-col cols="2" class="d-flex justify-end align-center">
+                <h5>Dátum: {{ formatDate(conference.date) }}</h5>
+              </v-col>
+              <v-col cols="2" class="d-flex justify-end align-center">
                 <p class="green">Počet prác: {{ conference.papers.length }}</p>
               </v-col>
-
               <!-- Actions Section -->
-              <v-col cols="3" class="d-flex justify-end align-center">
+              <v-col cols="3" class="d-flex justify-start align-center">
                 <v-btn
                   color="primary"
+                  class="mr-2"
                   @click="toggleConference(conference._id)"
                 >
                   <v-icon left class="conf-icon">
@@ -591,6 +605,7 @@ export default defineComponent({
                   Práce
                 </v-btn>
                 <v-btn
+                  variant="outlined"
                   color="tertiary"
                   class="mr-2"
                   @click="
@@ -598,7 +613,13 @@ export default defineComponent({
                   "
                 >
                   <v-icon left class="conf-icon">mdi-download</v-icon>Stiahnuť
-                  všetko
+                </v-btn>
+                <v-btn
+                  variant="outlined"
+                  color="primary"
+                  @click="downloadExcel(conference._id)"
+                >
+                  <v-icon left class="conf-icon">mdi-microsoft-excel</v-icon>Excel
                 </v-btn>
               </v-col>
             </v-row>
@@ -618,7 +639,7 @@ export default defineComponent({
                       dense
                     />
                   </v-col>
-                  <v-col cols="4" md="2">
+                  <v-col cols="4" md="3">
                     <v-btn color="primary" small @click="resetFilters"
                       >Zrušiť filter</v-btn
                     >
@@ -705,13 +726,13 @@ export default defineComponent({
                         @click="openDeadlineDialog(paper)"
                         title="Upraviť termín"
                       >
-                        <v-icon size="25">mdi-timer-edit</v-icon>
+                        <v-icon size="25" color="black">mdi-timer-edit</v-icon>
                       </v-btn>
                       <v-btn
                         color="#BC463A"
                         @click="confirmDeletePaper(paper)"
                         title="Odstraniť">
-                        <v-icon size="25" color="white">mdi-delete</v-icon>
+                        <v-icon size="25">mdi-delete</v-icon>
                       </v-btn>
                     </td>
                   </tr>
@@ -747,10 +768,10 @@ export default defineComponent({
                 </div>
               </v-card-text>
               <v-card-actions>
-                <v-btn color="secondary" @click="closeAssignReviewerDialog"
+                <v-btn variant="outlined" color="#BC463A" @click="closeAssignReviewerDialog"
                   >Zrušiť</v-btn
                 >
-                <v-btn color="primary" @click="assignReviewer">Priradiť</v-btn>
+                <v-btn variant="outlined" color="primary" @click="assignReviewer">Priradiť</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -817,15 +838,16 @@ export default defineComponent({
                 </v-row>
               </v-card-text>
               <v-card-actions>
+                <v-btn variant="outlined" color="#BC463A" @click="isPaperViewDialogOpen = false"
+                >Zrušiť</v-btn
+                >
                 <v-btn
+                  variant="outlined"
                   color="primary"
                   @click="downloadPaper(selectedPaper?.conference?._id, selectedPaper?._id)">
                   <v-icon size="36">mdi-download-box</v-icon>
                   Stiahnuť
                 </v-btn>
-                <v-btn color="tertiary" @click="isPaperViewDialogOpen = false"
-                  >Zrušiť</v-btn
-                >
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -836,8 +858,8 @@ export default defineComponent({
                 <v-date-picker v-model="newDeadline"></v-date-picker>
               </v-card-text>
               <v-card-actions>
-                <v-btn @click="isDeadlineDialogOpen = false">Zrušiť</v-btn>
-                <v-btn color="primary" @click="changeDeadline">Uložiť</v-btn>
+                <v-btn variant="outlined" @click="isDeadlineDialogOpen = false" color="#BC463A">Zrušiť</v-btn>
+                <v-btn variant="outlined" color="primary" @click="changeDeadline">Uložiť</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -852,8 +874,8 @@ export default defineComponent({
                 </p>
               </v-card-text>
               <v-card-actions>
-                <v-btn color="secondary" @click="closeDeletePaperDialog">Zrušiť</v-btn>
-                <v-btn color="red" @click="deletePaper">Odstrániť</v-btn>
+                <v-btn variant="outlined" color="primary" @click="closeDeletePaperDialog">Zrušiť</v-btn>
+                <v-btn variant="outlined" color="#BC463A" @click="deletePaper">Odstrániť</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -864,14 +886,6 @@ export default defineComponent({
               <v-card-title>Úprava práce</v-card-title>
               <v-card-text>
                 <v-row>
-<!--                  <v-col cols="12" md="6">-->
-<!--                    <v-text-field-->
-<!--                      v-model="selectedPaper?.title || ''"-->
-<!--                      label="Title"-->
-<!--                      outlined-->
-<!--                      dense-->
-<!--                    />-->
-<!--                  </v-col>-->
                   <!-- Category Edit -->
                   <v-col cols="12" md="12">
                     <v-menu
@@ -938,8 +952,8 @@ export default defineComponent({
 
               <!-- Dialog Actions -->
               <v-card-actions>
-                <v-btn @click="closeEditDialog" color="#BC463A">Zrušiť</v-btn>
-                <v-btn @click="saveEditedPaper" color="primary">Uložiť zmeny</v-btn>
+                <v-btn variant="outlined" @click="closeEditDialog" color="#BC463A">Zrušiť</v-btn>
+                <v-btn variant="outlined" @click="saveEditedPaper" color="primary">Uložiť zmeny</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -959,8 +973,8 @@ h4 {
   color: #bc4639;
 }
 
-p {
-  font-size: 1rem;
+p, h5 {
+  font-size: 1.3rem;
   color: #2c3531;
 }
 
@@ -1027,5 +1041,11 @@ p {
 .paperInfo {
   display: flex;
   font-size: 1.2rem;
+}
+
+.dynamic-button {
+  font-size: clamp(12px, 2vw, 16px);
+  white-space: normal;
+  text-align: center;
 }
 </style>

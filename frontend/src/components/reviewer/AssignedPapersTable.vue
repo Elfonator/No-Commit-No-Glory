@@ -405,13 +405,18 @@ export default defineComponent({
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="secondary" @click="reviewDialog = false">Zrušiť</v-btn>
           <v-btn
-            color="primary"
+            variant="outlined"
+            color="#BC463A"
+            @click="reviewDialog = false">Zrušiť</v-btn>
+          <v-btn
+            variant="outlined"
+            color="tertiary"
             @click="saveDraft"
             :disabled="!isReviewDeadlineActive || selectedReview?.isDraft === false">Uložiť</v-btn>
           <v-btn
-            color="error"
+            variant="outlined"
+            color="primary"
             @click="submitReviewConfirmation"
             :disabled="!isReviewDeadlineActive || selectedReview?.isDraft === false">Odoslať</v-btn>
         </v-card-actions>
