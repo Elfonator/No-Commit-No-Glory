@@ -207,8 +207,8 @@ export default defineComponent({
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="secondary" @click="closeDialog">Zrušiť</v-btn>
-          <v-btn :disabled="!valid" color="primary" @click="saveDocument">
+          <v-btn variant="outlined" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
+          <v-btn variant="outlined" :disabled="!valid" color="primary" @click="saveDocument">
             {{ dialogMode === 'add' ? 'Pridať' : 'Uložiť' }}
           </v-btn>
         </v-card-actions>

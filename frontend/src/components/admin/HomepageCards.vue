@@ -237,8 +237,8 @@ export default defineComponent({
         </v-radio-group>
       </v-card-text>
       <v-card-actions>
-        <v-btn color="secondary" @click="closeDialog">Zrušiť</v-btn>
-        <v-btn color="primary" @click="saveMember">
+        <v-btn variant="outlined" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
+        <v-btn variant="outlined" color="primary" @click="saveMember">
           {{ dialogMode === 'add' ? 'Pridať' : 'Uložiť' }}
         </v-btn>
       </v-card-actions>

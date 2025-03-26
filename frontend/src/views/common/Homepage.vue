@@ -211,23 +211,36 @@ export default defineComponent({
 
   .banner-text {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: rgba(255, 255, 255, 0.7);
-    font-family: 'Lato', sans-serif;
-    font-size: 4rem;
-    font-weight: bold;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 3;
-    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 2rem;
 
-    @media (min-width: 768px) {
+    span {
+      color: rgba(255, 255, 255, 0.85);
+      font-family: 'Lato', sans-serif;
       font-size: 2.5rem;
-    }
+      font-weight: bold;
+      line-height: 1.2;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);
+      max-width: 100%;
+      word-break: keep-all;
+      white-space: normal;
 
-    @media (min-width: 1200px) {
-      font-size: 3.5rem;
+      @media (min-width: 880px) {
+        font-size: 3rem;
+      }
+
+      @media (min-width: 1300px) {
+        font-size: 3.5rem;
+        max-width: 75%;
+      }
     }
   }
 

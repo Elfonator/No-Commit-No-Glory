@@ -38,7 +38,7 @@ import {
   addProgramItem,
   updateProgramItem,
   updateProgram,
-  adminUpdatePaper
+  adminUpdatePaper, exportPapersToExcel
 } from '../controllers/admin.controller'
 import { authenticateToken } from "../middleware/authenticateToken";
 import { upload } from '../controllers/user.controller'
@@ -85,6 +85,7 @@ router.get("/papers/download/:conferenceId", downloadPapersByConference);
 router.patch("/papers/:paperId/reviewer", assignReviewer);
 router.patch("/papers/:paperId/deadline", changeSubmissionDeadline);
 router.delete("/papers/:paperId", adminDeletePaper);
+router.get("/papers/export/:conferenceId", exportPapersToExcel);
 
 //Homepage - Committees
 router.get('/committees', getCommittees);

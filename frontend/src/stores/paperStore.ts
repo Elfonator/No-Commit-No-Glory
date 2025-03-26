@@ -390,6 +390,31 @@ export const usePaperStore = defineStore('papers', () => {
     }
   }
 
+  const downloadExcel = async (conferenceId: string) => {
+    try {
+      const response = await axiosInstance.get(
+        `/auth/admin/papers/export/${conferenceId}`,
+        { responseType: 'blob' }
+      )
+
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `papers_${conferenceId}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Failed to download Excel report:', error)
+      throw error
+    }
+  }
+
   return {
     //State
     participantPapers,
@@ -418,6 +443,7 @@ export const usePaperStore = defineStore('papers', () => {
     assignReviewerToPaper,
     downloadPaperAdmin,
     downloadAllPapersInConference,
-    adminDeletePaper
+    adminDeletePaper,
+    downloadExcel
   }
 })

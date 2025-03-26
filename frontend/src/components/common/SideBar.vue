@@ -37,18 +37,18 @@
             <!-- Badge for admin notifications -->
             <v-badge
               v-if="authStore.isAdmin() && link.name === 'Používatelia'"
-              :content="notificationStore.newUserCount"
+              :content="newUserCount"
               color="#bc4639"
               overlap
-              v-show="notificationStore.newUserCount > 0"
+              v-show="newUserCount > 0"
               class="badge-position"
             ></v-badge>
             <v-badge
               v-if="authStore.isAdmin() && link.name === 'Práce'"
-              :content="notificationStore.newPaperCount"
+              :content="newPaperCount"
               color="#bc4639"
               overlap
-              v-show="notificationStore.newPaperCount > 0"
+              v-show="newPaperCount > 0"
               class="badge-position"
             ></v-badge>
           </div>
@@ -156,18 +156,20 @@ function navigateTo(path: string): void {
   }
 }
 
-//Fetch notifications on load
+//Fetch notifications
 onMounted(async () => {
-  try {
-    await notificationStore.fetchNotifications()
-  } catch (error) {
-    console.error('Failed to fetch notifications:', error)
-  }
+  await notificationStore.fetchNotifications()
+
+  // Optional: auto-refresh every 60 seconds
+  setInterval(() => {
+    notificationStore.fetchNotifications()
+  }, 60000)
 })
 
 //Getters for new user and paper counts
 const newUserCount = computed(() => notificationStore.newUserCount)
 const newPaperCount = computed(() => notificationStore.newPaperCount)
+
 </script>
 
 <style lang="scss">

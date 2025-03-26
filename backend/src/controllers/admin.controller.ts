@@ -643,8 +643,10 @@ export const changeSubmissionDeadline = async (
       return;
     }
     const updatedPaper = await Paper.findByIdAndUpdate(
-        paperId,
-        { deadline_date: new Date(newDeadline) },
+        paperId, {
+          deadline_date: new Date(newDeadline),
+          status: PaperStatus.Draft
+      },
         { new: true },
     );
     if (!updatedPaper) {
@@ -1217,6 +1219,76 @@ export const uploadProgramFile = async (req: Request, res: Response): Promise<vo
     res.status(500).json({ message: "Nepodarilo sa nahrať programový súbor", error });
   }
 };
+
+/** Excel output **/
+// Generate Excel for all papers in a specific conference
+export const exportPapersToExcel = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { conferenceId } = req.params;
+
+    if (!conferenceId) {
+      res.status(400).json({ message: "Chýba ID konferencie" });
+      return;
+    }
+
+    const papers = await Paper.find({ conference: conferenceId })
+      .populate("user", "first_name last_name email university")
+      .populate("category", "name")
+      .populate("conference", "year location");
+
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Papers");
+
+    // Define headers
+    sheet.addRow([
+      "Názov",
+      "Výsledok",
+      "Krstné meno",
+      "Priezvisko",
+      "Školiteľ/ka",
+      "Pracovisko",
+      "Stupeň štúdia",
+      "Email (Autor 1)",
+      "Súčasná sekcia",
+    ]);
+
+    // Add paper data rows
+    for (const paper of papers) {
+      const user = paper.user as any;
+      const category = paper.category as any;
+
+      sheet.addRow([
+        paper.title || '',
+        '', // Výsledok - empty
+        user?.first_name || '',
+        user?.last_name || '',
+        '', // Školiteľ/ka - empty
+        user?.university || '',
+        '', // Stupeň štúdia - empty
+        user?.email || '',
+        category?.name || '',
+      ]);
+    }
+
+    // Set response headers
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="papers_${conferenceId}.xlsx"`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error exporting papers to Excel:", error);
+    res.status(500).json({ message: "Nepodarilo sa exportovať do Excelu.", error });
+  }
+};
+
 
 /** OTHER **/
 //Admin Reports Controller

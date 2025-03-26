@@ -5,13 +5,14 @@ import {
   reactive,
   onMounted,
   computed,
-  inject,
+  inject, nextTick
 } from 'vue'
 import { useConferenceStore } from '@/stores/conferenceStore'
 import { useRouter } from 'vue-router'
 import { format } from 'date-fns'
 import { sk } from 'date-fns/locale'
 import type { ConferenceAdmin } from '@/types/conference.ts'
+import { useAuthStore } from '@/stores/auth.ts'
 
 export default defineComponent({
   name: 'ConferenceTable',
@@ -27,6 +28,8 @@ export default defineComponent({
     if (!showSnackbar) {
       console.error('showSnackbar is not provided')
     }
+
+    const authStore = useAuthStore()
 
     const setEndOfDay = (date: Date) => {
       const d = new Date(date)
@@ -288,10 +291,12 @@ export default defineComponent({
       },
     })
 
-    onMounted(() => {
-      conferenceStore.fetchAdminConferences().then(() => {
-        console.log('Fetched Conferences:', conferenceStore.adminConferences)
-      })
+    onMounted(async () => {
+      await nextTick()
+
+      if (authStore.role === 'admin') {
+        await conferenceStore.fetchAdminConferences()
+      }
     })
 
     return {
@@ -692,8 +697,9 @@ export default defineComponent({
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="secondary" @click="closeDialog">Zrušiť</v-btn>
+          <v-btn variant="outlined" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
           <v-btn
+            variant="outlined"
             :disabled="!valid"
             v-if="dialogMode !== 'view'"
             color="primary"
@@ -715,8 +721,8 @@ export default defineComponent({
           </p>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="secondary" @click="closeDeleteDialog">Zrušiť</v-btn>
-          <v-btn color="red" @click="deleteConference">Odstrániť</v-btn>
+          <v-btn variant="outlined" color="primary" @click="closeDeleteDialog">Zrušiť</v-btn>
+          <v-btn variant="outlined" color="#BC463A" @click="deleteConference">Odstrániť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

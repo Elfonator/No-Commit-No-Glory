@@ -151,10 +151,9 @@ export default defineComponent({
         await Promise.all([
           conferenceStore.fetchParticipantConferences(),
           categoryStore.fetchParticipantCategories(),
-          paperStore.getMyPapers(),
           userStore.fetchUserProfile(),
         ])
-
+        await paperStore.getMyPapers();
         paperStore.participantPapers = paperStore.participantPapers.map(
           paper => ({
             ...paper,
@@ -692,20 +691,20 @@ export default defineComponent({
           <td>{{ formatDate(paper.submission_date) }}</td>
           <td class="d-flex justify-end align-center">
             <v-btn
-              :disabled="!canEditPaper(paper)"
-              color="#FFCD16"
-              @click="openDialog('edit', paper)"
-              title="Upraviť"
-            >
-              <v-icon size="25">mdi-pencil</v-icon>
-            </v-btn>
-            <v-btn
               :disabled="!canViewReview(paper)"
               color="success"
               @click="viewReview(paper)"
               title="Ukazať recenziu"
             >
               <v-icon size="25" color="black">mdi-account-alert</v-icon>
+            </v-btn>
+            <v-btn
+              :disabled="!canEditPaper(paper)"
+              color="#FFCD16"
+              @click="openDialog('edit', paper)"
+              title="Upraviť"
+            >
+              <v-icon size="25">mdi-pencil</v-icon>
             </v-btn>
             <v-btn
               :disabled="paper.status != PaperStatus.Draft"
@@ -888,17 +887,18 @@ export default defineComponent({
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn @click="closeDialog" color="#BC463A" variant="flat">Zrušiť</v-btn>
+          <v-btn @click="closeDialog" color="#BC463A" variant="outlined">Zrušiť</v-btn>
           <v-btn
             v-if="!currentPaper.isFinal"
             @click="savePaper"
-            color="secondary"
-            variant="flat"
+            color="tertiary"
+            variant="outlined"
             >Uložiť</v-btn>
           <v-btn
             v-if="currentPaper.isFinal"
             @click="submitPaper"
-            color="primary" variant="flat"
+            color="primary"
+            variant="outlined"
             :disabled="!isFormValid">Odoslať</v-btn
           >
         </v-card-actions>
@@ -914,10 +914,10 @@ export default defineComponent({
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="primary" @click="isDeleteDialogOpen = false"
+          <v-btn variant="outlined" color="primary" @click="isDeleteDialogOpen = false"
             >Zrušiť</v-btn
           >
-          <v-btn color="red" @click="deletePaper">Vymazať</v-btn>
+          <v-btn variant="outlined" color="#BC463A" @click="deletePaper">Vymazať</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -956,15 +956,16 @@ export default defineComponent({
           </v-table>
         </v-card-text>
         <v-card-actions>
+          <v-btn variant="outlined" color="#BC463A" @click="paperDetailsDialog = false"
+          >Zrušiť</v-btn
+          >
           <v-btn
+            variant="outlined"
             color="primary"
             @click="downloadPaper(currentPaper)">
             <v-icon size="36">mdi-download-box</v-icon>
             Stiahnuť
           </v-btn>
-          <v-btn color="tertiary" @click="paperDetailsDialog = false"
-          >Zrušiť</v-btn
-          >
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -1065,6 +1066,7 @@ export default defineComponent({
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn
+            variant="outlined"
             color="primary"
             @click="reviewDialog = false">
             Zatvoriť
