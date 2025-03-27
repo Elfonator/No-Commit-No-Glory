@@ -159,11 +159,6 @@ function navigateTo(path: string): void {
 //Fetch notifications
 onMounted(async () => {
   await notificationStore.fetchNotifications()
-
-  // Optional: auto-refresh every 60 seconds
-  setInterval(() => {
-    notificationStore.fetchNotifications()
-  }, 60000)
 })
 
 //Getters for new user and paper counts

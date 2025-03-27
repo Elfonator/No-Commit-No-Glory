@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, verifyEmail } from "../controllers/user.controller";
+import { registerUser, resendVerificationEmail, verifyEmail } from '../controllers/user.controller'
 import { forgotPassword, loginUser, refreshToken, resetPassword } from '../controllers/auth.controller'
 import {
   registerValidationRules,
@@ -26,6 +26,7 @@ router.get(
   validateRequest,
   verifyEmail,
 );
+router.post("/resend-verification", resendVerificationEmail);
 router.post("/refresh-token", refreshToken);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);

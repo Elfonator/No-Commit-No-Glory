@@ -263,9 +263,13 @@ export default defineComponent({
           />
         </v-col>
         <v-col cols="12" md="3">
-          <v-btn color="primary" small @click="resetFilters"
-            >Zrušiť filter</v-btn
-          >
+          <v-btn
+            color="primary"
+            @click="resetFilters"
+            title="Zrušiť filter"
+            variant="outlined">
+            <v-icon>mdi-filter-remove</v-icon>
+          </v-btn>
         </v-col>
       </v-row>
     </v-card-subtitle>

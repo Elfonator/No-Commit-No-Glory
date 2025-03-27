@@ -4,9 +4,10 @@ import axiosInstance from "@/config/axiosConfig";
 import type { ActiveCategory } from '@/types/conference.ts'
 import { format } from 'date-fns'
 import { sk } from 'date-fns/locale'
+import type { ProgramItem } from '@/types/homepage.ts'
 
 export const useHomepageStore = defineStore("homepage", () => {
-  const program = ref<{ _id: string; schedule: string; description: string; fileLink: string }[]>([]);
+  const program = ref<{ items: ProgramItem[]; fileLink: string } | null>(null);
   const activeCategories = ref<ActiveCategory[]>([]);
   const ongoingConference = ref<any>(null);
   const programDocumentUrl = ref<string | null>(null);
@@ -28,7 +29,7 @@ export const useHomepageStore = defineStore("homepage", () => {
         return;
       }
       committees.value = response.data.homepage.committees || response.data.committees || [];
-      program.value = [...(response.data.homepage?.program?.items || [])];
+      program.value = response.data.homepage?.program || { items: [], fileLink: "" };
       activeCategories.value = [...(response.data.activeCategories || [])];
       programDocumentUrl.value = response.data.homepage?.program?.fileLink || "";
       ongoingConference.value = response.data.ongoingConference ? { ...response.data.ongoingConference } : null;
@@ -75,15 +76,6 @@ export const useHomepageStore = defineStore("homepage", () => {
     }
   })
 
-  const updateProgram = async (newProgram: any) => {
-    try {
-      await axiosInstance.patch("/auth/admin/homepage/program", { program: newProgram });
-      program.value = newProgram;
-    } catch (err) {
-      console.error("Error updating program:", err);
-      throw err;
-    }
-  };
   // Fetch committees from the backend
   const fetchCommittees = async () => {
     loading.value = true;
@@ -134,7 +126,6 @@ export const useHomepageStore = defineStore("homepage", () => {
     }
   };
 
-
 // Fetch conference program
   const fetchProgram = async () => {
     loading.value = true;
@@ -151,25 +142,12 @@ export const useHomepageStore = defineStore("homepage", () => {
     }
   };
 
-// Add or update a program item
-  const addProgramItem = async (schedule: string, description: string) => {
+  const updateProgram = async (payload: { programItems: ProgramItem[], fileLink: string }) => {
     try {
-      const response = await axiosInstance.post("/auth/admin/program", { schedule, description });
-      program.value = response.data.program;
-      await fetchProgram();
+      await axiosInstance.patch("/auth/admin/program", payload);
+      program.value = { items: payload.programItems, fileLink: payload.fileLink };
     } catch (err) {
-      console.error("Error adding program item:", err);
-      throw err;
-    }
-  };
-
-  const updateProgramItem = async (itemId: string, updates: { schedule: string; description: string }) => {
-    try {
-      const response = await axiosInstance.patch(`/auth/admin/program/${itemId}`, updates);
-      program.value = response.data.program;
-      await fetchProgram();
-    } catch (err) {
-      console.error("Error updating program item:", err);
+      console.error("Error updating program:", err);
       throw err;
     }
   };
@@ -185,23 +163,6 @@ export const useHomepageStore = defineStore("homepage", () => {
     }
   };
 
-// Upload program file
-  const uploadProgramFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await axiosInstance.post("/auth/admin/program/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      programDocumentUrl.value = response.data.program.fileLink;
-      return response.data;
-    } catch (err) {
-      console.error("Error uploading program file:", err);
-      throw err;
-    }
-  };
-
   return {
     program,
     activeCategories,
@@ -212,16 +173,13 @@ export const useHomepageStore = defineStore("homepage", () => {
     error,
 
     fetchHomepageData,
-    updateProgram,
     fetchCommittees,
     addCommittee,
     updateCommittee,
     deleteCommittee,
     fetchProgram,
-    addProgramItem,
-    updateProgramItem,
+    updateProgram,
     deleteProgramItem,
-    uploadProgramFile,
 
     deadlines,
   };

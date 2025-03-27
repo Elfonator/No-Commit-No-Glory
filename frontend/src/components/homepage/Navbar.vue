@@ -75,6 +75,16 @@ export default defineComponent({
       }
     });
 
+    watch(loginDialog, (isOpen) => {
+      if (!isOpen) {
+        loginEmail.value = ''
+        loginPassword.value = ''
+        forgotPasswordEmail.value = ''
+        resetForm()
+        activeTab.value = 'login'
+      }
+    })
+
     //Login modal
     const handleLogin = async () => {
       try {

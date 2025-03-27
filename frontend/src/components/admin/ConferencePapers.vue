@@ -273,7 +273,6 @@ export default defineComponent({
       }
     }
 
-
     /** Dialog for editing submission information **/
     const addAuthor = () => {
       if (selectedPaper.value && !selectedPaper.value.authors) {
@@ -352,10 +351,6 @@ export default defineComponent({
         fullName: `${user.first_name} ${user.last_name}`,
       })),
     )
-
-    const isReviewerDisabled = (paper: AdminPaper) => {
-      return !!paper.reviewer // disable if reviewer exists
-    }
 
     const openAssignReviewerDialog = (paper: AdminPaper) => {
       selectedPaper.value = paper
@@ -508,7 +503,6 @@ export default defineComponent({
       closeDeletePaperDialog,
       downloadPaper,
       downloadExcel,
-      isReviewerDisabled,
       isDeadlineDisabled,
       resetConferenceFilters,
       resetFilters,
@@ -538,27 +532,33 @@ export default defineComponent({
     <v-card-subtitle>
       <!-- Conference Filters -->
       <v-row class="mt-4" dense>
-        <v-col cols="6" md="3">
+        <v-col cols="6" md="2">
           <v-text-field
             v-model="conferenceFilters.year"
-            label="Filtrovať podľa roku"
+            label="Rok"
             type="number"
             outlined
             dense
+            clearable
           />
         </v-col>
         <v-col cols="6" md="3">
           <v-text-field
             v-model="conferenceFilters.location"
-            label="Filtrovať podľa miesta"
+            label="Miesto"
             outlined
             dense
+            clearable
           />
         </v-col>
-        <v-col cols="12" md="3">
-          <v-btn color="primary" small @click="resetConferenceFilters"
-            >Zrušiť filter</v-btn
-          >
+        <v-col cols="12" md="2">
+          <v-btn
+            color="primary"
+            @click="resetConferenceFilters"
+            title="Zrušiť filter"
+            variant="outlined">
+            <v-icon>mdi-filter-remove</v-icon>
+          </v-btn>
         </v-col>
       </v-row>
     </v-card-subtitle>
@@ -574,13 +574,13 @@ export default defineComponent({
           <v-card-title>
             <v-row class="align-center">
               <!-- Conference Title Section -->
-              <v-col cols="8">
+              <v-col cols="7">
                 <h4>{{ conference.year }} - {{ conference.location }}</h4>
               </v-col>
               <v-col cols="2" class="d-flex justify-end align-center">
                 <h5>Dátum: {{ formatDate(conference.date) }}</h5>
               </v-col>
-              <v-col cols="2" class="d-flex justify-end align-center">
+              <v-col cols="3" class="d-flex justify-end align-center">
                 <p class="green">Počet prác: {{ conference.papers.length }}</p>
               </v-col>
               <!-- Actions Section -->
@@ -630,7 +630,7 @@ export default defineComponent({
             <div v-if="expandedConferenceId === conference._id">
               <v-card-subtitle>
                 <v-row>
-                  <v-col ols="6" md="4">
+                  <v-col ols="6" md="3">
                     <v-select
                       v-model="paperFilters.selectedStatus"
                       :items="Object.values(PaperStatus)"
@@ -640,9 +640,13 @@ export default defineComponent({
                     />
                   </v-col>
                   <v-col cols="4" md="3">
-                    <v-btn color="primary" small @click="resetFilters"
-                      >Zrušiť filter</v-btn
-                    >
+                    <v-btn
+                      color="primary"
+                      @click="resetFilters"
+                      title="Zrušiť filter"
+                      variant="outlined">
+                      <v-icon>mdi-filter-remove</v-icon>
+                    </v-btn>
                   </v-col>
                 </v-row>
               </v-card-subtitle>
@@ -706,7 +710,6 @@ export default defineComponent({
                     <td class="d-flex justify-end align-center">
                       <!-- Assign Reviewer -->
                       <v-btn
-                        :disabled="isReviewerDisabled(paper)"
                         color="#3C888C"
                         title="Priradiť recenzenta"
                         @click="openAssignReviewerDialog(paper)"

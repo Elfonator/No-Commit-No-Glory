@@ -24,12 +24,12 @@ export default defineComponent({
     //Watch for token expiration
     watch(
       () => authStore.isTokenExpired,
-      expired => {
+      (expired) => {
         if (expired) {
           console.log('Token expired, showing modal')
           showModal.value = true
         }
-      },
+      }
     )
 
     //Handle token refresh
@@ -229,4 +229,5 @@ export default defineComponent({
 div .v-btn {
   font-size: 1rem !important;
 }
+
 </style>

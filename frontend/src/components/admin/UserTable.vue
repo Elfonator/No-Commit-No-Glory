@@ -20,8 +20,7 @@ export default defineComponent({
 
     // Filters for table
     const filters = ref({
-      first_name: '',
-      last_name: '',
+      name: '',
       university: '',
       selectedStatus: [] as string[],
       selectedRole: [] as string[],
@@ -67,7 +66,13 @@ export default defineComponent({
       'Iné',
     ]
     const statusOptions = ['Aktívny', 'Neaktívny', 'Čakajúci', 'Pozastavený']
-    const roleOptions = Object.values(userStore.reverseRoleMapping) //Use Slovak roles from store
+    //const roleOptions = Object.values(userStore.reverseRoleMapping) //Use Slovak roles from store
+    const roleOptions = Object.entries(userStore.reverseRoleMapping).map(
+      ([key, label]) => ({
+        value: key,
+        text: label,
+      })
+    )
     const statusColors = {
       [UserStatus.Active]: 'green',
       [UserStatus.Inactive]: 'grey',
@@ -99,15 +104,16 @@ export default defineComponent({
     // Filtered users computed property
     const filteredUsers = computed(() =>
       userStore.adminUsers.filter(user => {
+        const rawRole = typeof user.role === 'string' ? user.role : user.role?.name
+
+        const roleKey = Object.entries(userStore.reverseRoleMapping)
+          .find(([, label]) => label === rawRole)?.[0] ?? rawRole
+
         return (
-          (!filters.value.first_name ||
-            user.first_name
+          (!filters.value.name ||
+            `${user.first_name} ${user.last_name}`
               .toLowerCase()
-              .includes(filters.value.first_name.toLowerCase())) &&
-          (!filters.value.last_name ||
-            user.last_name
-              .toLowerCase()
-              .includes(filters.value.last_name.toLowerCase())) &&
+              .includes(filters.value.name.toLowerCase())) &&
           (!filters.value.university ||
             user.university
               .toLowerCase()
@@ -115,9 +121,7 @@ export default defineComponent({
           (!filters.value.selectedStatus.length ||
             filters.value.selectedStatus.includes(user.status)) &&
           (!filters.value.selectedRole.length ||
-            filters.value.selectedRole.includes(
-              userStore.reverseRoleMapping[user.role.name] || user.role.name,
-            ))
+            filters.value.selectedRole.includes(roleKey))
         )
       }),
     )
@@ -125,8 +129,7 @@ export default defineComponent({
     // Reset filters
     const resetFilters = () => {
       filters.value = {
-        first_name: '',
-        last_name: '',
+        name: '',
         university: '',
         selectedStatus: [],
         selectedRole: [],
@@ -321,31 +324,37 @@ export default defineComponent({
           <v-select
             v-model="filters.selectedRole"
             :items="roleOptions"
+            item-title="text"
+            item-value="value"
             label="Rola"
-            outlined
-            dense
             multiple
           />
         </v-col>
         <v-col cols="12" md="3">
           <v-text-field
-            v-model="filters.last_name"
-            label="Filtrovať podľa priezviska"
+            v-model="filters.name"
+            label="Používateľ"
             outlined
             dense
+            clearable
           />
         </v-col>
         <v-col cols="12" md="3">
           <v-text-field
             v-model="filters.university"
-            label="Filtrovať podľa univerzity"
+            label="Univerzita"
             outlined
             dense
+            clearable
           />
         </v-col>
-        <v-col cols="10" md="2">
-          <v-btn color="primary" small @click="resetFilters">
-            Zrušiť filter
+        <v-col cols="8" md="2">
+          <v-btn
+            color="primary"
+            @click="resetFilters"
+            title="Zrušiť filter"
+            variant="outlined">
+            <v-icon>mdi-filter-remove</v-icon>
           </v-btn>
         </v-col>
       </v-row>
@@ -422,6 +431,8 @@ export default defineComponent({
           <v-select
             v-model="currentUser.role"
             :items="roleOptions"
+            item-title="text"
+            item-value="value"
             label="Rola"
             outlined
             dense

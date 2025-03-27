@@ -39,14 +39,25 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = response.data.token
       isAuthenticated.value = true
 
-      //Store tokens in localStorage for persistence
+      // Store tokens
       localStorage.setItem('authToken', token.value || '')
       localStorage.setItem('userRole', role.value || '')
       localStorage.setItem('refreshToken', response.data.refreshToken)
-      console.log('Received refresh token:', response.data.refreshToken)
-      //Set Authorization header for future requests
-      axiosInstance.defaults.headers.common['Authorization'] =
-        `Bearer ${token.value}`
+
+      // Set auth header
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+
+      // Redirect based on role
+      if (role.value === 'admin') {
+        await router.push('/auth/admin/conferences')
+      } else if (role.value === 'participant') {
+        await router.push('/auth/participant/works')
+      } else if (role.value === 'reviewer') {
+        await router.push('/auth/reviewer/papers')
+      } else {
+        await router.push('/auth/profile')
+      }
+
     } catch (error) {
       console.error('Login failed:', error)
       throw error
@@ -87,6 +98,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('userRole')
       isAuthenticated.value = false
+      isTokenExpired.value = true
     }
   }
 
@@ -132,6 +144,17 @@ export const useAuthStore = defineStore('auth', () => {
       throw error
     }
   }
+
+  const resendVerificationEmail = async (emailToResend: string): Promise<string> => {
+    try {
+      const res = await axiosInstance.post('/resend-verification', { email: emailToResend });
+      return res.data.message || 'Overovací e-mail bol odoslaný.';
+    } catch (error: any) {
+      const errMessage =
+        error.response?.data?.message || 'Nastala chyba pri odosielaní.';
+      throw new Error(errMessage);
+    }
+  };
 
   const loadAuthState = async () => {
     const authToken = localStorage.getItem('authToken')
@@ -179,6 +202,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshAccessToken,
     logout,
     verifyEmail,
+    resendVerificationEmail,
     loadAuthState,
     isParticipant,
     isAdmin,
