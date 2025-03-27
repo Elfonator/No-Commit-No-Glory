@@ -339,23 +339,6 @@ export default defineComponent({
     <v-card-subtitle>
       <v-row>
         <v-col cols="10" md="3">
-          <v-text-field
-            v-model="conferenceStore.filters.year"
-            label="Filtrovať podľa roku"
-            type="number"
-            outlined
-            dense
-          />
-        </v-col>
-        <v-col cols="10" md="3">
-          <v-text-field
-            v-model="conferenceStore.filters.university"
-            label="Filtrovať podľa univerzity"
-            outlined
-            dense
-          />
-        </v-col>
-        <v-col cols="10" md="3">
           <v-select
             v-model="conferenceStore.filters.selectedStatus"
             :items="statusOptions"
@@ -365,10 +348,33 @@ export default defineComponent({
             multiple
           />
         </v-col>
+        <v-col cols="10" md="2">
+          <v-text-field
+            v-model="conferenceStore.filters.year"
+            label="Rok"
+            type="number"
+            outlined
+            dense
+            clearable
+          />
+        </v-col>
+        <v-col cols="10" md="3">
+          <v-text-field
+            v-model="conferenceStore.filters.university"
+            label="Univerzita"
+            outlined
+            dense
+            clearable
+          />
+        </v-col>
         <v-col cols="8" md="2">
-          <v-btn color="primary" small @click="conferenceStore.resetFilters"
-            >Zrušiť filter</v-btn
-          >
+          <v-btn
+            color="primary"
+            @click="conferenceStore.resetFilters"
+            title="Zrušiť filter"
+            variant="outlined">
+            <v-icon>mdi-filter-remove</v-icon>
+          </v-btn>
         </v-col>
       </v-row>
     </v-card-subtitle>

@@ -1,71 +1,112 @@
 <script lang="ts">
-import {computed, defineComponent, onMounted, ref} from 'vue';
+import { computed, defineComponent, inject, onMounted, ref } from 'vue'
 import {useHomepageStore} from "@/stores/homepageStore.ts";
+import type { ProgramItem } from '@/types/homepage.ts'
+import axiosInstance from '@/config/axiosConfig.ts'
 
 export default defineComponent({
   name: 'ConferenceProgram',
   setup() {
+    const showSnackbar = inject('showSnackbar') as ({
+                                                      message,
+                                                      color,
+                                                    }: {
+      message: string
+      color?: string
+    }) => void
+
+    if (!showSnackbar) {
+      console.error('showSnackbar is not provided')
+    }
 
     const homepageStore = useHomepageStore();
-    const program = computed(() => homepageStore.program);
+    const programItems = computed(() => homepageStore.program?.items || []);
+
+    const localProgramItems = ref<ProgramItem[]>([]);
 
     const programFile = ref<File | null>(null);
 
     onMounted(async () => {
       try {
         await homepageStore.fetchProgram();
-        console.log(homepageStore.program);
+        localProgramItems.value = [...(homepageStore.program?.items || [])];
       } catch (error) {
         console.error("Failed to fetch program:", error);
       }
     });
 
-    const addEvent = async () => {
+    const addEvent = () => {
       try {
-        const newEvent = {
-          _id: "",
+        localProgramItems.value.push({
           schedule: "",
           description: "",
-          fileLink: "",
-        };
+        });
 
-        program.value.push(newEvent);
+        showSnackbar?.({
+          message: "Nový bod programu bol pridaný.",
+          color: "success",
+        });
       } catch (error) {
-        console.error("Failed to add event:", error);
+        showSnackbar?.({
+          message: "Nepodarilo sa pridať bod programu.",
+          color: "error",
+        });
+        console.error("Add event failed:", error);
       }
     };
 
     const removeEvent = (itemId: string) => {
       try {
-        const index = program.value.findIndex(event => event._id === itemId || itemId === "");
-
+        const index = localProgramItems.value.findIndex(event => event._id === itemId || !event._id);
         if (index !== -1) {
-          program.value.splice(index, 1);
+          localProgramItems.value.splice(index, 1);
+          showSnackbar?.({ message: "Bod programu bol odstránený.", color: "success" });
+        } else {
+          showSnackbar?.({ message: "Bod programu nebol nájdený.", color: "warning" });
         }
       } catch (error) {
-        console.error("Failed to remove event:", error);
+        console.error("Remove event failed:", error);
+        showSnackbar?.({ message: "Chyba pri odstraňovaní bodu programu.", color: "error" });
       }
     };
-
 
     const saveProgram = async () => {
       try {
-        const file = programFile.value;  // The file selected for upload
+        let fileLink = homepageStore.program?.fileLink || "";
 
-        if (file) {
-          await homepageStore.uploadProgramFile(file);
+        if (programFile.value) {
+          // Create FormData and append the file
+          const formData = new FormData();
+          formData.append("file", programFile.value);
+
+          const response = await axiosInstance.post("/auth/admin/program/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+
+          fileLink = response.data.program.fileLink;
         }
 
-        await homepageStore.updateProgram(program.value);
-        console.log("Program saved successfully!");
-      } catch (error) {
-        console.error("Failed to save program:", error);
+        await homepageStore.updateProgram({
+          programItems: localProgramItems.value,
+          fileLink,
+        });
+        //console.log("Program uložený vrátane súboru");
+        showSnackbar?.({
+          message: "Program bol úspešne uložený.",
+          color: "success",
+        });
+      } catch (err) {
+        //console.error("Nepodarilo sa uložiť program so súborom", err);
+        showSnackbar?.({
+          message: "Nepodarilo sa uložiť program so súborom.",
+          color: "error",
+        });
       }
     };
 
-
     return {
-      program,
+      programItems,
+      localProgramItems,
       programFile,
       addEvent,
       removeEvent,
@@ -88,7 +129,7 @@ export default defineComponent({
 
     <!-- List of program events -->
     <v-list>
-      <v-list-item v-for="(event, index) in program" :key="event._id">
+      <v-list-item v-for="event in localProgramItems" :key="event._id">
         <v-row class="w-100">
           <!-- Schedule text field column -->
           <v-col cols="2">

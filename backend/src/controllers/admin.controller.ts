@@ -1029,60 +1029,6 @@ export const getProgram = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
-// Add a new program schedule item
-export const addProgramItem = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { schedule, description } = req.body;
-
-    if (!schedule || !description) {
-      res.status(400).json({ message: "Chýbajúce údaje" });
-      return;
-    }
-
-    const homepage = await Homepage.findOneAndUpdate(
-      {},
-      { $push: { "program.items": { schedule, description } } },
-      { new: true, upsert: true }
-    );
-
-    res.status(201).json({
-      message: "Bod programu bol úspešne pridaný",
-      program: homepage?.program || { fileLink: "", items: [] },
-    });
-  } catch (error) {
-    console.error("Error adding program item:", error);
-    res.status(500).json({ message: "Nepodarilo sa pridať bod programu", error });
-  }
-};
-
-// Update an existing program schedule item
-export const updateProgramItem = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { itemId } = req.params;
-    const updates = req.body;
-
-    const homepage = await Homepage.findOneAndUpdate(
-      { "program.items._id": itemId },
-      { $set: { "program.items.$": updates } },
-      { new: true }
-    );
-
-    if (!homepage) {
-      res.status(404).json({ message: "Bod programu nebol nájdený" });
-      return;
-    }
-
-    res.status(200).json({
-      message: "Bod programu bol úspešne aktualizovaný",
-      program: homepage?.program || { fileLink: "", items: [] },
-    });
-  } catch (error) {
-    console.error("Error updating program item:", error);
-    res.status(500).json({ message: "Nepodarilo sa aktualizovať bod programu", error });
-  }
-};
-
-
 export const updateProgram = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { programItems, fileLink } = req.body;
@@ -1093,14 +1039,12 @@ export const updateProgram = async (req: AuthRequest, res: Response): Promise<vo
 
     const updateFields: any = {};
 
-
     if (programItems) {
       updateFields["program.items"] = programItems;
     }
     if (fileLink) {
       updateFields["program.fileLink"] = fileLink;
     }
-
 
     const homepage = await Homepage.findOneAndUpdate(
         {},
@@ -1234,40 +1178,58 @@ export const exportPapersToExcel = async (req: AuthRequest, res: Response): Prom
     const papers = await Paper.find({ conference: conferenceId })
       .populate("user", "first_name last_name email university")
       .populate("category", "name")
+      .populate("reviewer", "first_name last_name email")
+      .populate("review")
       .populate("conference", "year location");
 
     const ExcelJS = await import('exceljs');
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Papers");
+    const conference = papers[0]?.conference as any;
+    const sheetName = `SVK ${conference.year}`;
+    const sheet = workbook.addWorksheet(sheetName);
 
-    // Define headers
+    // Define all requested headers
     sheet.addRow([
       "Názov",
       "Výsledok",
-      "Krstné meno",
-      "Priezvisko",
+      "Krstné meno (Autor 1)",
+      "Priezvisko  (Autor 1)",
       "Školiteľ/ka",
-      "Pracovisko",
+      "Pracovisko (Autor 1)",
       "Stupeň štúdia",
       "Email (Autor 1)",
       "Súčasná sekcia",
+      "Finálna sekcia",
+      "Hľadá recenzenta (člen org. výboru)",
+      "Meno Recenzenta",
+      "Email recenzenta",
+      "Komentáre po recenzií",
+      "Poslané na recenziu"
     ]);
 
     // Add paper data rows
     for (const paper of papers) {
       const user = paper.user as any;
       const category = paper.category as any;
+      const reviewer = paper.reviewer as any;
+      const review = paper.review as any;
 
       sheet.addRow([
         paper.title || '',
-        '', // Výsledok - empty
+        '', // Výsledok
         user?.first_name || '',
         user?.last_name || '',
-        '', // Školiteľ/ka - empty
+        '', // Školiteľ/ka
         user?.university || '',
-        '', // Stupeň štúdia - empty
+        '', // Stupeň štúdia
         user?.email || '',
         category?.name || '',
+        '', // Finálna sekcia
+        '', // Hľadá recenzenta
+        reviewer ? `${reviewer.first_name} ${reviewer.last_name}` : '',
+        reviewer?.email || '',
+        review?.comments || '', // Assuming review schema has "comments"
+        reviewer ? 'Áno' : 'Nie',
       ]);
     }
 
@@ -1288,7 +1250,6 @@ export const exportPapersToExcel = async (req: AuthRequest, res: Response): Prom
     res.status(500).json({ message: "Nepodarilo sa exportovať do Excelu.", error });
   }
 };
-
 
 /** OTHER **/
 //Admin Reports Controller

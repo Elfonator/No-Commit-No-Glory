@@ -35,8 +35,6 @@ import {
   getProgram,
   deleteProgramItem,
   uploadProgramFile,
-  addProgramItem,
-  updateProgramItem,
   updateProgram,
   adminUpdatePaper, exportPapersToExcel
 } from '../controllers/admin.controller'
@@ -95,9 +93,7 @@ router.delete('/committees/:committeeId', deleteCommittee);
 
 //Homepage - Program
 router.get("/program", getProgram);
-router.post("/program", addProgramItem);
 router.patch("/program", updateProgram);
-router.patch("/program/:itemId", updateProgramItem);
 router.delete("/program/:itemId",  deleteProgramItem);
 router.post("/program/upload", upload.single("file"), uploadProgramFile);
 

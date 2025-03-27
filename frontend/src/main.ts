@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth.ts'
 import App from './App.vue'
 import router from './router'
 import vuetify from './plugins/vuetify'
+import { setAuthStore } from '@/config/axiosConfig.ts'
 
 // Create the app instance
 const app = createApp(App)
@@ -12,6 +13,7 @@ const app = createApp(App)
 app.use(createPinia())
 
 const authStore = useAuthStore()
+setAuthStore(authStore)
 
 app.use(vuetify)
 app.use(router)

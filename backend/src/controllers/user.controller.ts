@@ -9,8 +9,6 @@ import { generateVerificationEmail, sendEmail } from "../utils/emailService";
 import fs from "fs";
 import path from "path";
 
-const BASE_UPLOAD_DIR = process.env.UPLOADS_DIR || "/app/uploads";
-
 export const registerUser = async (
   req: Request,
   res: Response,
@@ -127,37 +125,45 @@ export const verifyEmail = async (
   }
 };
 
-/*
-export const resendVerificationEmail = async (req: Request, res: Response) => {
-    try {
-        const { token } = req.body;
+export const resendVerificationEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
 
-        // Decode the expired token to extract user info
-        const decoded = jwt.decode(token);
-        if (!decoded || !decoded.userId) {
-            return res.status(400).json({ message: 'Invalid token' });
-        }
+    const user = await User.findOne({ email });
 
-        const user = await User.findOne({_id:decoded.userId});
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Generate a new token
-        const newToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-            expiresIn: '1h',
-        });
-
-        // Send the new verification email
-        await sendVerificationEmail(user.email, newToken);
-
-        res.status(200).json({ message: 'Verification email sent successfully' });
-    } catch (error) {
-        console.error('Error resending verification email:', error);
-        res.status(500).json({ message: 'Error resending verification email', error });
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
     }
+
+    if (user.isVerified) {
+      res.status(400).json({ message: "User is already verified." });
+      return;
+    }
+
+    // Generate a new verification token
+    const newToken = jwt.sign(
+      { userId: user._id },
+      config.jwtSecret,
+      { expiresIn: "1h" },
+    );
+
+    user.verificationToken = newToken;
+    await user.save();
+
+    const verificationUrl = `${config.baseUrl}/api/verify-email?token=${newToken}`;
+    await sendEmail({
+      to: user.email,
+      subject: "Resend: Verify Your Email",
+      html: generateVerificationEmail(verificationUrl),
+    });
+
+    res.status(200).json({ message: "Verification email resent successfully." });
+  } catch (error) {
+    console.error("Error resending verification email:", error);
+    res.status(500).json({ message: "Could not resend verification email.", error });
+  }
 };
-*/
 
 //User profile data
 export const getUserProfile = async (
