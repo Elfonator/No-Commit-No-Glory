@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref, onMounted } from "vue";
+import { defineComponent, ref, onMounted, computed } from 'vue'
 import { useHomepageStore } from "@/stores/homepageStore";
 
 export default defineComponent({
@@ -13,7 +13,7 @@ export default defineComponent({
       activeTab,
       categories: store.activeCategories,
       deadlines: store.deadlines,
-      program: store.program,
+      programItems: computed(() => store.program?.items || []),
       programDocumentUrl: store.programDocumentUrl,
     };
   },
@@ -74,8 +74,8 @@ export default defineComponent({
       <!-- PROGRAM -->
       <v-tabs-window-item value="program">
         <div class="tab-content">
-          <ul v-if="program.length > 0">
-            <li v-for="(event, index) in program" :key="index">
+          <ul v-if="programItems.length > 0">
+            <li v-for="(event, index) in programItems" :key="index">
               <strong>{{ event.schedule }}</strong>&nbsp;  {{ event.description }}
             </li>
           </ul>
