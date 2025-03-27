@@ -123,7 +123,7 @@ export default defineComponent({
 
     const getHomepageData = async () => {
       try {
-        const response = await axiosInstance.get('homepage')
+        const response = await axiosInstance.get('/homepage')
         const ongoingConference = response.data.ongoingConference
 
         if (ongoingConference) {
