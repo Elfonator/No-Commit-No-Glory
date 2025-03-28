@@ -5,6 +5,7 @@ export interface Committee {
 }
 
 export interface ProgramItem {
+  _id?: string;
   schedule: string;
   description: string;
 }
