@@ -153,7 +153,7 @@ export default defineComponent({
 
           <!-- Delete button column -->
           <v-col cols="1" class="d-flex justify-end">
-            <v-btn color="#BC463A" @click="removeEvent(event._id)">
+            <v-btn color="#BC463A" @click="removeEvent(event._id || '')">
               <v-icon>mdi-delete</v-icon>
             </v-btn>
           </v-col>
