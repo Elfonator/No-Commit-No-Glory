@@ -271,7 +271,7 @@ export default defineComponent({
       <v-icon left>{{ isLoggedIn ? 'mdi-account' : 'mdi-login' }}</v-icon>
     </v-btn>
 
-    <!-- GitHub Icon -->
+    <!-- FPVaI Icon -->
     <v-btn
       href="https://www.fpvai.ukf.sk/sk/"
       target="_blank"
@@ -417,7 +417,7 @@ export default defineComponent({
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn @click="loginDialog = false">Zatvoriť</v-btn>
+          <v-btn @click="loginDialog = false" variant="outlined">Zatvoriť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -438,15 +438,15 @@ export default defineComponent({
 <style lang="scss">
 .v-app-bar {
   box-shadow: none;
-  height: 100px;
-  padding-top: 15px;
+  height: 80px;
+  padding-top: 10px;
   align-content: center;
   border: none;
 
   .v-app-bar-title {
     padding-left: 10px;
     img {
-      height: 80px;
+      height: 60px;
       max-width: 100%;
       object-fit: contain;
       display: block;
@@ -462,12 +462,12 @@ export default defineComponent({
     align-items: center;
     gap: 10px;
     font-weight: bold;
-    font-size: 1.2rem;
+    font-size: 1rem;
     color: #fff !important;
     border: none;
     border-radius: 8px;
     background-color: #bc463a;
-    padding: 30px 20px;
+    padding: 10px 10px;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 
     &:hover {
@@ -503,7 +503,7 @@ export default defineComponent({
   height: 50px;
   max-width: 150px;
   object-fit: contain;
-  margin-top: -5px;
+  margin-top: -10px;
   &:hover {
     transform: scale(1.1);
   }
@@ -511,7 +511,7 @@ export default defineComponent({
 
 .v-tabs {
   margin-bottom: 20px;
-  font-size: 1.5rem;
+  font-size: 1rem;
 }
 .v-tab {
   font-size: 18px;
@@ -526,7 +526,7 @@ export default defineComponent({
 }
 
 .v-snackbar {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   background: transparent;
   color: white;
 }
@@ -540,7 +540,7 @@ export default defineComponent({
 }
 
 .large-text-field .v-input__control {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
 }
 
 .margin-top-btn {

@@ -8,7 +8,6 @@ import {
   inject, nextTick
 } from 'vue'
 import { useConferenceStore } from '@/stores/conferenceStore'
-import { useRouter } from 'vue-router'
 import { format } from 'date-fns'
 import { sk } from 'date-fns/locale'
 import type { ConferenceAdmin } from '@/types/conference.ts'
@@ -41,7 +40,6 @@ export default defineComponent({
 
     // Initialize the conference store and router
     const conferenceStore = useConferenceStore()
-    const router = useRouter()
 
     // Dialog and form state
     const isDialogOpen = ref(false)
@@ -66,13 +64,13 @@ export default defineComponent({
 
     // Table headers
     const tableHeaders = [
-      { title: '', value: 'view', sortable: false },
-      { title: 'Stav', key: 'status' },
+      { title: '', value: 'view', sortable: false},
+      { title: 'Stav', key: 'status', width: '30px' },
       { title: 'Rok', key: 'year' },
-      { title: 'Univerzita', key: 'university' },
-      { title: 'Začiatok', key: 'start_date' },
-      { title: 'Koniec', key: 'end_date' },
-      { title: 'Práce do', key: 'deadline_submission' },
+      { title: 'Univerzita', key: 'university', width: '230px' },
+      { title: 'Datum', key: 'date' },
+      { title: 'Práce', key: 'deadline_submission' },
+      { title: 'Recenze', key: 'deadline_review' },
       { title: '', value: 'actions', sortable: false },
     ]
 
@@ -82,30 +80,46 @@ export default defineComponent({
     ) => {
       dialogMode.value = mode
 
-      //Convert date fields to Date objects if they are strings
-      Object.assign(currentConference, {
-        ...conference,
-        date: conference.date ? new Date(conference.date) : new Date(),
-        start_date: conference.start_date
-          ? new Date(conference.start_date)
-          : new Date(),
-        end_date: conference.end_date
-          ? new Date(conference.end_date)
-          : new Date(),
-        deadline_submission: conference.deadline_submission
-          ? new Date(conference.deadline_submission)
-          : new Date(),
-        submission_confirmation: conference.submission_confirmation
-          ? new Date(conference.submission_confirmation)
-          : new Date(),
-        deadline_review: conference.deadline_review
-          ? new Date(conference.deadline_review)
-          : new Date(),
-        deadline_correction: conference.deadline_correction
-          ? new Date(conference.deadline_correction)
-          : new Date(),
-      })
-
+        if (mode === 'add') {
+          Object.assign(currentConference, {
+            _id: '',
+            status: '',
+            year: new Date().getFullYear(),
+            location: '',
+            university: '',
+            date: new Date(),
+            start_date: new Date(),
+            end_date: new Date(),
+            deadline_submission: new Date(),
+            submission_confirmation: new Date(),
+            deadline_review: new Date(),
+            deadline_correction: new Date(),
+          })
+        } else {
+          //Convert date fields to Date objects if they are strings
+          Object.assign(currentConference, {
+            ...conference,
+            date: conference.date ? new Date(conference.date) : new Date(),
+            start_date: conference.start_date
+              ? new Date(conference.start_date)
+              : new Date(),
+            end_date: conference.end_date
+              ? new Date(conference.end_date)
+              : new Date(),
+            deadline_submission: conference.deadline_submission
+              ? new Date(conference.deadline_submission)
+              : new Date(),
+            submission_confirmation: conference.submission_confirmation
+              ? new Date(conference.submission_confirmation)
+              : new Date(),
+            deadline_review: conference.deadline_review
+              ? new Date(conference.deadline_review)
+              : new Date(),
+            deadline_correction: conference.deadline_correction
+              ? new Date(conference.deadline_correction)
+              : new Date(),
+          })
+        }
       isDialogOpen.value = true
     }
 
@@ -218,15 +232,6 @@ export default defineComponent({
       }
     };
 
-
-    // View works for a specific conference
-    const viewWorksForConference = (conference: any) => {
-      router.push({
-        name: 'ConferencePapers',
-        //params: { conferenceId: conference._id },
-      })
-    }
-
     const formatTimestamp = (date: Date | string | null): string => {
       if (!date) return 'N/A'
       const parsedDate = typeof date === 'string' ? new Date(date) : date
@@ -316,7 +321,6 @@ export default defineComponent({
       confirmDelete,
       closeDeleteDialog,
       deleteConference,
-      viewWorksForConference,
       formatTimestamp,
     }
   },
@@ -336,39 +340,41 @@ export default defineComponent({
     </v-card-title>
 
     <!-- Filters Section -->
-    <v-card-subtitle>
-      <v-row>
-        <v-col cols="10" md="3">
+    <v-card-subtitle class="filters-section">
+      <v-row no-gutters>
+        <v-col cols="4" md="3">
           <v-select
             v-model="conferenceStore.filters.selectedStatus"
             :items="statusOptions"
             label="Stav"
             outlined
-            dense
             multiple
+            density="compact"
           />
         </v-col>
-        <v-col cols="10" md="2">
+        <v-col cols="3" md="2">
           <v-text-field
             v-model="conferenceStore.filters.year"
             label="Rok"
             type="number"
             outlined
-            dense
             clearable
+            density="compact"
           />
         </v-col>
-        <v-col cols="10" md="3">
+        <v-col cols="4" md="3">
           <v-text-field
             v-model="conferenceStore.filters.university"
             label="Univerzita"
             outlined
             dense
             clearable
+            density="compact"
           />
         </v-col>
-        <v-col cols="8" md="2">
+        <v-col cols="1" class="d-flex justify-end">
           <v-btn
+            class="filter-btn"
             color="primary"
             @click="conferenceStore.resetFilters"
             title="Zrušiť filter"
@@ -387,8 +393,8 @@ export default defineComponent({
       :pageText="'{0}-{1} z {2}'"
       items-per-page-text="Konferencie na stránku"
       item-value="_id"
-      dense
       class="custom-table"
+      density="comfortable"
     >
       <template v-slot:body="{ items }">
         <tr
@@ -398,7 +404,7 @@ export default defineComponent({
         >
           <td>
             <v-icon
-              size="24"
+              size="20"
               color="primary"
               @click="openDialog('view', conference)"
               style="cursor: pointer"
@@ -426,19 +432,19 @@ export default defineComponent({
           </td>
           <td>{{ conference.year }}</td>
           <td>{{ conference.university }}</td>
-          <td>{{ formatTimestamp(conference.start_date) }}</td>
-          <td>{{ formatTimestamp(conference.end_date) }}</td>
+          <td>{{ formatTimestamp(conference.date) }}</td>
           <td>{{ formatTimestamp(conference.deadline_submission) }}</td>
+          <td>{{ formatTimestamp(conference.deadline_review) }}</td>
           <td class="d-flex justify-end align-center">
             <v-btn
               color="#FFCD16"
               title="Edit"
               @click="openDialog('edit', conference)"
             >
-              <v-icon size="24">mdi-pencil</v-icon>
+              <v-icon size="20">mdi-pencil</v-icon>
             </v-btn>
             <v-btn color="#BC463A" @click="confirmDelete(conference)">
-              <v-icon size="24" color="white">mdi-delete</v-icon>
+              <v-icon size="20" color="white">mdi-delete</v-icon>
             </v-btn>
           </td>
         </tr>
@@ -459,7 +465,7 @@ export default defineComponent({
         </v-card-title>
         <v-card-text>
           <v-form ref="formRef" v-model="valid">
-            <v-row>
+            <v-row dense no-gutters>
               <v-col cols="12" md="4">
                 <v-select
                   v-model="currentConference.status"
@@ -505,7 +511,6 @@ export default defineComponent({
                       append-inner-icon="mdi-calendar"
                       @click:append-inner="menu.date = true"
                       class="large-text-field"
-                      :disabled="dialogMode === 'view'"
                     />
                   </template>
                   <v-date-picker
@@ -522,7 +527,6 @@ export default defineComponent({
                   outlined
                   dense
                   class="large-text-field"
-                  :disabled="dialogMode === 'view'"
                   :rules="[v => !!v || 'Univerzita je povinná']"
                 />
               </v-col>
@@ -533,7 +537,6 @@ export default defineComponent({
                   outlined
                   dense
                   class="large-text-field"
-                  :disabled="dialogMode === 'view'"
                   :rules="[v => !!v || 'Miesto konania je povinné']"
                 />
               </v-col>
@@ -557,7 +560,6 @@ export default defineComponent({
                       append-inner-icon="mdi-calendar"
                       @click:append-inner="menu.start_date = true"
                       class="large-text-field"
-                      :disabled="dialogMode === 'view'"
                     />
                   </template>
                   <v-date-picker
@@ -586,7 +588,6 @@ export default defineComponent({
                       append-inner-icon="mdi-calendar"
                       @click:append-inner="menu.end_date = true"
                       class="large-text-field"
-                      :disabled="dialogMode === 'view'"
                     />
                   </template>
                   <v-date-picker
@@ -596,15 +597,12 @@ export default defineComponent({
                   />
                 </v-menu>
               </v-col>
-
-
               <v-col cols="12" md="6">
                 <v-menu
                   v-model="menu.deadline_submission"
                   :close-on-content-click="false"
                   transition="scale-transition"
                   attach
-                  :disabled="dialogMode === 'view'"
                 >
                   <template v-slot:activator="{ props }">
                     <v-text-field
@@ -618,7 +616,6 @@ export default defineComponent({
                       append-inner-icon="mdi-calendar"
                       @click:append-inner="menu.deadline_submission = true"
                       class="large-text-field"
-                      :disabled="dialogMode === 'view'"
                     />
                   </template>
                   <v-date-picker

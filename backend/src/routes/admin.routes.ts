@@ -36,7 +36,7 @@ import {
   deleteProgramItem,
   uploadProgramFile,
   updateProgram,
-  adminUpdatePaper, exportPapersToExcel
+  adminUpdatePaper, exportPapersToExcel, uploadProgram
 } from '../controllers/admin.controller'
 import { authenticateToken } from "../middleware/authenticateToken";
 import { upload } from '../controllers/user.controller'
@@ -95,7 +95,7 @@ router.delete('/committees/:committeeId', deleteCommittee);
 router.get("/program", getProgram);
 router.patch("/program", updateProgram);
 router.delete("/program/:itemId",  deleteProgramItem);
-router.post("/program/upload", upload.single("file"), uploadProgramFile);
+router.post("/program/upload", uploadProgram.single("file_link"), uploadProgramFile);
 
 //Homepage - Documents
 

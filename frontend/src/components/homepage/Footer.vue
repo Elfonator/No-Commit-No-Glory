@@ -52,17 +52,17 @@ export default defineComponent({
   .footer-left,
   .footer-right {
     color: #2c3531;
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .footer-title {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: bold;
     margin-bottom: 8px;
   }
 
   .footer-right {
-    text-align: right; /* Align text to the right */
+    text-align: right;
   }
 
   a {

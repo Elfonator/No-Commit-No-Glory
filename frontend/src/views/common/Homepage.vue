@@ -174,15 +174,15 @@ export default defineComponent({
 .banner-container {
   position: relative;
   width: 100%;
-  height: min(70vh, 400px);
+  height: min(70vh, 300px);
   overflow: hidden;
 
   @media (min-width: 768px) {
-    height: 400px;
+    height: 300px;
   }
 
   @media (min-width: 1200px) {
-    height: 500px;
+    height: 400px;
   }
 
   .banner-image {
@@ -225,7 +225,7 @@ export default defineComponent({
     span {
       color: rgba(255, 255, 255, 0.85);
       font-family: 'Lato', sans-serif;
-      font-size: 2.5rem;
+      font-size: 2rem;
       font-weight: bold;
       line-height: 1.2;
       text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);
@@ -234,7 +234,7 @@ export default defineComponent({
       white-space: normal;
 
       @media (min-width: 880px) {
-        font-size: 3rem;
+        font-size: 2.5rem;
       }
 
       @media (min-width: 1300px) {
@@ -248,7 +248,7 @@ export default defineComponent({
     position: absolute;
     bottom: 0;
     width: 100%;
-    max-height: 100px;
+    max-height: 80px;
     background-color: rgba(210, 233, 227, 0.8);
     text-align: center;
     z-index: 3;
@@ -320,22 +320,22 @@ export default defineComponent({
 }
 
 .call-to-action-section {
-  background-color: rgba(210, 233, 227, 0.8);
+  background-color: rgba(44, 53, 49, 0.9);
   text-align: center;
   width: 100%;
-  max-height: 100px;
+  max-height: 80px;
   margin-bottom: 30px;
 
   .cta-title {
     margin-top: -5px;
-    font-size: 1.5rem;
+    font-size: 1rem;
     font-weight: bold;
-    color: #2c3531;
+    color: white;
   }
 
   .cta-description {
-    font-size: 1.2rem;
-    color: #28655c;
+    font-size: 1rem;
+    color: #d1e8e2;
     line-height: 1.2;
   }
 }

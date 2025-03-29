@@ -170,7 +170,6 @@ export const usePaperStore = defineStore('papers', () => {
 
       // Get reviewed paper IDs (both drafts & submitted)
       const reviewedPaperIds: Set<any> = new Set([
-        ...reviewStore.draftReviews.map((review) => review.paper),
         ...reviewStore.submittedReviews.map((review) => review.paper),
       ]);
 

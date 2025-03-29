@@ -34,7 +34,12 @@ const ReviewSchema: Schema = new Schema(
           ref: "Question",
           required: true,
         },
-        answer: { type: Schema.Types.Mixed, required: true },
+        answer: {
+          type: Schema.Types.Mixed,
+          required: function (this: any) {
+            return !this.parent().isDraft;
+          },
+        },
       },
     ],
     comments: { type: String, required: false },

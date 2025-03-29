@@ -209,8 +209,8 @@ export default defineComponent({
         <!-- Form Actions -->
         <v-row>
           <v-col cols="12" class="d-flex justify-end">
-            <v-btn color="secondary" @click="toggleEditMode">Zrušiť</v-btn>
-            <v-btn color="primary" @click="saveProfile">Uložiť</v-btn>
+            <v-btn color="tertiary" @click="toggleEditMode" variant="outlined">Zrušiť</v-btn>
+            <v-btn color="primary" @click="saveProfile" variant="outlined">Uložiť</v-btn>
           </v-col>
         </v-row>
       </v-form>
@@ -224,12 +224,6 @@ export default defineComponent({
   justify-content: center;
   align-items: start;
   height: 100%;
-  font-size: 1.5rem;
-
-  .v-btn {
-    margin-right: 15px;
-    font-size: 1.2rem;
-  }
 
   h3 {
     color: #116466;
@@ -238,9 +232,7 @@ export default defineComponent({
   .uni {
     font-weight: bold;
   }
-  p {
-    font-size: 1.2rem;
-  }
+
   .about {
     color: #2c3531;
     font-style: oblique;
@@ -258,17 +250,5 @@ export default defineComponent({
   border-radius: 10%;
   object-fit: cover !important;
   padding-bottom: 5px;
-}
-
-.v-card-title {
-  font-weight: bold;
-}
-
-.v-textarea,
-.v-text-field,
-.v-file-input {
-  margin-bottom: 16px;
-  font-size: 1.2rem;
-  color: #116466;
 }
 </style>

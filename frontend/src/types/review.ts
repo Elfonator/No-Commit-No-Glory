@@ -1,6 +1,8 @@
+import type { Question } from './question'
+
 export interface ReviewResponse {
-  _id: string;
-  question: string
+  _id: string
+  question: string | Question
   answer: string | number | null
 }
 

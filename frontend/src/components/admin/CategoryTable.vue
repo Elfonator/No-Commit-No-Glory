@@ -153,6 +153,7 @@ export default defineComponent({
       class="custom-table"
       :pageText="'{0}-{1} z {2}'"
       items-per-page-text="Kategórie na stránku"
+      density="comfortable"
     >
       <template v-slot:body="{ items }">
         <tr v-for="category in items" :key="category._id" class="custom-row">
@@ -168,11 +169,17 @@ export default defineComponent({
           </td>
           <td>{{ category.name }}</td>
           <td class="d-flex justify-end align-center w-100">
-            <v-btn color="#FFCD16" @click="openDialog('edit', category)">
-              <v-icon size="24">mdi-pencil</v-icon>
+            <v-btn
+              color="#FFCD16"
+              @click="openDialog('edit', category)"
+              title="Upraviť">
+              <v-icon size="20">mdi-pencil</v-icon>
             </v-btn>
-            <v-btn color="#BC463A" @click="confirmDelete(category)">
-              <v-icon size="24" color="white">mdi-delete</v-icon>
+            <v-btn
+              color="#BC463A"
+              @click="confirmDelete(category)"
+              title="Odstraniť">
+              <v-icon size="20" color="white">mdi-delete</v-icon>
             </v-btn>
           </td>
         </tr>
@@ -233,4 +240,6 @@ export default defineComponent({
   </v-card>
 </template>
 
-<style lang="scss"></style>
+<style lang="scss">
+
+</style>

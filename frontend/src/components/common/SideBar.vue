@@ -1,5 +1,5 @@
 <template>
-  <v-navigation-drawer app permanent class="sidebar">
+  <v-navigation-drawer app permanent class="sidebar" width="180">
     <!-- Logo Section -->
     <div class="logo-container">
       <router-link to="/" class="logo-link">
@@ -58,7 +58,7 @@
     </template>
     <template v-if="authStore.isAdmin()">
       <v-divider class="my-4"></v-divider>
-      <v-list-subheader>Úprava Homepage</v-list-subheader>
+      <v-list-subheader style="justify-self: center">Homepage</v-list-subheader>
       <v-list>
         <v-list-item
           :to="'/auth/admin/tabs'"
@@ -169,39 +169,45 @@ const newPaperCount = computed(() => notificationStore.newPaperCount)
 
 <style lang="scss">
 .sidebar {
-  width: 350px;
+  width: 180px !important;
   top: 0;
   background-color: #f8f9fa;
   border-radius: 0 10px 10px 0;
   box-shadow: 5px 0 5px rgba(0, 0, 0, 0.1);
-  font-size: 1.5rem;
+  font-size: 0.9rem;
 
   .logo-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 150px;
+    height: 120px;
     margin-bottom: 16px;
   }
 
   .sidebar-logo {
-    width: 80%;
+    width: 70%;
     height: auto;
     margin-left: 30px;
     object-fit: contain;
   }
 
-  .v-list-item-title {
-    font-size: 1.2rem;
-    font-family: 'Lato', sans-serif;
-    color: #2c3531;
+  .v-list-item.active-link {
+    background-color: #dfe6e9;
+    font-weight: bold;
+    border-radius: 5px;
   }
 
-  .v-list-item.active-link {
-    background-color: #dfe6e9; /* Light gray background */
-    font-weight: bold;
-    color: #bc4639 !important; /* SciSubmit main accent color */
-    border-radius: 5px;
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .v-list-subheader__text {
+    padding-left: 5px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #2c3531;
   }
 }
 
@@ -213,6 +219,7 @@ const newPaperCount = computed(() => notificationStore.newPaperCount)
 
   .badge-position {
     margin-left: auto;
+    margin-bottom: 2px;
     vertical-align: center;
   }
 }
