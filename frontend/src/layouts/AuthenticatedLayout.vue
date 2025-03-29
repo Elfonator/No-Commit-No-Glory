@@ -37,6 +37,7 @@ export default defineComponent({
       try {
         await authStore.refreshAccessToken()
         showModal.value = false
+        window.location.reload()
       } catch (error) {
         showSnackbar({
           message: 'Obnovenie tokenu zlyhalo. Prihláste sa znova.',
@@ -137,97 +138,31 @@ export default defineComponent({
   </v-dialog>
 </template>
 
+
 <style lang="scss">
 .sidebar {
   z-index: 10;
 }
 
-/* Main content styling */
-.v-main {
-  margin: 0 auto;
-  width: 100%;
-  max-width: 1500px;
-  overflow: visible;
-  padding-top: 0;
-  position: relative;
-  z-index: 2;
-}
-
 .main-container {
   position: relative;
-  top: -150px;
+  top: -120px;
 
-  /* Profile card container styling */
   .profile {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 3;
-    position: relative;
-    margin-top: 20px;
+    margin-top: 16px;
   }
 
   .profile-card {
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
     background-color: #fff;
-    width: 90%;
+    width: 100%;
     max-width: 900px;
   }
-}
-
-.v-card {
-  padding: 25px;
-
-  .v-card-title {
-    margin: 10px;
-    font-size: 1.5rem;
-    color: #116466;
-    text-transform: uppercase;
-  }
-
-  .v-card-subtitle {
-    padding-inline: 30px;
-  }
-
-  .v-btn {
-    margin-top: 10px;
-    margin-bottom: 10px;
-    margin-right: 5px;
-    font-size: 1.2rem;
-  }
-
-  .add_new {
-    margin-bottom: 20px !important;
-    margin-left: 30px;
-  }
-
-  .custom-table {
-    padding-inline: 30px;
-  }
-
-  .custom-table thead th {
-    font-size: 1.2rem;
-    font-weight: bold !important;
-    background-color: rgba(16, 100, 102, 0.1);
-    color: #2c3531;
-    padding-left: 20px !important;
-
-  }
-  .custom-table td {
-    font-size: 1.1rem;
-    font-weight: normal;
-
-    .custom-chip {
-      font-size: 1.1rem;
-      padding: 10px 8px;
-    }
-  }
-}
-
-div .v-btn {
-  font-size: 1rem !important;
 }
 
 </style>

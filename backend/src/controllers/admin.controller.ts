@@ -19,7 +19,7 @@ import { setEndOfDay } from '../utils/dateUtils'
 /** USERS**/
 //Get all users
 export const getAllUsers = async (
-    req: AuthRequest,
+  _req: AuthRequest,
     res: Response,
 ): Promise<void> => {
   try {
@@ -163,7 +163,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
 
 /** CATEGORIES **/
 //Get all categories
-export const getAllCategories = async (req: AuthRequest, res: Response) => {
+export const getAllCategories = async (_req: AuthRequest, res: Response) => {
   try {
     //Fetch all categories
     const categories = await Category.find();
@@ -305,6 +305,7 @@ export const createConference = async (
 ): Promise<void> => {
   try {
     const {
+      status,
       year,
       date,
       location,
@@ -322,7 +323,7 @@ export const createConference = async (
       date,
       location,
       university,
-      status: ConferenceStatus.Upcoming,
+      status: status|| ConferenceStatus.Upcoming,
       start_date,
       end_date: setEndOfDay(new Date(end_date)),
       deadline_submission: setEndOfDay(new Date(deadline_submission)),
@@ -439,7 +440,7 @@ export const deleteConference = async (req: AuthRequest, res: Response): Promise
 /** QUESTIONS **/
 //Get all questions
 export const getAllQuestions = async (
-    req: AuthRequest,
+  _req: AuthRequest,
     res: Response,
 ): Promise<void> => {
   try {
@@ -696,7 +697,7 @@ export const adminUpdatePaper = async (req: AuthRequest, res: Response): Promise
 };
 
 export const getReviewers = async (
-    req: AuthRequest,
+  _req: AuthRequest,
     res: Response,
 ): Promise<void> => {
   try {
@@ -713,42 +714,64 @@ export const getReviewers = async (
 
 //Assign reviewer to paper (dynamic update)
 export const assignReviewer = async (
-    req: AuthRequest,
-    res: Response,
+  req: AuthRequest,
+  res: Response,
 ): Promise<void> => {
   try {
     const { paperId } = req.params;
     const { reviewerId } = req.body;
 
-    const updatedPaper = await Paper.findByIdAndUpdate(
-        paperId,
-        {
-          reviewer: reviewerId,
-          status: PaperStatus.UnderReview,
-        },
-        { new: true, runValidators: true },
-    ).populate("reviewer", "first_name last_name email university"); // Populate the reviewer data
-
-    if (!updatedPaper) {
+    const paper = await Paper.findById(paperId);
+    if (!paper) {
       res.status(404).json({ message: "Nepodarilo sa nájsť prácu" });
       return;
     }
 
-    const reviewer = updatedPaper.reviewer as IUser;
-    const paper = updatedPaper;
+    // If a reviewer already exists and different, delete their review
+    const oldReviewerId = paper.reviewer?.toString();
+    if (oldReviewerId && oldReviewerId !== reviewerId) {
+      const existingReview = await Review.findOne({
+        paper: paperId,
+        reviewer: oldReviewerId,
+      });
 
+      if (existingReview) {
+        await Review.findByIdAndDelete(existingReview._id);
+        console.log(`Deleted old review by reviewer ${oldReviewerId}`);
+      }
+    }
+
+    // Assign the new reviewer
+    const updatedPaper = await Paper.findByIdAndUpdate(
+      paperId,
+      {
+        reviewer: reviewerId,
+        status: PaperStatus.UnderReview,
+      },
+      { new: true, runValidators: true },
+    ).populate("reviewer", "first_name last_name email university");
+
+    if (!updatedPaper) {
+      res.status(404).json({ message: "Nepodarilo sa nájsť prácu po aktualizácii" });
+      return;
+    }
+
+    // Send email notification
+    const reviewer = updatedPaper.reviewer as IUser;
     const currentDate = new Date().toLocaleDateString("sk-SK", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
 
-    if (reviewer && paper) {
+    if (reviewer) {
       const emailContent = `
-        <p>Dobrý deň,</p>
-        <p>Bola vám dňa ${currentDate} pridelená nová práca "<strong>${paper.title}</strong>" na recenziu.</p>
-        <p>Prihláste sa do svojho účtu, aby ste získali prístup k podrobnostiam.</p>
-      `;
+  <p>Dobrý deň,</p>
+  <p>Bola vám dňa ${currentDate} pridelená nová práca "<strong>${updatedPaper.title}</strong>" na recenziu.</p>
+  <p>Prihláste sa do svojho účtu, aby ste získali prístup k podrobnostiam.</p>
+  <p><a href="https://svk-ukf.sk/" target="_blank">Navštíviť web SVK UKF</a></p>
+  <p>S pozdravom,<br/>tím SciSubmit</p>
+`;
 
       await sendEmail({
         to: reviewer.email,
@@ -757,16 +780,16 @@ export const assignReviewer = async (
       });
     }
 
-
     res.status(200).json({
-      message: "Práca bola úspešne aktualizovaná",
+      message: "Recenzent bol priradený a stará recenzia bola vymazaná (ak existovala).",
       paper: updatedPaper,
     });
   } catch (error) {
     console.error("Error assigning reviewer:", error);
-    res
-        .status(500)
-        .json({ message: "Nepodarilo sa aktualizovať prácu", error });
+    res.status(500).json({
+      message: "Nepodarilo sa aktualizovať prácu",
+      error,
+    });
   }
 };
 
@@ -931,7 +954,7 @@ export const downloadPapersByConference = async (
 /** HOMEPAGE MANAGEMENT **/
 /** Committees **/
 //Fetch committees
-export const getCommittees = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getCommittees = async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
     const homepage = await Homepage.findOne().select("committees");
     res.status(200).json({ committees: homepage?.committees || [] });
@@ -1019,7 +1042,7 @@ export const deleteCommittee = async (req: AuthRequest, res: Response): Promise<
 
 /** Program **/
 // Fetch program
-export const getProgram = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getProgram = async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
     const homepage = await Homepage.findOne().select("program");
     res.status(200).json({ program: homepage?.program || { fileLink: "", items: [] } });
@@ -1092,7 +1115,7 @@ export const deleteProgramItem = async (req: AuthRequest, res: Response): Promis
 };
 
 const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
+  destination: async (_req, _file, cb) => {
     try {
       const uploadPath = path.join(config.uploads, "programs");
       await fs.mkdir(uploadPath, { recursive: true });
@@ -1101,12 +1124,12 @@ const storage = multer.diskStorage({
       cb(error instanceof Error ? error : new Error(String(error)), "");
     }
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     cb(null, file.originalname);
   },
 });
 
-const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedExtensions = [".pdf"];
   const ext = path.extname(file.originalname).toLowerCase();
 
@@ -1117,7 +1140,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
   }
 };
 
-export const upload = multer({ storage, fileFilter });
+export const uploadProgram = multer({ storage, fileFilter });
 
 // Upload Program File
 export const uploadProgramFile = async (req: Request, res: Response): Promise<void> => {

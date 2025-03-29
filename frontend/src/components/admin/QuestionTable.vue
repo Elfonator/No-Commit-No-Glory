@@ -79,9 +79,8 @@ export default defineComponent({
     }
 
     const tableHeaders = [
-      { title: 'Text', value: 'text' },
-      { title: 'Typ', value: 'type' },
-      { title: 'Kategória', value: 'category' },
+      { title: 'Text', value: 'text', width: '800px' },
+      { title: 'Typ', value: 'type', width: '40px' },
       { title: '', value: 'actions' },
     ]
 
@@ -236,8 +235,8 @@ export default defineComponent({
       </div>
     </v-card-title>
 
-    <v-card-subtitle>
-      <v-row>
+    <v-card-subtitle class="filters-section">
+      <v-row no-gutters>
         <v-col cols="12" md="3">
           <v-select
             v-model="filters.type"
@@ -247,7 +246,7 @@ export default defineComponent({
             item-value="value"
             multiple
             outlined
-            dense
+            density="compact"
           />
         </v-col>
         <v-col cols="12" md="3">
@@ -260,10 +259,12 @@ export default defineComponent({
             multiple
             outlined
             dense
+            density="compact"
           />
         </v-col>
-        <v-col cols="12" md="3">
+        <v-col cols="10" md="2">
           <v-btn
+            class="filter-btn"
             color="primary"
             @click="resetFilters"
             title="Zrušiť filter"
@@ -280,12 +281,12 @@ export default defineComponent({
       :items-per-page="perPage"
       :page.sync="currentPage"
       class="custom-table"
-      dense
+      density="comfortable"
       item-value="_id"
     >
       <template v-slot:body="{ items }">
         <tr v-for="question in items" :key="question._id" class="custom-row">
-          <td>{{ question.text }}</td>
+          <td class="truncate-cell">{{ question.text }}</td>
           <td>
             <v-chip
               color="primary"
@@ -302,22 +303,13 @@ export default defineComponent({
               </td>
             </v-chip>
           </td>
-          <td>
-            <v-chip
-              color="brown"
-              dark
-              small
-              class="d-flex justify-center custom-chip rounded"
-            >
-              {{ question.category || 'N/A' }}
-            </v-chip>
-          </td>
+
           <td class="d-flex justify-end align-center">
             <v-btn color="#FFCD16" @click="openDialog('edit', question)">
-              <v-icon size="24">mdi-pencil</v-icon>
+              <v-icon size="20">mdi-pencil</v-icon>
             </v-btn>
             <v-btn color="#BC463A" @click="confirmDelete(question)">
-              <v-icon size="24" color="white">mdi-delete</v-icon>
+              <v-icon size="20" color="white">mdi-delete</v-icon>
             </v-btn>
           </td>
         </tr>
@@ -325,7 +317,7 @@ export default defineComponent({
     </v-data-table>
 
     <!-- Dialog -->
-    <v-dialog v-model="dialogVisible" max-width="800px">
+    <v-dialog v-model="dialogVisible" max-width="700px">
       <v-card>
         <v-card-title>
           {{ dialogMode === 'add' ? 'Pridať Otázku' : 'Upraviť Otázku' }}
@@ -382,4 +374,11 @@ export default defineComponent({
   </v-card>
 </template>
 
-<style lang="scss"></style>
+<style lang="scss">
+.truncate-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>

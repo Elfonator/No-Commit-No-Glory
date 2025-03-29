@@ -95,9 +95,9 @@ export default defineComponent({
       { title: 'Priezvisko', value: 'last_name' },
       { title: 'Meno', value: 'first_name' },
       { title: 'Email', value: 'email' },
-      { title: 'Univerzita', value: 'university' },
-      { title: 'Fakulta', value: 'faculty' },
-      { title: 'Role', value: 'role' },
+      { title: 'Univerzita', value: 'university', width: '230px' },
+      { title: 'Fakulta', value: 'faculty', width: '90px' },
+      { title: 'Role', value: 'role', width: '30px'},
       { title: '', value: 'actions', sortable: false },
     ]
 
@@ -303,20 +303,20 @@ export default defineComponent({
       <div class="d-flex justify-space-between align-center w-100">
         <h3>Správa používateľov</h3>
         <v-btn color="primary" class="add_new" @click="openDialog('add')">
-          <v-icon left class="add_icon">mdi-plus-circle-outline</v-icon>Pridať používateľa</v-btn>
+          <v-icon left class="add_icon">mdi-plus-circle-outline</v-icon>Nový používateľ</v-btn>
       </div>
     </v-card-title>
 
     <!-- Filters Section -->
-    <v-card-subtitle>
-      <v-row>
+    <v-card-subtitle class="filters-section">
+      <v-row no-gutters>
         <v-col cols="12" md="2">
           <v-select
             v-model="filters.selectedStatus"
             :items="statusOptions"
             label="Stav"
             outlined
-            dense
+            density="compact"
             multiple
           />
         </v-col>
@@ -328,6 +328,7 @@ export default defineComponent({
             item-value="value"
             label="Rola"
             multiple
+            density="compact"
           />
         </v-col>
         <v-col cols="12" md="3">
@@ -335,7 +336,7 @@ export default defineComponent({
             v-model="filters.name"
             label="Používateľ"
             outlined
-            dense
+            density="compact"
             clearable
           />
         </v-col>
@@ -344,12 +345,13 @@ export default defineComponent({
             v-model="filters.university"
             label="Univerzita"
             outlined
-            dense
             clearable
+            density="compact"
           />
         </v-col>
         <v-col cols="8" md="2">
           <v-btn
+            class="filter-btn"
             color="primary"
             @click="resetFilters"
             title="Zrušiť filter"
@@ -367,7 +369,7 @@ export default defineComponent({
       :items-per-page="perPage"
       :page.sync="currentPage"
       class="custom-table"
-      dense
+      density="comfortable"
       item-value="_id"
     >
       <template v-slot:body="{ items }">
@@ -390,7 +392,6 @@ export default defineComponent({
           <td>
             <v-chip
               :color="roleColors[user.role as keyof typeof roleColors]"
-              dark
               small
               prepend-icon="mdi-label"
               class="d-flex justify-start custom-chip rounded"
@@ -404,10 +405,10 @@ export default defineComponent({
           </td>
           <td class="d-flex justify-center align-center">
             <v-btn @click="openDialog('edit', user._id)" color="#FFCD16">
-              <v-icon size="24">mdi-pencil</v-icon>
+              <v-icon size="20">mdi-pencil</v-icon>
             </v-btn>
             <v-btn color="#BC463A" @click="confirmDelete(user)">
-              <v-icon size="24" color="white">mdi-delete</v-icon>
+              <v-icon size="20" color="white">mdi-delete</v-icon>
             </v-btn>
           </td>
         </tr>

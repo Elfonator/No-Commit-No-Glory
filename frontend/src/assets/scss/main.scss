@@ -9,7 +9,7 @@ $tertiary: #ffcb9a;
 $secondary-light: #f2c9b6;
 $secondary-dark: #b7846c;
 
-$error: #5c2018;
+$error: #bc4639;
 $error-light: #bc4639;
 
 $black: #000;
@@ -17,556 +17,119 @@ $white: #fff;
 
 $border-radius-8: 8px;
 
-//Vuetify scss
+// Global shrinkage
+body {
+  font-size: 0.8rem;
+}
+.v-application .text-h1 { font-size: 2rem !important; }
+.v-application .text-h2 { font-size: 1.6rem !important; }
+.v-application .text-h3 { font-size: 1.4rem !important; }
+.v-application .text-h4 { font-size: 1.2rem !important; }
+.v-application .text-h5 { font-size: 1rem !important; }
+.v-application .text-h6 { font-size: 0.8rem !important; }
+
+// Banner
 .banner-container {
   position: relative;
   width: 100%;
-  height: 300px;
+  height: 200px;
   overflow: hidden;
   align-self: center;
 
   .banner-image {
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
-    height: 300px;
+    height: 250px;
     object-fit: cover;
-    z-index: 1;
     opacity: 0.5;
   }
 
   .banner-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
-    z-index: 2;
-    background: linear-gradient(
-      to bottom,
-      rgba(16, 100, 102, 0.6),
-      rgba(0, 0, 0, 0.5)
-    );
+    background: linear-gradient(to bottom, rgba(16, 100, 102, 0.6), rgba(0, 0, 0, 0.5));
   }
 }
 
+// Dialogs
 .v-dialog {
-  max-width: 1000px !important;
+  max-width: 800px !important;
 
   .v-card {
-    padding: 16px;
+    padding: 10px;
 
     .v-btn {
-      font-size: 1em !important;
+      font-size: 0.9em !important;
     }
 
-    /* Align actions at the bottom */
     .v-card-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 3px;
+      gap: 4px;
     }
 
     .v-card-title {
-      font-size: 2rem;
-      font-weight: bold;
+      font-size: 1.3rem;
       text-align: center;
+    }
 
+    .v-card-text p{
+      font-size: 0.9rem;
+    }
+
+    .v-input {
+      margin-bottom: 6px !important;
+    }
+
+    .v-field {
+      min-height: 40px !important;
+    }
+
+    .v-field__input,
+    .v-input__control {
+      height: 40px !important;
+      align-items: center !important;
+    }
+
+    .v-label {
+      font-size: 0.75rem !important;
     }
   }
 }
 
-.large-text-field input {
-  font-size: 1.1rem;
-  color: $primary;
-}
-
-.large-text-field label {
-  font-size: 1.1rem;
-  color: $primary;
-}
-
-.large-text-field select {
-  font-size: 1.1rem;
-}
-
-
-.large-text-field .v-input__control {
-  font-size: 1.1rem;
-}
-
-.large-text-field.v-input--disabled {
-  color: black;
-}
-
-.add_icon {
-  margin-right: 10px;
-}
-
-//Puvodni scss
-// Layout
-.layout {
-  display: flex;
-  height: 100vh;
-}
-
-// Main Content
-.main-content {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  background-color: #f9f9f9;
-}
-
-//Modals
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-container {
-  background: white;
-  padding: 20px;
-  border-radius: $border-radius-8;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  position: relative;
-}
-
-//Cards
-.card {
-  border: 1px solid #ddd;
-  border-radius: $border-radius-8;
-  overflow: hidden;
-  margin: 20px auto;
-  max-width: 800px;
-
-  &-header {
-    background: #f4f4f4;
-    padding: 15px;
-    border-bottom: 1px solid #ddd;
-  }
-
-  &-footer {
-    display: flex;
-    justify-content: flex-end;
-    padding: 10px;
-    background: #f4f4f4;
-  }
-}
-
-//Buttons
-.btn {
-  padding: 6px 12px;
-  border: none;
-  border-radius: $border-radius-8;
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin: 2px;
-
-  &-primary {
-    background-color: $primary !important;
-    border: none !important;
-
-    &:hover {
-      background-color: $primary-light !important;
-    }
-  }
-
-  &-edit {
-    background-color: $secondary !important;
-    color: $black !important;
-
-    &:hover {
-      background-color: $secondary-light !important;
-      color: $black !important;
-    }
-
-    &:disabled {
-      border: none;
-      background-color: $secondary-light;
-      cursor: not-allowed;
-    }
-  }
-
-  &-delete {
-    background-color: $error !important;
-    color: $white !important;
-
-    &:hover {
-      background-color: $error-light !important;
-      color: $white !important;
-    }
-  }
-}
-
-//Tables
-.table-container {
-  overflow-x: auto;
-  margin-bottom: 1rem;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-
-  th,
-  td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-  }
-
-  th {
-    background: #f4f4f4;
-    font-weight: bold;
-  }
-}
-
-//Badges
-.badge {
-  padding: 5px 10px;
-  border-radius: $border-radius-8;
-  font-size: 12px;
-  color: white;
-
-  &-success {
-    background-color: $primary-light;
-  }
-
-  &-secondary {
-    background-color: #6c757d;
-  }
-
-  &-warning {
-    background-color: $error;
-  }
-
-  &-primary {
-    background-color: $primary;
-  }
-
-  &-yellow {
-    background-color: #b9841d;
-  }
-}
-
-//Close button
-.btn-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  border: none;
-  background: none;
-  font-size: 1.5rem;
-  color: #333;
-  cursor: pointer;
-
-  &:hover {
-    color: #555;
-  }
-
-  &:focus {
-    outline: none;
-    color: #000;
-  }
-}
-
-//Forms
-.submission-form {
-  max-width: 600px;
-  margin: auto;
-  padding: 20px;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: $border-radius-8;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-
-  label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-  }
-
-  input,
-  select,
-  textarea {
-    width: 100%;
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: $border-radius-8;
-  }
-}
-
-//Author
-.author-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-
-  input {
-    flex: 1;
-  }
-}
-
-//Sidebar
-.sidebar {
-  background-color: #f8f9fa; // Light gray background
-  width: 250px;
-  height: 100vh;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  position: fixed;
-  top: 0;
-  left: 0;
-  overflow-y: auto;
-
-  ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .v-list-subheader__text {
-    font-weight: bold;
-    font-size: 1.3rem;
-    font-family: Roboto, sans-serif;
-    color: #2c3531;
-  }
-}
-
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  padding: 10px 15px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  border-radius: $border-radius-8;
-  transition: background-color 0.3s;
-
-  &:hover {
-    background-color: #e2e6ea;
-  }
-
-  .text-primary {
+// Form inputs
+.large-text-field {
+  input, select, label, .v-input__control {
+    font-size: 0.8rem;
     color: $primary;
   }
 
-  .text-orange {
-    color: #fd7e14;
+  &.v-input--disabled {
+    color: black;
   }
 }
 
-//Pagination
-.pagination-footer {
-  display: flex;
-  justify-content: flex-end;
+// Vuetify Typography Overrides
+.v-list-item-title {
+  font-size: 0.9rem;
+  font-family: 'Lato', sans-serif;
+  color: #2c3531;
 }
 
-.pagination {
-  button {
-    margin: 0 4px;
-    padding: 6px 12px;
-    cursor: pointer;
-    background-color: $primary-light;
-    color: white;
-    border: none;
-    border-radius: $border-radius-8;
-    transition: background-color 0.3s;
-
-    &:hover:not(:disabled) {
-      background-color: #336f78;
-    }
-
-    &:disabled {
-      background-color: #d6d6d6;
-      cursor: not-allowed;
-    }
-  }
-
-  span {
-    margin: 0 8px;
-    font-size: 1rem;
-  }
-}
-
-//Profile
-.edit-profile-form {
-  padding: 20px;
-  background-color: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: $border-radius-8;
-}
-
-.card-profile-image {
-  width: 80px;
-  height: auto;
-}
-
-.table-card {
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  padding: 1rem 0;
-  border-radius: $border-radius-8;
-
-  .card-header {
-    padding: 0 1rem 1rem;
-  }
-}
-
-//Filters
-.filter-group {
-  margin-bottom: 0.5rem;
-
-  .filter-checkbox {
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: row;
-    align-items: center;
-
-    input[type='checkbox'] {
-      accent-color: $primary;
-      margin-right: 10px;
-    }
-
-    label {
-      margin-right: 20px;
-    }
-  }
-}
-
-.filter-dropdown {
-  position: relative;
-
-  .btn {
-    margin: 0 0 1rem 1rem;
-  }
-}
-
-//Dropdown
-.dropdown-content {
-  position: absolute;
-  background-color: white;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-  z-index: 1;
-  padding: 10px;
-  width: 250px;
-  border-radius: $border-radius-8;
-  display: flex;
-  flex-direction: column;
-}
-
-//Radio
-.custom-radio-group {
-  display: flex;
-  gap: 1rem;
-}
-
-.custom-radio {
-  position: relative;
-  display: inline-block;
-  padding-left: 35px;
-  cursor: pointer;
-
-  input[type='radio'] {
-    position: absolute;
-    left: 0;
-    top: 0;
-    opacity: 0;
-    cursor: pointer;
-
-    &:hover + .custom-radio-label::before {
-      background-color: #ccc;
-    }
-
-    &:checked + .custom-radio-label::before {
-      background-color: $primary;
-    }
-
-    &:disabled + .custom-radio-label {
-      color: #212529;
-    }
-  }
-
-  .custom-radio-label {
-    display: flex;
-    align-items: center;
-    font-size: 16px;
-    color: #212529;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background-color: #ddd;
-      transition: background-color 0.3s ease;
-      border: 2px solid #212529;
-    }
-  }
-}
-
-//Roles
-.user-role-group {
-  margin-bottom: 1.5rem;
-}
-
-.role-label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  display: block;
-}
-
-.role-options {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.role-option {
-  display: flex;
-  align-items: center;
-  font-size: 1rem;
-  margin: 0;
-
-  input {
-    margin-right: 0.5rem;
-    width: auto !important;
-  }
-}
-
-//Other
+// Small extras you might still use
 .icon {
-  margin-right: 10px;
-  font-size: 20px;
+  margin-right: 8px;
+  font-size: 18px;
 }
 
 .link-name {
-  font-size: 16px;
+  font-size: 0.9rem;
   color: #333;
 }
 
 .nav-link {
-  color: $primary !important; // Teal
+  color: $primary !important;
 
   &.active {
     background-color: $primary !important;
@@ -574,64 +137,157 @@ $border-radius-8: 8px;
   }
 }
 
-.sidebar-category {
-  font-weight: bold;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid #ccc;
+.v-main {
+  width: 100%;
+  padding-top: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
 }
 
-.file-input-submit {
-  display: none;
-}
+.v-card {
+  padding: 1px;
 
-.custom-file-label {
-  display: inline-block;
-  cursor: pointer;
-  text-align: center;
-  font-weight: normal;
-  width: fit-content;
-  transition: background-color 0.3s ease;
-  s &:hover {
-    background-color: #f4f4f4;
+  .v-card-title {
+    margin: 8px 0;
+    font-size: 1rem;
+    color: $primary;
+    text-transform: uppercase;
+  }
+
+  .v-card-subtitle {
+    padding: 0 14px;
+  }
+
+  .v-btn {
+    margin: 8px 4px;
+    font-size: 0.9rem;
+  }
+
+  .add_new {
+    margin-bottom: 14px !important;
+    margin-left: 20px;
+  }
+
+  .custom-table {
+    padding: 0 16px;
+  }
+
+  .custom-table thead th {
+    font-size: 0.9rem;
+    font-weight: 600 !important;
+    background-color: rgba(16, 100, 102, 0.05);
+    color: $primary-shadow;
+    margin-left: 10px !important;
+  }
+
+  .custom-table td {
+    font-size: 0.9rem;
+
+    .custom-chip {
+      font-size: 0.9rem;
+      padding: 3px 3px;
+    }
+  }
+
+  // Table tweaks
+  .v-data-table {
+    font-size: 0.9rem;
+    th, td {
+      padding: 0 6px !important;
+    }
+  }
+
+  .v-data-table .v-btn {
+    margin-left: 6px;
+    margin-right: 0;
+    padding: 4px 6px !important;
+    min-width: 36px !important;
+    height: 30px !important;
+    width: 30px !important;
   }
 }
 
-.conference-container {
-  margin-bottom: 1rem;
+.v-btn {
+  font-size: 0.8rem !important;
+  padding: 4px 6px;
 }
 
-.button-group {
-  display: flex;
-  justify-content: space-evenly;
+.v-textarea,
+.v-text-field,
+.v-file-input {
+  margin-bottom: 12px;
+  font-size: 1rem;
+  color: $primary;
+}
 
-  svg {
-    color: $primary;
-    font-size: 1.2em;
+.v-data-table-footer {
+  padding: 0 8px !important;
+  min-height: 50px !important;
+  height: 32px !important;
+  font-size: 0.8rem !important;
 
-    &.fa-trash-can {
-      color: $error;
+  .v-data-table-footer__items-per-page {
+    padding: 0 !important;
+    margin: 0 !important;
+    height: 32px !important;
+    align-items: center;
+  }
+
+  .v-select,
+  .v-input {
+    height: 15px !important;
+    min-height: 15px !important;
+    font-size: 0.75rem !important;
+  }
+
+  .v-field {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
+  }
+
+  .v-field__input,
+  .v-field__append-inner {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 6px !important;
+    font-size: 0.75rem !important;
+    align-items: center;
+  }
+}
+
+.filters-section {
+  .v-input.v-input--density-compact {
+    min-height: 36px !important;
+    height: 36px !important;
+    margin: 0 !important;
+
+    .v-input__control {
+      min-height: 40px !important;
+      padding: 0 6px !important;
+    }
+
+    .v-field {
+      min-height: 40px !important;
+    }
+
+    .v-label {
+      font-size: 0.7rem !important;
+    }
+
+    .v-select__selection-text {
+      font-size: 0.8rem !important;
     }
   }
 }
 
-.icon-button {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
-
-.header-buttons button {
-  margin-right: 10px;
-}
-.button-group-multiple {
+.filter-btn {
+  height: 34px !important;
+  width: 34px !important;
+  padding: 0 !important;
+  margin-top: 4px !important;
   display: flex;
-  justify-content: space-evenly;
   align-items: center;
 }
-.button-group-multiple svg,
-.button-group svg {
-  color: $primary;
-  font-size: 1.2em;
-}
+

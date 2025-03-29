@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { useAuthStore } from '@/stores/auth'
 
 let authStore: ReturnType<typeof import('@/stores/auth').useAuthStore>
 

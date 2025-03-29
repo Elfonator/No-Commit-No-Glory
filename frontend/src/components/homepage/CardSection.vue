@@ -414,7 +414,7 @@ export default defineComponent({
           </ol>
         </v-card-text>
         <v-card-actions>
-          <v-btn @click="closeModal('authorInstructions')">Zatvoriť</v-btn>
+          <v-btn @click="closeModal('authorInstructions')" variant="outlined">Zatvoriť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -434,7 +434,7 @@ export default defineComponent({
           </div>
         </v-card-text>
         <v-card-actions>
-          <v-btn @click="closeModal('conferenceCommittees')">Zatvoriť</v-btn>
+          <v-btn @click="closeModal('conferenceCommittees')" variant="outlined">Zatvoriť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -459,7 +459,7 @@ export default defineComponent({
           </div>
         </v-card-text>
         <v-card-actions class="card-actions">
-          <v-btn @click="closeModal('awardedWorks')">Zatvoriť</v-btn>
+          <v-btn @click="closeModal('awardedWorks')" variant="outlined">Zatvoriť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -484,7 +484,7 @@ export default defineComponent({
           </div>
         </v-card-text>
         <v-card-actions class="card-actions">
-          <v-btn @click="closeModal('pastConferences')">Zatvoriť</v-btn>
+          <v-btn @click="closeModal('pastConferences')" variant="outlined">Zatvoriť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -493,9 +493,9 @@ export default defineComponent({
 
 <style lang="scss">
 .cards-section {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  max-width: 75%;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  max-width: 80%;
 
   .v-card {
     background-color: #f7f7f7 !important;
@@ -508,15 +508,17 @@ export default defineComponent({
       color: #116466;
       font-weight: bolder;
       margin-left: 5px;
-      padding-top: 40px;
+      padding-top: 20px;
       text-align: center;
-      font-size: 1.1rem !important;
+      font-size: 1rem !important;
+      word-break: keep-all;
+      white-space: normal;
     }
 
     .v-card-text {
       margin: 10px 0 0 10px;
       text-align: left;
-      font-size: 1.2rem;
+      font-size: 0.9rem;
     }
 
     .card-icon {
@@ -562,7 +564,7 @@ export default defineComponent({
   ul,
   ol {
     padding-left: 20px;
-    font-size: 1.2rem;
+    font-size: 0.9rem;
   }
 
   ul {
@@ -591,11 +593,11 @@ export default defineComponent({
   }
 
   p {
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
 
   h4 {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: bold;
     color: #2c3531;
     margin-top: 15px;

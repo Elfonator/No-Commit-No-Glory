@@ -77,7 +77,7 @@ export default defineComponent({
         if (programFile.value) {
           // Create FormData and append the file
           const formData = new FormData();
-          formData.append("file", programFile.value);
+          formData.append("file_link", programFile.value);
 
           const response = await axiosInstance.post("/auth/admin/program/upload", formData, {
             headers: { "Content-Type": "multipart/form-data" },
@@ -129,10 +129,10 @@ export default defineComponent({
 
     <!-- List of program events -->
     <v-list>
-      <v-list-item v-for="event in localProgramItems" :key="event._id">
-        <v-row class="w-100">
+      <v-list-item v-for="event in localProgramItems" :key="event._id"  class="py-0 my-0 list-item-tight">
+        <v-row class="w-100" no-gutters>
           <!-- Schedule text field column -->
-          <v-col cols="2">
+          <v-col cols="3">
             <v-text-field
               v-model="event.schedule"
               label="Čas"
@@ -140,9 +140,8 @@ export default defineComponent({
               class="mr-2"
             />
           </v-col>
-
           <!-- Description text field column -->
-          <v-col cols="9">
+          <v-col cols="8">
             <v-text-field
               v-model="event.description"
               label="Bod programu"
@@ -150,7 +149,6 @@ export default defineComponent({
               class="mr-2"
             />
           </v-col>
-
           <!-- Delete button column -->
           <v-col cols="1" class="d-flex justify-end">
             <v-btn color="#BC463A" @click="removeEvent(event._id || '')">
@@ -175,7 +173,7 @@ export default defineComponent({
 
     <!-- Save Button -->
     <v-card-actions>
-      <v-btn color="primary" @click="saveProgram">Uložiť program</v-btn>
+      <v-btn color="primary" @click="saveProgram" variant="outlined">Uložiť program</v-btn>
     </v-card-actions>
   </v-card>
 </template>

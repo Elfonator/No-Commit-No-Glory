@@ -23,13 +23,15 @@ export const getAssignedPapers = async (
     }
 
     // Get all reviewed paper IDs (both drafts & submitted)
-    const reviewedPaperIds = await Review.find({ reviewer: reviewerId })
-      .distinct('paper');
+    const submittedPaperIds = await Review.find({
+      reviewer: reviewerId,
+      isDraft: false
+    }).distinct('paper');
 
     // Find papers that have NOT been reviewed (no drafts or submitted reviews)
     const pendingPapers = await Paper.find({
       reviewer: reviewerId,
-      _id: { $nin: reviewedPaperIds }
+      _id: { $nin: submittedPaperIds }
     })
       .populate('category', 'name')
       .populate('conference', 'year location date end_date deadline_review');
@@ -96,7 +98,7 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
     const { paper, reviewer, responses, recommendation, comments, isDraft } = req.body;
 
     // Validate required fields
-    if (!paper || !reviewer || !responses || !recommendation) {
+    if (!paper || !reviewer || (!responses || responses.length === 0) && !isDraft || !recommendation) {
       res.status(400).json({ message: "Chýbajú povinné polia" });
       return;
     }

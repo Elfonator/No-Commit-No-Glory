@@ -31,12 +31,10 @@ export default defineComponent({
     const isEditDialogOpen = ref(false)
     const isPaperViewDialogOpen = ref(false)
     const isAssignReviewerDialogOpen = ref(false)
-    const isDropdownOpen = ref(false)
     const selectedPaper = ref<AdminPaper | null>(null)
     const selectedReviewer = ref<any>(null)
     const menuCatOpen = ref(false)
-
-
+    const isLoading = ref(false);
 
     //Table headers for papers
     const tableHeaders = [
@@ -163,30 +161,32 @@ export default defineComponent({
     /** Filters for papers **/
     const paperFilters = reactive({
       selectedStatus: null as PaperStatus | null,
+      userSearch: '',
     })
 
-    //Filtered papers for selected conference
+    // Filtered papers for selected conference and user
     const filteredPapers = computed(() => {
       return paperStore.adminPapers
         .filter(paper => paper.status !== PaperStatus.Draft) // Exclude drafts
         .filter(paper => {
-          // Ensure the paper belongs to the expanded conference
           const belongsToConference =
             expandedConferenceId.value === paper.conference?._id
 
-          // Check if the paper matches the selected status filter
           const matchesStatus =
             !paperFilters.selectedStatus ||
             paper.status === paperFilters.selectedStatus
 
-          // Include the paper if it belongs to the conference and matches the filter
-          return belongsToConference && matchesStatus
+          const matchesUser =
+            !paperFilters.userSearch ||
+            paper.user?.first_name?.toLowerCase().includes(paperFilters.userSearch.toLowerCase()) ||
+            paper.user?.last_name?.toLowerCase().includes(paperFilters.userSearch.toLowerCase())
+
+          return belongsToConference && matchesStatus && matchesUser
         })
         .sort((a, b) => {
-          // Sort by submission_date, newest first
           const dateA = new Date(a.submission_date).getTime()
           const dateB = new Date(b.submission_date).getTime()
-          return dateB - dateA // Newest papers on top
+          return dateB - dateA
         })
     })
 
@@ -251,6 +251,10 @@ export default defineComponent({
     }
 
     const changeDeadline = async () => {
+        if (isLoading.value) return; // prevent double-clicks
+
+        isLoading.value = true;
+        try {
       if (!selectedPaper.value || !newDeadline.value) return
 
       try {
@@ -271,6 +275,11 @@ export default defineComponent({
           color: 'error',
         })
       }
+        }catch (err) {
+          console.error(err);
+        } finally {
+          isLoading.value = false;
+        }
     }
 
     /** Dialog for editing submission information **/
@@ -306,6 +315,10 @@ export default defineComponent({
     };
 
     const saveEditedPaper = async () => {
+      if (isLoading.value) return; // prevent double-clicks
+
+      isLoading.value = true;
+      try {
       if (!selectedPaper.value) return;
 
       try {
@@ -330,6 +343,11 @@ export default defineComponent({
           color: 'error',
         });
       }
+    }catch (err) {
+      console.error(err);
+    } finally {
+      isLoading.value = false;
+    }
     };
 
     const selectCategory = (category: ActiveCategory) => {
@@ -359,23 +377,42 @@ export default defineComponent({
       }
 
       console.log('Available reviewers:', availableReviewers.value)
-      selectedReviewer.value = paper.reviewer || null
+      selectedReviewer.value =
+        availableReviewers.value.find(r => r._id === paper.reviewer) || null;
       isAssignReviewerDialogOpen.value = true
     }
 
-    const toggleDropdown = () => {
-      isDropdownOpen.value = !isDropdownOpen.value
-    }
+    const reviewerSearch = ref('')
 
-    const selectReviewer = (reviewer: any) => {
-      selectedReviewer.value = reviewer
-      isDropdownOpen.value = false
+    const customReviewerFilter = (item: any, queryText: string) => {
+      const search = queryText.toLowerCase()
+      return (
+        item.fullName.toLowerCase().includes(search) ||
+        item.email?.toLowerCase().includes(search) ||
+        item.university?.toLowerCase().includes(search)
+      )
     }
 
     //Assign reviewer to the selected paper
     const assignReviewer = async () => {
-      if (!selectedPaper.value || !selectedReviewer.value) return
+      if (isLoading.value) return; // prevent double-clicks
 
+      isLoading.value = true;
+      try {
+        if (!selectedPaper.value || !selectedReviewer.value) return
+
+        if (
+          selectedPaper.value.reviewer &&
+          selectedPaper.value.reviewer !== selectedReviewer.value._id
+        ) {
+          const confirmed = confirm(
+            "Táto práca už má recenziu od iného recenzenta. Pokračovaním sa táto recenzia vymaže. Pokračovať?"
+          );
+          if (!confirmed) {
+            isLoading.value = false;
+            return;
+          }
+        }
       try {
         await paperStore.assignReviewerToPaper(
           selectedPaper.value._id,
@@ -397,6 +434,11 @@ export default defineComponent({
           color: 'error',
         })
       }
+        }catch (err) {
+          console.error(err);
+        } finally {
+          isLoading.value = false;
+        }
     }
 
     const closeAssignReviewerDialog = () => {
@@ -449,18 +491,25 @@ export default defineComponent({
     //Fetch admin papers and reviewers
     onMounted(() => {
       paperStore.getAllPapers().then(() => {
-        //console.log('Papers from API:', paperStore.adminPapers)
-        const ongoingConference = groupedPapers.value.find(conference =>
-          conference.papers.some((paper: AdminPaper) => paper.status === PaperStatus.Submitted)
-        );
+        // Expand the first conference that has a paper with a review
+        const reviewedConference = groupedPapers.value.find(conference =>
+          conference.papers.some((paper: AdminPaper) => !!paper.review)
+        )
 
-        if (ongoingConference) {
-          expandedConferenceId.value = ongoingConference._id;
+        if (reviewedConference) {
+          expandedConferenceId.value = reviewedConference._id
+        } else {
+          // fallback: expand a conference with Submitted paper
+          const fallback = groupedPapers.value.find(conference =>
+            conference.papers.some((paper: AdminPaper) => paper.status === PaperStatus.Submitted)
+          )
+          if (fallback) {
+            expandedConferenceId.value = fallback._id
+          }
         }
       })
-      userStore.fetchReviewers().then(() => {
-        console.log('Reviewers:', userStore.reviewers)
-      })
+
+      userStore.fetchReviewers()
       categoryStore.fetchParticipantCategories()
     })
 
@@ -475,7 +524,6 @@ export default defineComponent({
       categoryStore,
       userStore,
       availableReviewers,
-      isDropdownOpen,
       isEditDialogOpen,
       isPaperViewDialogOpen,
       isDeadlineDialogOpen,
@@ -492,6 +540,9 @@ export default defineComponent({
       isDeletePaperDialogOpen,
       menuCatOpen,
       selectedCategory,
+      reviewerSearch,
+      isLoading,
+      customReviewerFilter,
       addAuthor,
       removeAuthor,
       saveEditedPaper,
@@ -507,8 +558,6 @@ export default defineComponent({
       resetConferenceFilters,
       resetFilters,
       viewPaper,
-      toggleDropdown,
-      selectReviewer,
       openAssignReviewerDialog,
       closeAssignReviewerDialog,
       assignReviewer,
@@ -529,30 +578,31 @@ export default defineComponent({
         <h3>Konferenčné príspevky</h3>
       </div>
     </v-card-title>
-    <v-card-subtitle>
+    <v-card-subtitle class="filters-section">
       <!-- Conference Filters -->
-      <v-row class="mt-4" dense>
-        <v-col cols="6" md="2">
+      <v-row no-gutters>
+        <v-col cols="3" md="2">
           <v-text-field
             v-model="conferenceFilters.year"
             label="Rok"
             type="number"
             outlined
-            dense
+            density="compact"
             clearable
           />
         </v-col>
-        <v-col cols="6" md="3">
+        <v-col cols="5" md="3">
           <v-text-field
             v-model="conferenceFilters.location"
             label="Miesto"
             outlined
-            dense
+            density="compact"
             clearable
           />
         </v-col>
-        <v-col cols="12" md="2">
+        <v-col cols="4" md="2">
           <v-btn
+            class="filter-btn"
             color="primary"
             @click="resetConferenceFilters"
             title="Zrušiť filter"
@@ -628,19 +678,30 @@ export default defineComponent({
           <!-- Toggleable section for papers -->
           <v-expand-transition>
             <div v-if="expandedConferenceId === conference._id">
-              <v-card-subtitle>
-                <v-row>
-                  <v-col ols="6" md="3">
+              <v-card-subtitle class="filters-section">
+                <v-row no-gutters>
+                  <v-col cols="7" md="3">
                     <v-select
                       v-model="paperFilters.selectedStatus"
                       :items="Object.values(PaperStatus)"
                       label="Zvolte status"
                       outlined
-                      dense
+                      density="compact"
+                      clearable
                     />
                   </v-col>
-                  <v-col cols="4" md="3">
+                  <v-col cols="6" md="3">
+                    <v-text-field
+                      v-model="paperFilters.userSearch"
+                      label="Autor"
+                      outlined
+                      density="compact"
+                      clearable
+                    />
+                  </v-col>
+                  <v-col cols="3" md="2">
                     <v-btn
+                      class="filter-btn"
                       color="primary"
                       @click="resetFilters"
                       title="Zrušiť filter"
@@ -657,7 +718,7 @@ export default defineComponent({
                 :pageText="'{0}-{1} z {2}'"
                 items-per-page-text="Práce na stránku"
                 item-value="_id"
-                dense
+                density="comfortable"
                 class="custom-table"
               >
                 <template v-slot:body="{ items }">
@@ -668,7 +729,7 @@ export default defineComponent({
                   >
                     <td>
                       <v-icon
-                        size="30"
+                        size="22"
                         color="primary"
                         @click="viewPaper(paper)"
                         style="cursor: pointer"
@@ -714,14 +775,14 @@ export default defineComponent({
                         title="Priradiť recenzenta"
                         @click="openAssignReviewerDialog(paper)"
                       >
-                        <v-icon size="25">mdi-account-plus</v-icon>
+                        <v-icon size="20">mdi-account-plus</v-icon>
                       </v-btn>
                       <!-- Edit Paper -->
                       <v-btn
                         color="#FFCD16"
                         @click="openEditDialog(paper)"
                         title="Upraviť prácu">
-                        <v-icon size="25">mdi-pencil</v-icon>
+                        <v-icon size="20">mdi-pencil</v-icon>
                       </v-btn>
                       <v-btn
                         :disabled="isDeadlineDisabled(paper.conference)"
@@ -729,13 +790,13 @@ export default defineComponent({
                         @click="openDeadlineDialog(paper)"
                         title="Upraviť termín"
                       >
-                        <v-icon size="25" color="black">mdi-timer-edit</v-icon>
+                        <v-icon size="20" color="black">mdi-timer-edit</v-icon>
                       </v-btn>
                       <v-btn
                         color="#BC463A"
                         @click="confirmDeletePaper(paper)"
                         title="Odstraniť">
-                        <v-icon size="25">mdi-delete</v-icon>
+                        <v-icon size="20">mdi-delete</v-icon>
                       </v-btn>
                     </td>
                   </tr>
@@ -744,41 +805,42 @@ export default defineComponent({
             </div>
           </v-expand-transition>
 
+          <!-- Assing reviewer dialog -->
           <v-dialog v-model="isAssignReviewerDialogOpen" max-width="600px">
             <v-card>
               <v-card-title>Priradiť recenzenta</v-card-title>
               <v-card-text>
-                <div class="custom-select">
-                  <div class="select-input" @click="toggleDropdown">
-                    <span>{{
-                      selectedReviewer?.fullName ||
-                      'Vyberte recenzenta zo zoznamu'
-                    }}</span>
-                    <v-icon>mdi-chevron-down</v-icon>
-                  </div>
-                  <div v-if="isDropdownOpen" class="dropdown-menu">
-                    <div
-                      v-for="reviewer in availableReviewers"
-                      :key="reviewer._id"
-                      class="dropdown-item"
-                      @click="selectReviewer(reviewer)"
-                    >
-                      {{ reviewer.fullName }}, {{ reviewer.university }} ({{
-                        reviewer.email
-                      }})
-                    </div>
-                  </div>
-                </div>
+                <v-autocomplete
+                  v-model="selectedReviewer"
+                  :items="availableReviewers"
+                  item-title="fullName"
+                  :item-value="reviewer => reviewer"
+                  label="Vyberte recenzenta"
+                  return-object
+                  outlined
+                  dense
+                  clearable
+                  :search-input.sync="reviewerSearch"
+                  :filter="customReviewerFilter"
+                />
               </v-card-text>
               <v-card-actions>
-                <v-btn variant="outlined" color="#BC463A" @click="closeAssignReviewerDialog"
+                <v-btn :loading="isLoading"
+                       variant="outlined"
+                       color="#BC463A"
+                       @click="closeAssignReviewerDialog"
                   >Zrušiť</v-btn
                 >
-                <v-btn variant="outlined" color="primary" @click="assignReviewer">Priradiť</v-btn>
+                <v-btn
+                  :loading="isLoading"
+                  variant="outlined"
+                  color="primary"
+                  @click="assignReviewer">Priradiť</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
 
+          <!-- Paper view dialog -->
           <v-dialog v-model="isPaperViewDialogOpen" max-width="900px">
             <v-card>
               <v-card-title>Detaily práce</v-card-title>
@@ -848,12 +910,14 @@ export default defineComponent({
                   variant="outlined"
                   color="primary"
                   @click="downloadPaper(selectedPaper?.conference?._id, selectedPaper?._id)">
-                  <v-icon size="36">mdi-download-box</v-icon>
+                  <v-icon size="22">mdi-download-box</v-icon>
                   Stiahnuť
                 </v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
+
+          <!-- Deadline change dialog -->
           <v-dialog v-model="isDeadlineDialogOpen" max-width="400px">
             <v-card>
               <v-card-title>Zmena termínu</v-card-title>
@@ -953,6 +1017,34 @@ export default defineComponent({
                 </v-btn>
               </v-card-text>
 
+              <v-divider class="my-4" />
+              <v-row v-if="selectedPaper?.review">
+                <v-col cols="12">
+                  <h4>Recenzia</h4>
+                  <v-list two-line>
+                    <v-list-item v-for="(response, index) in selectedPaper.review?.responses" :key="index">
+                      <v-list-item>
+                        <v-list-item-title>
+                          <strong>Otázka {{ index + 1 }}:</strong> {{ response.question }}
+                        </v-list-item-title>
+                        <v-list-item-subtitle>
+                          {{ response.answer }}
+                        </v-list-item-subtitle>
+                      </v-list-item>
+                    </v-list-item>
+                  </v-list>
+                  <v-textarea
+                    v-if="selectedPaper.review?.comments"
+                    label="Komentár recenzenta"
+                    :model-value="selectedPaper.review.comments"
+                    readonly
+                    auto-grow
+                    outlined
+                    class="mt-3"
+                  />
+                </v-col>
+              </v-row>
+
               <!-- Dialog Actions -->
               <v-card-actions>
                 <v-btn variant="outlined" @click="closeEditDialog" color="#BC463A">Zrušiť</v-btn>
@@ -977,51 +1069,12 @@ h4 {
 }
 
 p, h5 {
-  font-size: 1.3rem;
+  font-size: 0.95rem;
   color: #2c3531;
 }
 
 .green {
   color: #116466;
-}
-
-.custom-select {
-  position: relative;
-  justify-self: center;
-  justify-items: center;
-  width: 100%;
-  max-width: 500px;
-
-  .select-input {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f5f5f5;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    z-index: 1000;
-
-    .dropdown-item {
-      padding: 10px;
-      cursor: pointer;
-
-      &:hover {
-        background: #f0f0f0;
-      }
-    }
-  }
 }
 
 .custom-table {
@@ -1043,7 +1096,7 @@ p, h5 {
 
 .paperInfo {
   display: flex;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
 }
 
 .dynamic-button {

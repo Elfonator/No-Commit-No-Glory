@@ -143,16 +143,17 @@ export default defineComponent({
           class="custom-table"
           :page-text="'{0}-{1} z {2}'"
           items-per-page-text="Členovia na stránku"
+          density="compact"
         >
           <template v-slot:body="{ items }">
             <tr v-for="member in items" :key="member.fullName">
               <td>{{ member.fullName }}</td>
               <td class="d-flex justify-end align-center">
                 <v-btn color="#FFCD16" @click="openDialog('edit', member)">
-                  <v-icon size="24">mdi-pencil</v-icon>
+                  <v-icon size="20">mdi-pencil</v-icon>
                 </v-btn>
                 <v-btn color="#BC463A" @click="deleteMember(member)">
-                  <v-icon size="24" color="white">mdi-delete</v-icon>
+                  <v-icon size="20" color="white">mdi-delete</v-icon>
                 </v-btn>
               </td>
             </tr>
@@ -173,16 +174,17 @@ export default defineComponent({
           class="custom-table"
           :page-text="'{0}-{1} z {2}'"
           items-per-page-text="Členovia na stránku"
+          density="compact"
         >
           <template v-slot:body="{ items }">
             <tr v-for="member in items" :key="member.fullName">
               <td>{{ member.fullName }}</td>
               <td class="d-flex justify-end align-center">
                 <v-btn color="#FFCD16" @click="openDialog('edit', member)">
-                  <v-icon size="24">mdi-pencil</v-icon>
+                  <v-icon size="20">mdi-pencil</v-icon>
                 </v-btn>
                 <v-btn color="#BC463A" @click="deleteMember(member)">
-                  <v-icon size="24" color="white">mdi-delete</v-icon>
+                  <v-icon size="20" color="white">mdi-delete</v-icon>
                 </v-btn>
               </td>
             </tr>
@@ -203,16 +205,17 @@ export default defineComponent({
           class="custom-table"
           :page-text="'{0}-{1} z {2}'"
           items-per-page-text="Členovia na stránku"
+          density="compact"
         >
           <template v-slot:body="{ items }">
             <tr v-for="member in items" :key="member.fullName">
               <td>{{ member.fullName }}</td>
               <td class="d-flex justify-end align-center">
                 <v-btn color="#FFCD16" @click="openDialog('edit', member)">
-                  <v-icon size="24">mdi-pencil</v-icon>
+                  <v-icon size="20">mdi-pencil</v-icon>
                 </v-btn>
                 <v-btn color="#BC463A" @click="deleteMember(member)">
-                  <v-icon size="24" color="white">mdi-delete</v-icon>
+                  <v-icon size="20" color="white">mdi-delete</v-icon>
                 </v-btn>
               </td>
             </tr>
@@ -230,7 +233,7 @@ export default defineComponent({
       </v-card-title>
       <v-card-text>
         <v-text-field v-model="currentMember.fullName" label="Meno" outlined />
-        <v-radio-group v-model="currentMember.university" label="Vyberte univerzitu">
+        <v-radio-group v-model="currentMember.university" label="Vyberte univerzitu" inline>
           <v-radio label="UKF" value="UKF" />
           <v-radio label="UMB" value="UMB" />
           <v-radio label="UCM" value="UCM" />
