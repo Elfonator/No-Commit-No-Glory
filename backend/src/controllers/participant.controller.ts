@@ -216,6 +216,19 @@ export const editPaper = async (
       }
     }
 
+    // Check if the participant is submitting a final version after review
+    if (paper.isFinal) {
+      const hasPreviousReview =
+        paper.review &&
+        [PaperStatus.AcceptedWithChanges, PaperStatus.Rejected].includes(paper.status);
+
+      if (hasPreviousReview) {
+        paper.status = PaperStatus.SubmittedAfterReview;
+      } else {
+        paper.status = PaperStatus.Submitted;
+      }
+    }
+
     const updatedPaper = await paper.save();
 
     res.status(200).json({
@@ -258,7 +271,6 @@ export const getConferences = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const currentDate = new Date();
     const conferences = await Conference.find({
       status: "Aktuálna",
     }).select(

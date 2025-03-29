@@ -46,6 +46,26 @@ export default defineComponent({
       { title: '', value: 'actions', sortable: false },
     ]
 
+    const statusOptions = [
+      PaperStatus.Draft,
+      PaperStatus.Submitted,
+      PaperStatus.SubmittedAfterReview,
+      PaperStatus.UnderReview,
+      PaperStatus.Accepted,
+      PaperStatus.AcceptedWithChanges,
+      PaperStatus.Rejected,
+    ];
+
+    const statusColors = {
+      [PaperStatus.Draft]: 'grey',
+      [PaperStatus.Submitted]: 'blue',
+      [PaperStatus.SubmittedAfterReview]: 'indigo',
+      [PaperStatus.UnderReview]: 'orange',
+      [PaperStatus.Accepted]: 'green',
+      [PaperStatus.AcceptedWithChanges]: 'primary',
+      [PaperStatus.Rejected]: 'red',
+    };
+
     /** Global showSnackbar function **/
     const showSnackbar = inject('showSnackbar') as ({
       message,
@@ -518,6 +538,8 @@ export default defineComponent({
       expandedConferenceId,
       groupedPapers,
       tableHeaders,
+      statusOptions,
+      statusColors,
       isAssignReviewerDialogOpen,
       selectedPaper,
       selectedReviewer,
@@ -741,19 +763,7 @@ export default defineComponent({
                     <!-- Status -->
                     <td>
                       <v-chip
-                        :color="
-                          paper.status === PaperStatus.Accepted
-                            ? 'green'
-                            : paper.status === PaperStatus.Rejected
-                              ? 'red'
-                              : paper.status === PaperStatus.AcceptedWithChanges
-                                ? '#2c3531'
-                                : paper.status === PaperStatus.UnderReview
-                                  ? '#E7B500'
-                                  : paper.status === PaperStatus.Submitted
-                                    ? 'blue'
-                                    : 'grey'
-                        "
+                        :color="statusColors[paper.status as PaperStatus]"
                         outlined
                         small
                         class="d-flex justify-center custom-chip rounded"

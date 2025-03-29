@@ -50,6 +50,7 @@ export default defineComponent({
     const menuCatOpen = ref(false)
     const isDeleteDialogOpen = ref(false)
     const paperToDelete = ref<Paper | null>(null)
+    const isLoading = ref(false);
 
     const filters = reactive({
       selectedConference: '',
@@ -59,6 +60,7 @@ export default defineComponent({
     const statusOptions = [
       PaperStatus.Draft,
       PaperStatus.Submitted,
+      PaperStatus.SubmittedAfterReview,
       PaperStatus.UnderReview,
       PaperStatus.Accepted,
       PaperStatus.AcceptedWithChanges,
@@ -68,6 +70,7 @@ export default defineComponent({
     const statusColors = {
       [PaperStatus.Draft]: 'grey',
       [PaperStatus.Submitted]: 'blue',
+      [PaperStatus.SubmittedAfterReview]: 'indigo',
       [PaperStatus.UnderReview]: 'orange',
       [PaperStatus.Accepted]: 'green',
       [PaperStatus.AcceptedWithChanges]: 'primary',
@@ -275,6 +278,8 @@ export default defineComponent({
     }
 
     const savePaper = async () => {
+      if (isLoading.value) return; // prevent double-clicks
+      isLoading.value = true;
       try {
         // Validate the file_link
         if (!currentPaper.file_link) {
@@ -324,13 +329,16 @@ export default defineComponent({
 
         closeDialog();
       } catch (err: any) {
-        console.error(err);
         const errorMessage = err?.response?.data?.message || 'Uloženie práce zlyhalo';
         showSnackbar?.({ message: errorMessage, color: 'error' });
+      } finally {
+        isLoading.value = false;
       }
     }
 
     const submitPaper = async () => {
+      if (isLoading.value) return; // prevent double-clicks
+      isLoading.value = true;
       try {
 
         if (!currentPaper.file_link) {
@@ -347,7 +355,6 @@ export default defineComponent({
           abstract: currentPaper.abstract,
           keywords: currentPaper.keywords,
           isFinal: currentPaper.isFinal,
-          status: PaperStatus.Submitted,
           conference: currentPaper.conference?._id,
           category: currentPaper.category?._id,
           authors: Array.isArray(currentPaper.authors)
@@ -375,6 +382,8 @@ export default defineComponent({
         console.error(err);
         const errorMessage = err?.response?.data?.message || 'Nepodarilo sa odoslať prácu.';
         showSnackbar?.({ message: errorMessage, color: 'error' });
+      } finally {
+        isLoading.value = false;
       }
     };
 
@@ -570,6 +579,7 @@ export default defineComponent({
       conferences,
       selectedCategory,
       user,
+      isLoading,
       isDeleteDialogOpen,
       fileDownloadUrl,
       paperDetailsDialog,
@@ -811,6 +821,8 @@ export default defineComponent({
               </v-list>
             </v-menu>
             <!-- Keywords -->
+            <v-row>
+              <v-col cols="12">
             <v-text-field
               v-model="currentPaper.keywords"
               label="Kľúčové slová"
@@ -860,15 +872,25 @@ export default defineComponent({
                 >
               </v-col>
             </v-row>
+              </v-col>
+            </v-row>
             <!-- Abstract -->
+            <v-row>
+              <v-col cols="12">
             <v-textarea
               v-model="currentPaper.abstract"
               label="Abstrakt"
               outlined
               dense
               :rules="[() => !currentPaper.isFinal || !!currentPaper.abstract || 'Abstrakt je povinný pre finálnu verziu']"
-              class="large-text-field"
+              class="large-text-field pt-3 pb-3"
+              :rows="4"
+              auto-grow
             />
+              </v-col>
+            </v-row>
+                <v-row>
+                  <v-col cols="12">
             <v-file-input
               v-model="currentPaper.file_link"
               label="Nahrajte súbor"
@@ -889,6 +911,8 @@ export default defineComponent({
               color="red"
               label="Je toto finálna verzia? (Pre odovzdanie práce by malo byť zaškrtnuté)"
             />
+              </v-col>
+            </v-row>
           </v-form>
         </v-card-text>
         <v-card-actions>

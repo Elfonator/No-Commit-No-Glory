@@ -62,9 +62,6 @@ export const usePaperStore = defineStore('papers', () => {
     conference?: string
     status?: string
   }) => {
-    loading.value = true
-    error.value = null
-
     try {
       const params: any = {}
       if (filters?.conference) params.conference = filters.conference
@@ -80,14 +77,10 @@ export const usePaperStore = defineStore('papers', () => {
       error.value = 'Failed to fetch participant papers.'
       console.error(err)
       throw err
-    } finally {
-      loading.value = false
     }
   }
 
   const fetchPaperById = async (id: string) => {
-    loading.value = true
-    error.value = null
     try {
       const response = await axiosInstance.get(`/auth/participant/papers/${id}`)
       selectedPaper.value = response.data // Set the selected paper details
@@ -96,8 +89,6 @@ export const usePaperStore = defineStore('papers', () => {
       error.value = 'Failed to fetch paper details.'
       console.error(err)
       throw err
-    } finally {
-      loading.value = false
     }
   }
 
@@ -158,9 +149,6 @@ export const usePaperStore = defineStore('papers', () => {
 
   /** Reviewer Actions **/
   const getAssignedPapers = async () => {
-    loading.value = true;
-    error.value = null;
-
     try {
       const response = await axiosInstance.get('/auth/reviewer/papers');
       const allAssignedPapers = response.data || [];
@@ -181,19 +169,13 @@ export const usePaperStore = defineStore('papers', () => {
     } catch (err) {
       error.value = 'Failed to fetch assigned papers.';
       console.error(err);
-    } finally {
-      loading.value = false;
     }
   };
 
-
   // Create a shared utility function
   const extractFilenameFromResponse = (response: AxiosResponse): string => {
-    //console.log("Raw Headers:", response.headers);
-
-    // Extract filename from headers
+  // Extract filename from headers
     const contentDisposition = response.headers["content-disposition"] || response.headers["Content-Disposition"];
-    //console.log("Final C-D:", contentDisposition);
 
     let filename = "paper.pdf"; // Default fallback
 
@@ -208,7 +190,7 @@ export const usePaperStore = defineStore('papers', () => {
   }
 
   // Create a common download function that accepts role-specific parameters
-  const downloadPaper = async (endpoint: string, paperId: string, conferenceId: string): Promise<void> => {
+  const downloadPaper = async (endpoint: string): Promise<void> => {
     try {
       const response = await axiosInstance.get(endpoint, {
         responseType: "blob",
@@ -235,11 +217,11 @@ export const usePaperStore = defineStore('papers', () => {
 
   // Role-specific wrapper functions
   const downloadPaperAdmin = async (conferenceId: string, paperId: string) => {
-    return downloadPaper(`/auth/admin/papers/download/${conferenceId}/${paperId}`, conferenceId, paperId);
+    return downloadPaper(`/auth/admin/papers/download/${conferenceId}/${paperId}`);
   };
 
   const downloadPaperReviewer = async (conferenceId: string, paperId: string) => {
-    return downloadPaper(`/auth/reviewer/papers/download/${conferenceId}/${paperId}`, conferenceId, paperId);
+    return downloadPaper(`/auth/reviewer/papers/download/${conferenceId}/${paperId}`);
   };
 
   /** Admin Actions **/
@@ -248,7 +230,6 @@ export const usePaperStore = defineStore('papers', () => {
     error.value = null
     try {
       const response = await axiosInstance.get('/auth/admin/papers')
-      //console.log('Raw API Response:', response.data) // Log raw response
       adminPapers.value = response.data
     } catch (err) {
       error.value = 'Failed to fetch papers.'
@@ -309,48 +290,6 @@ export const usePaperStore = defineStore('papers', () => {
     }
   }
 
-  /*
-  const downloadSinglePaper = async (conferenceId: string, paperId: string) => {
-    try {
-      const response = await axiosInstance.get(`/auth/admin/papers/download/${conferenceId}/${paperId}`, {
-        responseType: "blob",
-        headers: { "Accept": "application/pdf" },
-      });
-
-      console.log("Raw Headers:", response.headers);
-      console.log("C-D:", response.headers["content-disposition"]);
-
-      // Extract filename from headers
-      const contentDisposition = response.headers["content-disposition"] || response.headers["Content-Disposition"];
-      console.log("Final C-D:", contentDisposition);
-
-      let filename = "paper.pdf"; // Default fallback
-
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="(.+?)"/);
-        if (match) {
-          filename = decodeURIComponent(match[1]); // Correctly decode special characters
-        }
-      }
-
-      console.log("Final Downloaded filename:", filename); // Debugging
-
-      // Create a download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-
-      // Cleanup
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error downloading paper:", error);
-      throw error;
-    }
-  };
-   */
   const downloadAllPapersInConference = async (
     conferenceId: string | undefined,
   ) => {

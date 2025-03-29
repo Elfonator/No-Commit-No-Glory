@@ -3,6 +3,7 @@ import type { Review } from '@/types/review.ts'
 export enum PaperStatus {
   Draft = 'Draft',
   Submitted = 'Odovzdaná',
+  SubmittedAfterReview = "Odovzdaná po recenzii",
   UnderReview = 'Posudzovanie',
   Accepted = 'Prijatá',
   AcceptedWithChanges = 'Prijatá so zmenami',
@@ -27,6 +28,7 @@ export interface Paper {
   file_link?: string | File | null;
   deadline_date?: string | Date
   review?: Review
+  awarded?: boolean
 }
 
 export interface AdminPaper {
@@ -55,8 +57,8 @@ export interface AdminPaper {
   keywords: string[]
   authors: { firstName: string; lastName: string }[]
   isFinal: boolean
-  awarded?: boolean
   review?: Review
+  awarded?: boolean
 }
 
 export interface ReviewerPaper {
