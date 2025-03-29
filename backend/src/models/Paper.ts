@@ -4,6 +4,7 @@ import { IUser } from './User'
 export enum PaperStatus {
   Draft = "Draft",
   Submitted = "Odovzdaná",
+  SubmittedAfterReview = "Odovzdaná po recenzii",
   UnderReview = "Posudzovanie",
   Accepted = "Prijatá",
   AcceptedWithChanges = "Prijatá so zmenami",
@@ -25,6 +26,7 @@ export interface IPaper extends Document {
   deadline_date: Date;
   reviewer: mongoose.Schema.Types.ObjectId | IUser;
   review: mongoose.Types.ObjectId;
+  awarded: boolean;
 }
 
 const PaperSchema: Schema = new Schema({

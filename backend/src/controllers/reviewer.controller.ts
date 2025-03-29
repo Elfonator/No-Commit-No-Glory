@@ -260,7 +260,6 @@ export const sendReview = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     review.isDraft = false;
-
     await review.save();
 
     // Update paper status based on recommendation
@@ -524,7 +523,6 @@ export const contactAdmin = async (req: AuthRequest, res: Response): Promise<voi
     res.status(500).json({ error: "Nepodarilo sa kontaktovať administrátorov." });
   }
 };
-
 
 // Get all admins in the system except default one
 export const getAdmins = async (_req: AuthRequest, res: Response) => {
