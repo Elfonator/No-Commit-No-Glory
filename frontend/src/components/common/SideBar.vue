@@ -94,7 +94,7 @@
         :key="'general-bottom-' + index"
         :to="link.path"
         exact-active-class="active-link"
-        @click="navigateTo(link.path)"
+        @click="navigateTo(link.path, link.action)"
       >
         <v-list-item-title>{{ link.name }}</v-list-item-title>
       </v-list-item>
@@ -118,10 +118,15 @@ const router = useRouter()
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 
+async function logoutUser() {
+  await authStore.logout()
+  window.location.href = '/'
+}
+
 //Link definitions
-const generalLinksBottom: Link[] = [
+const generalLinksBottom: (Link & { action?: () => void })[] = [
   { name: 'Profil', path: '/auth/profile' },
-  { name: 'Odhlásiť sa', path: '/auth/logout' },
+  { name: 'Odhlásiť sa', path: '', action: logoutUser },
 ]
 const participantLinks: Link[] = [
   { name: 'Moje práce', path: '/auth/participant/works' },
@@ -147,10 +152,9 @@ const roleSpecificLinks = computed(() => {
 })
 
 //Navigation handler
-function navigateTo(path: string): void {
-  if (path === '/auth/logout') {
-    authStore.logout()
-    router.push('/')
+function navigateTo(path: string, action?: () => void): void {
+  if (action) {
+    action()
   } else {
     router.push(path)
   }
