@@ -619,31 +619,36 @@ export default defineComponent({
     </v-card-title>
 
     <!-- Filters Section -->
-    <v-card-subtitle>
-      <v-row>
+    <v-card-subtitle class="filters-section">
+      <v-row no-gutters>
         <v-col cols="10" md="3">
           <v-text-field
             v-model="conferenceStore.filters.year"
-            label="Filtrovať podľa roku"
+            label="Rok"
             type="number"
             outlined
-            dense
+            density="compact"
           />
         </v-col>
         <v-col cols="10" md="4">
           <v-select
             v-model="filters.selectedStatus"
-            label="Filter by Status"
+            label="Status"
             :items="statusOptions"
             multiple
             outlined
-            dense
+            density="compact"
           />
         </v-col>
-        <v-col cols="8" md="3">
-          <v-btn color="primary" small @click="resetFilters"
-            >Zrušiť filter</v-btn
-          >
+        <v-col cols="4" md="3">
+          <v-btn
+            class="filter-btn"
+            color="primary"
+            @click="resetFilters"
+            title="Zrušiť filter"
+            variant="outlined">
+            <v-icon>mdi-filter-remove</v-icon>
+          </v-btn>
         </v-col>
       </v-row>
     </v-card-subtitle>
@@ -661,7 +666,7 @@ export default defineComponent({
         <tr v-for="paper in items" :key="paper._id">
           <td>
             <v-icon
-              size="30"
+              size="22"
               color="primary"
               @click="openPaperDetailsDialog(paper)"
               style="cursor: pointer"
@@ -696,7 +701,7 @@ export default defineComponent({
               @click="viewReview(paper)"
               title="Ukazať recenziu"
             >
-              <v-icon size="25" color="black">mdi-account-alert</v-icon>
+              <v-icon size="20" color="black">mdi-account-alert</v-icon>
             </v-btn>
             <v-btn
               :disabled="!canEditPaper(paper)"
@@ -704,7 +709,7 @@ export default defineComponent({
               @click="openDialog('edit', paper)"
               title="Upraviť"
             >
-              <v-icon size="25">mdi-pencil</v-icon>
+              <v-icon size="20">mdi-pencil</v-icon>
             </v-btn>
             <v-btn
               :disabled="paper.status != PaperStatus.Draft"
@@ -712,7 +717,7 @@ export default defineComponent({
               @click="confirmDeletePaper(paper)"
               title="Zmazať prácu"
             >
-              <v-icon size="25">mdi-delete</v-icon>
+              <v-icon size="20">mdi-delete</v-icon>
             </v-btn>
           </td>
         </tr>
