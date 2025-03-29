@@ -4,10 +4,14 @@ import { useHomepageStore } from "@/stores/homepageStore";
 
 export default defineComponent({
   name: "TabSection",
-  async setup() {
+  setup() {
     const activeTab = ref("benefits");
     const store = useHomepageStore();
-    await store.fetchHomepageData();
+
+    // Load data on component mount
+    onMounted(async () => {
+      await store.fetchHomepageData();
+    });
 
     return {
       activeTab,
