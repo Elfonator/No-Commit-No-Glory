@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, nextTick } from 'vue'
 import axiosInstance from '@/config/axiosConfig'
 import type { User } from '@/types/user.ts'
 import router from '@/router'
@@ -109,28 +109,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     try {
-      // Notify backend to invalidate refresh token
-      await axiosInstance.post('/auth/logout').catch(() => {});
+      await axiosInstance.post('/auth/logout').catch(() => {}); // ignore failure
+    } finally {
+      user.value = null;
+      token.value = null;
+      role.value = null;
+      isAuthenticated.value = false;
+      isTokenExpired.value = false;
 
-      // Clear authentication state
-      user.value = null
-      token.value = null
-      role.value = null
-      isAuthenticated.value = false
-      isTokenExpired.value = false
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userRole');
 
-      // Remove authentication data from localStorage
-      localStorage.removeItem('authToken')
-      localStorage.removeItem('refreshToken')
-      localStorage.removeItem('userRole')
+      delete axiosInstance.defaults.headers.common['Authorization'];
 
-      // Remove the token from Axios headers
-      delete axiosInstance.defaults.headers.common['Authorization']
+      // Delay next tick to ensure state is reflected
+      await nextTick();
 
-      // Redirect to homepage
-      await router.push('/')
-    } catch (error) {
-      console.error('Logout failed:', error)
+      localStorage.clear();
     }
   }
 

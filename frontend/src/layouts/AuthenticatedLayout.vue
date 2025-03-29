@@ -3,6 +3,7 @@ import { defineComponent, onMounted, provide, ref, watch } from 'vue'
 import SideBar from '@/components/common/SideBar.vue'
 import { useAuthStore } from '@/stores/auth.ts'
 import { useNotificationStore } from '@/stores/notificationStore.ts'
+import router from '@/router'
 
 export default defineComponent({
   name: 'AuthenticatedLayout',
@@ -73,10 +74,10 @@ export default defineComponent({
     })
 
     //Handle logout
-    const logout = () => {
-      authStore.logout()
-      showModal.value = false
-      window.location.href = '/'
+    const logout = async () => {
+      await authStore.logout();
+      showModal.value = false;
+      await router.push('/');
     }
 
     onMounted(fetchNotifications)
