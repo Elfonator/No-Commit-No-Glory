@@ -352,8 +352,8 @@ export default defineComponent({
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn variant="outlined" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
-          <v-btn variant="outlined" :disabled="!valid" color="primary" @click="submitDialogForm">Uložiť</v-btn>
+          <v-btn variant="tonal" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
+          <v-btn variant="tonal" :disabled="!valid" color="primary" @click="submitDialogForm">Uložiť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -366,8 +366,8 @@ export default defineComponent({
           <p>Ste si istí, že chcete odstrániť ?</p>
         </v-card-text>
         <v-card-actions>
-          <v-btn variant="outlined" color="primary" @click="closeDeleteDialog">Zrušiť</v-btn>
-          <v-btn variant="outlined" color="#BC463A" @click="deleteQuestion">Odstrániť</v-btn>
+          <v-btn variant="tonal" color="primary" @click="closeDeleteDialog">Zrušiť</v-btn>
+          <v-btn variant="tonal" color="#BC463A" @click="deleteQuestion">Odstrániť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

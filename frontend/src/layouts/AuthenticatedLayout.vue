@@ -147,7 +147,7 @@ export default defineComponent({
 
 .main-container {
   position: relative;
-  top: -120px;
+  top: -50px;
 
   .profile {
     display: flex;

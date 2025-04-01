@@ -679,7 +679,7 @@ export default defineComponent({
             color="primary"
             @click="resetConferenceFilters"
             title="Zrušiť filter"
-            variant="outlined">
+            variant="tonal">
             <v-icon>mdi-filter-remove</v-icon>
           </v-btn>
         </v-col>
@@ -712,6 +712,7 @@ export default defineComponent({
                   color="primary"
                   class="mr-2"
                   @click="toggleConference(conference._id)"
+                  variant="flat"
                 >
                   <v-icon left class="conf-icon">
                     {{
@@ -728,8 +729,8 @@ export default defineComponent({
                   Práce
                 </v-btn>
                 <v-btn
-                  variant="outlined"
-                  color="tertiary"
+                  variant="tonal"
+                  color="#2c3531"
                   class="mr-2"
                   @click="
                     paperStore.downloadAllPapersInConference(conference._id)
@@ -738,7 +739,7 @@ export default defineComponent({
                   <v-icon left class="conf-icon">mdi-download</v-icon>Stiahnuť
                 </v-btn>
                 <v-btn
-                  variant="outlined"
+                  variant="tonal"
                   color="primary"
                   @click="downloadExcel(conference._id)"
                 >
@@ -778,7 +779,7 @@ export default defineComponent({
                       color="primary"
                       @click="resetFilters"
                       title="Zrušiť filter"
-                      variant="outlined">
+                      variant="tonal">
                       <v-icon>mdi-filter-remove</v-icon>
                     </v-btn>
                   </v-col>
@@ -887,14 +888,14 @@ export default defineComponent({
               </v-card-text>
               <v-card-actions>
                 <v-btn :loading="isLoading"
-                       variant="outlined"
+                       variant="tonal"
                        color="#BC463A"
                        @click="closeAssignReviewerDialog"
                   >Zrušiť</v-btn
                 >
                 <v-btn
                   :loading="isLoading"
-                  variant="outlined"
+                  variant="tonal"
                   color="primary"
                   @click="assignReviewer">Priradiť</v-btn>
               </v-card-actions>
@@ -964,71 +965,24 @@ export default defineComponent({
                 </v-row>
               </v-card-text>
               <v-card-actions>
-                <v-btn variant="outlined" color="#BC463A" @click="isPaperViewDialogOpen = false"
+                <v-btn variant="tonal" color="#BC463A" @click="isPaperViewDialogOpen = false"
                 >Zrušiť</v-btn
                 >
                 <v-btn
-                  color="tertiary"
+                  color="primary-shadow"
                   @click="openReviewDialog(selectedPaper!)"
                   :disabled="!selectedPaper?.review"
-                  variant="outlined"
+                  variant="tonal"
                 >
                   <v-icon size="20">mdi-account-alert</v-icon>
                   Recenzia
                 </v-btn>
                 <v-btn
-                  variant="outlined"
+                  variant="tonal"
                   color="primary"
                   @click="downloadPaper(selectedPaper?.conference?._id, selectedPaper?._id)">
                   <v-icon size="22">mdi-download-box</v-icon>
                   Stiahnuť
-                </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-
-          <!-- Review dialog -->
-          <v-dialog v-model="isReviewDialogOpen" max-width="800px">
-            <v-card>
-              <v-card-title>
-                Recenzia
-                <v-spacer></v-spacer>
-                <v-chip
-                  :color="selectedReview?.recommendation === 'Publikovať' ? 'green'
-                : selectedReview?.recommendation === 'Odmietnuť' ? 'red'
-                : 'orange'">
-                  {{ selectedReview?.recommendation }}
-                </v-chip>
-              </v-card-title>
-
-              <v-divider></v-divider>
-
-              <v-card-text>
-                <div v-if="selectedReview?.comments">
-                  <h4>Komentár recenzenta</h4>
-                  <p>{{ selectedReview.comments }}</p>
-                </div>
-
-                <div v-if="selectedReview?.responses?.length">
-                  <h4 class="mt-4">Otázky a odpovede</h4>
-                  <v-list dense>
-                    <v-list-item
-                      v-for="(resp, index) in selectedReview.responses"
-                      :key="index"
-                    >
-                      <v-list-item>
-                        <v-list-item-title><strong>Otázka:</strong> {{ resp.question?.text || resp.question }}</v-list-item-title>
-                        <v-list-item-subtitle><strong>Odpoveď:</strong> {{ resp.answer }}</v-list-item-subtitle>
-                      </v-list-item>
-                    </v-list-item>
-                  </v-list>
-                </div>
-              </v-card-text>
-
-              <v-card-actions>
-                <v-spacer />
-                <v-btn variant="outlined" color="primary" @click="isReviewDialogOpen = false">
-                  Zavrieť
                 </v-btn>
               </v-card-actions>
             </v-card>
@@ -1130,10 +1084,10 @@ export default defineComponent({
               <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn
-                  variant="outlined"
-                  color="primary"
+                  variant="tonal"
+                  color="#BC463A"
                   @click="isReviewDialogOpen = false">
-                  Zatvoriť
+                  Zrušiť
                 </v-btn>
               </v-card-actions>
             </v-card>
@@ -1147,8 +1101,8 @@ export default defineComponent({
                 <v-date-picker v-model="newDeadline"></v-date-picker>
               </v-card-text>
               <v-card-actions>
-                <v-btn variant="outlined" @click="isDeadlineDialogOpen = false" color="#BC463A">Zrušiť</v-btn>
-                <v-btn variant="outlined" color="primary" @click="changeDeadline">Uložiť</v-btn>
+                <v-btn variant="tonal" @click="isDeadlineDialogOpen = false" color="#BC463A">Zrušiť</v-btn>
+                <v-btn variant="tonal" color="primary" @click="changeDeadline">Uložiť</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -1163,8 +1117,8 @@ export default defineComponent({
                 </p>
               </v-card-text>
               <v-card-actions>
-                <v-btn variant="outlined" color="primary" @click="closeDeletePaperDialog">Zrušiť</v-btn>
-                <v-btn variant="outlined" color="#BC463A" @click="deletePaper">Odstrániť</v-btn>
+                <v-btn variant="tonal" color="primary" @click="closeDeletePaperDialog">Zrušiť</v-btn>
+                <v-btn variant="tonal" color="#BC463A" @click="deletePaper">Odstrániť</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -1234,43 +1188,15 @@ export default defineComponent({
                     </v-btn>
                   </v-col>
                 </v-row>
-                <v-btn color="primary" @click="addAuthor">
+                <v-btn color="#3c888c" @click="addAuthor">
                   <v-icon icon="mdi-plus-circle" start></v-icon>Ďalší autor
                 </v-btn>
               </v-card-text>
 
-              <v-divider class="my-4" />
-              <v-row v-if="selectedPaper?.review">
-                <v-col cols="12">
-                  <h4>Recenzia</h4>
-                  <v-list two-line>
-                    <v-list-item v-for="(response, index) in selectedPaper.review?.responses" :key="index">
-                      <v-list-item>
-                        <v-list-item-title>
-                          <strong>Otázka {{ index + 1 }}:</strong> {{ response.question }}
-                        </v-list-item-title>
-                        <v-list-item-subtitle>
-                          {{ response.answer }}
-                        </v-list-item-subtitle>
-                      </v-list-item>
-                    </v-list-item>
-                  </v-list>
-                  <v-textarea
-                    v-if="selectedPaper.review?.comments"
-                    label="Komentár recenzenta"
-                    :model-value="selectedPaper.review.comments"
-                    readonly
-                    auto-grow
-                    outlined
-                    class="mt-3"
-                  />
-                </v-col>
-              </v-row>
-
               <!-- Dialog Actions -->
               <v-card-actions>
-                <v-btn variant="outlined" @click="closeEditDialog" color="#BC463A">Zrušiť</v-btn>
-                <v-btn variant="outlined" @click="saveEditedPaper" color="primary">Uložiť zmeny</v-btn>
+                <v-btn variant="tonal" @click="closeEditDialog" color="#BC463A">Zrušiť</v-btn>
+                <v-btn variant="tonal" @click="saveEditedPaper" color="primary">Uložiť zmeny</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -1285,7 +1211,7 @@ export default defineComponent({
   </v-card>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 h4 {
   color: #bc4639;
 }

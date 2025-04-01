@@ -378,7 +378,7 @@ export default defineComponent({
             color="primary"
             @click="conferenceStore.resetFilters"
             title="Zrušiť filter"
-            variant="outlined">
+            variant="tonal">
             <v-icon>mdi-filter-remove</v-icon>
           </v-btn>
         </v-col>
@@ -700,9 +700,9 @@ export default defineComponent({
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn variant="outlined" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
+          <v-btn variant="tonal" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
           <v-btn
-            variant="outlined"
+            variant="tonal"
             :disabled="!valid"
             v-if="dialogMode !== 'view'"
             color="primary"
@@ -724,8 +724,8 @@ export default defineComponent({
           </p>
         </v-card-text>
         <v-card-actions>
-          <v-btn variant="outlined" color="primary" @click="closeDeleteDialog">Zrušiť</v-btn>
-          <v-btn variant="outlined" color="#BC463A" @click="deleteConference">Odstrániť</v-btn>
+          <v-btn variant="tonal" color="primary" @click="closeDeleteDialog">Zrušiť</v-btn>
+          <v-btn variant="tonal" color="#BC463A" @click="deleteConference">Odstrániť</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
