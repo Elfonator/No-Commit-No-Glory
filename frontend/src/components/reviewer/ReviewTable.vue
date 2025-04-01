@@ -163,8 +163,9 @@ export default defineComponent({
     const paperDetailsDialog = ref(false);
     const selectedPaper = ref<any>(null);
 
-    const openPaperDetailsDialog = (paper: any) => {
+    const openPaperDetailsDialog = async (paper: any) => {
       selectedPaper.value = paper;
+      await nextTick();
       paperDetailsDialog.value = true;
     };
 
@@ -350,8 +351,11 @@ export default defineComponent({
       }
     };
 
-    const formatDate = (date: Date | string) =>
-      format(new Date(date), 'dd.MM.yyyy')
+    const formatDate = (date: Date | string | undefined | null): string => {
+      if (!date) return '—';
+      const parsed = new Date(date);
+      return isNaN(parsed.getTime()) ? '—' : format(parsed, 'dd.MM.yyyy');
+    };
 
     onMounted(async () => {
       await reviewStore.fetchAllReviews();
@@ -446,7 +450,7 @@ export default defineComponent({
               color="primary"
               @click="resetFilters"
               title="Zrušiť filter"
-              variant="outlined">
+              variant="tonal">
               <v-icon>mdi-filter-remove</v-icon>
             </v-btn>
           </v-col>
@@ -495,16 +499,16 @@ export default defineComponent({
             <td class="truncate-cell">{{ review.paper.title }}</td>
             <td class="d-flex justify-end align-center">
               <v-btn
+                color="primary"
+                @click="openPaperDetailsDialog(review.paper)"
+              >
+                <v-icon size="20">mdi-note-search</v-icon>
+              </v-btn>
+              <v-btn
                 color="#FFCD16"
                 @click="editReview(review)"
                 :disabled="!canEditReview(review)">
                 <v-icon size="20">mdi-pencil</v-icon>
-              </v-btn>
-              <v-btn
-                color="primary"
-                @click="sendReview(review)"
-                :disabled="!canEditReview(review)">
-                <v-icon size="20">mdi-send</v-icon>
               </v-btn>
               <v-btn
                 color="#BC463A"
@@ -523,15 +527,6 @@ export default defineComponent({
     <v-card>
       <v-card-title>{{ isViewMode ? 'Zobraziť recenziu' : 'Upraviť recenziu' }}</v-card-title>
       <v-card-text>
-        <v-btn
-          v-if="isViewMode"
-          color="primary"
-          @click="openPaperDetailsDialog(selectedReview.paper)"
-          variant="elevated"
-        >
-          <v-icon size="20">mdi-file-eye</v-icon>
-          Detaily práce
-        </v-btn>
         <!-- Rating Questions -->
         <v-row
           v-for="question in ratingQuestions"
@@ -689,17 +684,31 @@ export default defineComponent({
         </v-table>
       </v-card-text>
       <v-card-actions>
-        <v-btn variant="outlined" color="#BC463A" @click="paperDetailsDialog = false">
-          Zavrieť
+        <v-btn variant="tonal" color="#BC463A" @click="paperDetailsDialog = false">
+          Zrušiť
         </v-btn>
         <v-btn
-          variant="outlined"
+          variant="tonal"
           color="primary"
           @click="paperStore.downloadPaperReviewer(selectedPaper?.conference?._id, selectedPaper?._id)"
         >
           <v-icon size="22">mdi-download-box</v-icon>
           Stiahnuť
         </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Confirmation Dialog -->
+  <v-dialog v-model="confirmationDialog" max-width="500px">
+    <v-card>
+      <v-card-title>Potvrdiť odoslanie</v-card-title>
+      <v-card-text>
+        Naozaj chcete odoslať túto recenziu? Po odoslaní ju nie je možné odstraniť.
+      </v-card-text>
+      <v-card-actions>
+        <v-btn color="#bc4639" @click="confirmationDialog = false" variant="tonal">Zrušiť</v-btn>
+        <v-btn color="primary" @click="sendReview" variant="tonal" :loading="isLoading">Odoslať</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -714,8 +723,8 @@ export default defineComponent({
         </p>
       </v-card-text>
       <v-card-actions>
-        <v-btn variant="outlined" color="primary" @click="closeDeleteDialog">Zrušiť</v-btn>
-        <v-btn variant="outlined" color="#BC463A" @click="deleteReview">Odstrániť</v-btn>
+        <v-btn variant="tonal" color="primary" @click="closeDeleteDialog">Zrušiť</v-btn>
+        <v-btn variant="tonal" color="#BC463A" @click="deleteReview">Odstrániť</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
