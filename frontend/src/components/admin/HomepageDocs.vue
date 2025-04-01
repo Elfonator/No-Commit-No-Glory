@@ -4,11 +4,13 @@ import { defineComponent, ref, reactive, inject } from 'vue'
 // Move the interface outside of setup for better visibility
 export interface HomepageDocument {
   id: string;
-  name: string;
-  year: string;
-  fileName: string;
-  file: File | null;
+  conference: string | null;
+  awardedWorks: File | null;
+  publishedWorks: File | null;
+  reviewedWorks: File | null;
+  isbn: string;
 }
+
 
 export default defineComponent({
   name: 'DocumentTable',
@@ -27,35 +29,44 @@ export default defineComponent({
 
     // Temporary data for documents
     const documents = ref<HomepageDocument[]>([
-      { id: '1', name: 'Dokument 2023', year: '2023', fileName: '', file: null },
-      { id: '2', name: 'Dokument 2022', year: '2022', fileName: '', file: null },
-      { id: '3', name: 'Dokument 2021', year: '2021', fileName: '', file: null },
-    ]);
+      { id: '1', conference: 'Konferencia 2023', awardedWorks: null, publishedWorks: null, reviewedWorks: null, isbn: '978-80-558-2024-8' },
+      { id: '2', conference: 'Konferencia 2022', awardedWorks: null, publishedWorks: null, reviewedWorks: null, isbn: '978-80-558-2024-9' },
+      { id: '3', conference: 'Konferencia 2021', awardedWorks: null, publishedWorks: null, reviewedWorks: null, isbn: '978-80-558-2030-1' },
+    ])
+
+    const conferenceList = ref([
+      { id: '1', name: 'Konferencia 2023' },
+      { id: '2', name: 'Konferencia 2022' },
+      { id: '3', name: 'Konferencia 2021' },
+    ])
 
     // States for handling the modal and form data
     const isDialogOpen = ref(false)
     const dialogMode = ref<'add' | 'edit'>('add')
     const currentDocument = reactive<HomepageDocument>({
       id: '',
-      name: '',
-      year: '',
-      fileName: '',
-      file: null
+      conference: null,
+      awardedWorks: null,
+      publishedWorks: null,
+      reviewedWorks: null,
+      isbn: '978-80-558-2024-8',
     });
     const valid = ref(false)
 
     // Table headers
     const headers = [
-      { title: 'Názov dokumentu', key: 'name' },
-      { title: 'Rok', key: 'year' },
-      { title: 'Názov súboru', key: 'fileName' },
+      { title: 'Konferencia', key: 'conference' },
+      { title: 'Ocenené práce', key: 'awardedWorks' },
+      { title: 'Publikované práce', key: 'publishedWorks' },
+      { title: 'Zborník', key: 'reviewedWorks' },
+      { title: 'ISBN', key: 'isbn' },
       { title: '', value: 'actions', sortable: false },
     ]
 
     // Open the dialog for adding or editing a document
     const openDialog = (
       mode: 'add' | 'edit',
-      document = { id: '', name: '', year: '', file: null as File | null, fileName: '' }
+      document: HomepageDocument = {  id: '', conference: null, awardedWorks: null, publishedWorks: null, reviewedWorks: null, isbn: '' }
     ) => {
       dialogMode.value = mode
       Object.assign(currentDocument, document)
@@ -65,7 +76,7 @@ export default defineComponent({
     // Close the dialog
     const closeDialog = () => {
       isDialogOpen.value = false
-      Object.assign(currentDocument, { id: '', name: '', year: '', file: null, fileName: '' })
+      Object.assign(currentDocument, { id: '', conference: null, awardedWorks: null, publishedWorks: null, reviewedWorks: null, isbn: '' })
     }
 
     // Save the document (add or update)
@@ -75,10 +86,11 @@ export default defineComponent({
           // Add new document to the temporary data
           documents.value.push({
             id: (documents.value.length + 1).toString(),
-            name: currentDocument.name,
-            year: currentDocument.year,
-            fileName: currentDocument.file ? currentDocument.file.name : '',
-            file: currentDocument.file,
+            conference: currentDocument.conference,
+            awardedWorks: currentDocument.awardedWorks,
+            publishedWorks: currentDocument.publishedWorks,
+            reviewedWorks: currentDocument.reviewedWorks,
+            isbn: currentDocument.isbn,
           })
           showSnackbar?.({
             message: 'Dokument bol úspešne pridaný.',
@@ -90,10 +102,11 @@ export default defineComponent({
           if (index !== -1) {
             documents.value[index] = {
               ...documents.value[index],
-              name: currentDocument.name,
-              year: currentDocument.year,
-              fileName: currentDocument.file ? currentDocument.file.name : documents.value[index].fileName,
-              file: currentDocument.file,
+              conference: currentDocument.conference,
+              awardedWorks: currentDocument.awardedWorks,
+              publishedWorks: currentDocument.publishedWorks,
+              reviewedWorks: currentDocument.reviewedWorks,
+              isbn: currentDocument.isbn,
             }
           }
           showSnackbar?.({
@@ -136,6 +149,7 @@ export default defineComponent({
       currentDocument,
       valid,
       headers,
+      conferenceList,
       openDialog,
       closeDialog,
       saveDocument,
@@ -164,9 +178,11 @@ export default defineComponent({
     >
       <template v-slot:body="{ items }">
         <tr v-for="document in items" :key="document.id">
-          <td>{{ document.name }}</td>
-          <td>{{ document.year }}</td>
-          <td>{{ document.fileName || 'No file uploaded' }}</td>
+          <td>{{ document.conference }}</td>
+          <td>{{ document.awardedWorks || 'No file uploaded' }}</td>
+          <td>{{ document.publishedWorks || 'No file uploaded' }}</td>
+          <td>{{ document.reviewedWorks || 'No file uploaded' }}</td>
+          <td>{{ document.isbn || 'No file uploaded' }}</td>
           <td class="d-flex justify-end align-center">
             <v-btn color="#FFCD16" @click="openDialog('edit', document)">
               <v-icon size="24">mdi-pencil</v-icon>
@@ -185,24 +201,48 @@ export default defineComponent({
         <v-card-title>{{ dialogMode === 'add' ? 'Pridať dokument' : 'Upraviť dokument' }}</v-card-title>
         <v-card-text>
           <v-form ref="formRef" v-model="valid">
-            <v-text-field
-              v-model="currentDocument.name"
-              label="Názov dokumentu"
+            <!-- Conference Picker -->
+            <v-autocomplete
+              v-model="currentDocument.conference"
+              :items="conferenceList"
+              item-text="name"
+              item-value="id"
+              label="Vyberte konferenciu"
               outlined
-              :rules="[v => !!v || 'Názov dokumentu je povinný']"
+              :rules="[v => !!v || 'Konferencia je povinná']"
             />
-            <v-text-field
-              v-model="currentDocument.year"
-              label="Rok"
-              type="number"
-              outlined
-              :rules="[v => !!v || 'Rok je povinný']"
-            />
+
+            <!-- Awarded Works (File Input) -->
             <v-file-input
-              v-model="currentDocument.file"
-              label="Vyberte súbor"
-              accept=".pdf,.docx,.txt"
+              v-model="currentDocument.awardedWorks"
+              label="Zoznam ocenených prác"
               outlined
+              accept=".pdf,.docx,.txt"
+            />
+
+
+            <!-- Published Works (File Input) -->
+            <v-file-input
+              v-model="currentDocument.publishedWorks"
+              label="Zoznam publikovaných prác"
+              outlined
+              accept=".pdf,.docx,.txt"
+            />
+
+            <v-file-input
+              v-model="currentDocument.reviewedWorks"
+              label="Zborník recenzovaných príspevkov"
+              outlined
+              accept=".pdf,.docx,.txt"
+            />
+
+            <!-- Reviewed Proceedings ISBN -->
+            <v-text-field
+              v-model="currentDocument.isbn"
+              label="ISBN zborníka"
+              outlined
+              :rules="[v => !!v || 'ISBN je povinné']"
+              placeholder="978-80-558-2024-8"
             />
           </v-form>
         </v-card-text>

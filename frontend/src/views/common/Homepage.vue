@@ -248,7 +248,7 @@ export default defineComponent({
     position: absolute;
     bottom: 0;
     width: 100%;
-    max-height: 80px;
+    max-height: 7em;
     background-color: rgba(210, 233, 227, 0.8);
     text-align: center;
     z-index: 3;
