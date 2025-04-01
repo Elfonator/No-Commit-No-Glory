@@ -372,12 +372,12 @@ export default defineComponent({
     </v-card>
 
     <!-- Review Dialog -->
-    <v-dialog v-model="reviewDialog" width="900px">
+  <v-dialog v-model="reviewDialog" max-width="900px">
       <v-card>
         <v-card-title class="wrap-title">
           {{ mode === 'edit' ? 'Pokračovať v recenzii' : 'Nová recenzia' }}: {{ selectedPaper.title }}
         </v-card-title>
-        <v-card-text>
+        <v-card-text class="review-scrollable">
           <v-form ref="reviewForm">
             <v-container>
               <!-- Rating Questions -->
@@ -391,7 +391,6 @@ export default defineComponent({
                 <v-col cols="9" >
                   <p class="mb-0">{{ question.text }}</p>
                 </v-col>
-
                 <v-col cols="3">
                   <v-select
                     v-model="reviewResponses[question._id]"
@@ -443,22 +442,22 @@ export default defineComponent({
               <v-row
                 :class="{ 'missing-answer': attemptedSubmission && !reviewResponses[question._id] }"
                 v-for="question in textQuestions"
-                :key="question._id" no-gutters>
-                <v-col cols="5" class="pt-4">
+                :key="question._id"
+                class="pt-4"
+                align="start"
+              >
+                <v-col cols="4">
                   <p>{{ question.text }}</p>
                 </v-col>
-                <v-col cols="7">
+                <v-col cols="8">
                   <v-textarea
                     v-model="reviewResponses[question._id]"
                     placeholder="Vložte odpoveď"
-                    auto-grow
                     outlined
-                    required
-                    class="mt-3 pt-2 pb-0 mb-0"
-                    :rows="2"
+                    class="resizable-textarea mt-2"
+                    :rows="5"
                   />
                 </v-col>
-                <v-divider v-if="question !== yesNoQuestions[yesNoQuestions.length - 1]"></v-divider>
               </v-row>
 
               <div class="double-divider" v-if="ratingQuestions.length"></div>
@@ -472,7 +471,6 @@ export default defineComponent({
                     label="Odporúčanie"
                     dense
                     outlined
-                    required
                     class="large-text-field"
                   />
                 </v-col>
@@ -481,12 +479,11 @@ export default defineComponent({
               <!-- Conditional Comments -->
               <v-row v-if="['Publikovať so zmenami', 'Odmietnuť'].includes(recommendation)">
                 <v-col cols="12">
-                  <label>Komentáre (voliteľné)</label>
                   <v-textarea
                     v-model="comments"
                     placeholder="Pridajte komentáre, aby ste odôvodnili svoje odporúčanie"
                     outlined
-                    dense
+                    class="resizable-textarea mt-2"
                   />
                 </v-col>
               </v-row>
@@ -549,14 +546,18 @@ export default defineComponent({
         </v-card-text>
         <v-card-actions>
           <v-btn
-            color="primary"
-            @click="downloadPaper(selectedPaper)">
-            <v-icon size="36">mdi-download-box</v-icon>
-            Stiahnuť
-          </v-btn>
-          <v-btn color="tertiary" @click="paperDetailsDialog = false"
+            color="#BC463A"
+            @click="paperDetailsDialog = false"
+            variant="outlined"
           >Zrušiť</v-btn
           >
+          <v-btn
+            color="primary"
+            @click="downloadPaper(selectedPaper)"
+            variant="outlined">
+            <v-icon size="25">mdi-download-box</v-icon>
+            Stiahnuť
+          </v-btn>
         </v-card-actions>
 
       </v-card>
@@ -577,7 +578,7 @@ export default defineComponent({
     </v-dialog>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 
 .v-divider {
   color: #116466;
@@ -588,7 +589,7 @@ export default defineComponent({
 }
 
 .questions {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #2c3531;
 }
 
@@ -599,8 +600,19 @@ export default defineComponent({
 }
 
 .missing-answer {
-  background-color: #ffe6e6; // light red background
-  border-left: 4px solid #bc4639; // red border
+  background-color: #ffe6e6;
+  border-left: 4px solid #bc4639;
+}
+
+:deep(.resizable-textarea) {
+  .v-field__field {
+    height: auto !important;
+  }
+
+  textarea {
+    min-height: 100px;
+    max-height: 400px;
+  }
 }
 
 </style>

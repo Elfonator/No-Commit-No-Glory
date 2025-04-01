@@ -565,22 +565,29 @@ export const getAllPapers = async (
     const papers = await Paper.find()
         .populate({
           path: "conference",
-          select: "year location date", // Include relevant fields from Conference
+          select: "year location date",
         })
         .populate({
           path: "user",
-          select: "first_name last_name email", // Include relevant fields from User
+          select: "first_name last_name email",
         })
         .populate({
           path: "category",
-          select: "name", // Include relevant fields from Category
+          select: "name",
         })
         .populate({
           path: "reviewer",
           select: "first_name last_name email university",
         })
+      .populate({
+        path: "review",
+        populate: {
+          path: "responses.question",
+          select: "text type options",
+        }
+      })
         .select(
-            "status title submission_date abstract keywords authors category conference file_link final_submission deadline_date ",
+            "status title submission_date abstract keywords authors category conference file_link final_submission deadline_date reviewer review",
         );
 
     res.status(200).json(papers);
@@ -613,8 +620,15 @@ export const getPaperById = async (
           path: "reviewer",
           select: "first_name last_name email university",
         })
+        .populate({
+          path: "review",
+          populate: {
+            path: "responses.question",
+            select: "text type options",
+          }
+        })
         .select(
-            "status title submission_date abstract keywords authors category conference file_link final_submission deadline_date",
+            "status title submission_date abstract keywords authors category conference file_link final_submission deadline_date reviewer review",
         );
 
     if (!paper) {
@@ -1164,7 +1178,7 @@ export const uploadProgramFile = async (req: Request, res: Response): Promise<vo
     // Delete old file if it exists
     if (homepage.program?.fileLink) {
       try {
-        const oldFilePath = path.join(config.uploads, homepage.program.fileLink.replace("/uploads/", ""));
+        const oldFilePath = path.join(config.uploads, homepage.program.fileLink.replace("/programs/", ""));
         await fs.access(oldFilePath, fs.constants.F_OK);
         await fs.unlink(oldFilePath);
         console.log(`Old program file deleted: ${oldFilePath}`);

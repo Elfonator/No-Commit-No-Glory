@@ -272,7 +272,7 @@ export default defineComponent({
 
       img {
         max-width: 100%;
-        max-height: 80px;
+        max-height: 70px;
         height: auto;
         transition: transform 0.3s;
       }

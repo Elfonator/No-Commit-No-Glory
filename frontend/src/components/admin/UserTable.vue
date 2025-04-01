@@ -95,8 +95,8 @@ export default defineComponent({
       { title: 'Priezvisko', value: 'last_name' },
       { title: 'Meno', value: 'first_name' },
       { title: 'Email', value: 'email' },
-      { title: 'Univerzita', value: 'university', width: '230px' },
-      { title: 'Fakulta', value: 'faculty', width: '90px' },
+      { title: 'Univerzita', value: 'university' },
+      { title: 'Fakulta', value: 'faculty'},
       { title: 'Role', value: 'role', width: '30px'},
       { title: '', value: 'actions', sortable: false },
     ]
@@ -388,7 +388,7 @@ export default defineComponent({
           <td>{{ user.first_name }}</td>
           <td>{{ user.email }}</td>
           <td class="truncate-cell">{{ user.university }}</td>
-          <td>{{ user.faculty }}</td>
+          <td class="truncate-cell">{{ user.faculty }}</td>
           <td>
             <v-chip
               :color="roleColors[user.role as keyof typeof roleColors]"
