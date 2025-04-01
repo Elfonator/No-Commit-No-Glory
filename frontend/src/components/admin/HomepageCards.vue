@@ -100,7 +100,6 @@ export default defineComponent({
 
     onMounted(async () => {
       await homepageStore.fetchCommittees();
-      console.log("Fetched Committees:", homepageStore.committees); // Debugging log
     });
 
 
@@ -240,8 +239,8 @@ export default defineComponent({
         </v-radio-group>
       </v-card-text>
       <v-card-actions>
-        <v-btn variant="outlined" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
-        <v-btn variant="outlined" color="primary" @click="saveMember">
+        <v-btn variant="tonal" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
+        <v-btn variant="tonal" color="primary" @click="saveMember">
           {{ dialogMode === 'add' ? 'Pridať' : 'Uložiť' }}
         </v-btn>
       </v-card-actions>

@@ -149,7 +149,7 @@ export default defineComponent({
     <!-- List of program events -->
     <v-list>
       <v-list-item v-for="event in localProgramItems" :key="event._id"  class="py-0 my-0 list-item-tight">
-        <v-row class="w-100" no-gutters>
+        <v-row no-gutters>
           <!-- Schedule text field column -->
           <v-col cols="3">
             <v-text-field
@@ -179,7 +179,7 @@ export default defineComponent({
     </v-list>
     <v-divider class="my-4"></v-divider>
     <!-- File input for uploading program PDF -->
-    <v-row class="mt-3" justify="center">
+    <v-row class="mt-3 ml-2">
       <v-col cols="6" class="d-flex justify-center">
         <v-file-input
           v-model="programFile"
@@ -196,7 +196,7 @@ export default defineComponent({
 
     <!-- Save Button -->
     <v-card-actions>
-      <v-btn color="primary" @click="saveProgram" variant="outlined">Uložiť program</v-btn>
+      <v-btn color="primary" @click="saveProgram" variant="tonal">Uložiť program</v-btn>
     </v-card-actions>
   </v-card>
 </template>

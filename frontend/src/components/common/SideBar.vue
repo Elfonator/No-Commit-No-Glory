@@ -36,19 +36,19 @@
 
             <!-- Badge for admin notifications -->
             <v-badge
-              v-if="authStore.isAdmin() && link.name === 'Používatelia'"
-              :content="newUserCount"
-              color="#bc4639"
-              overlap
-              v-show="newUserCount > 0"
-              class="badge-position"
-            ></v-badge>
-            <v-badge
               v-if="authStore.isAdmin() && link.name === 'Práce'"
               :content="newPaperCount"
               color="#bc4639"
               overlap
               v-show="newPaperCount > 0"
+              class="badge-position"
+            ></v-badge>
+            <v-badge
+              v-if="authStore.isAdmin() && link.name === 'Používatelia'"
+              :content="newUserCount"
+              color="#bc4639"
+              overlap
+              v-show="newUserCount > 0"
               class="badge-position"
             ></v-badge>
           </div>
@@ -83,8 +83,6 @@
         </v-list-item>
       </v-list>
     </template>
-
-
 
     <!-- General Links Bottom -->
     <v-divider class="my-4"></v-divider>
@@ -137,8 +135,8 @@ const reviewerLinks: Link[] = [
 ]
 const adminLinks: Link[] = [
   { name: 'Konferencie', path: '/auth/admin/conferences' },
-  { name: 'Používatelia', path: '/auth/admin/users' },
   { name: 'Práce', path: '/auth/admin/papers' },
+  { name: 'Používatelia', path: '/auth/admin/users' },
   { name: 'Kategórie', path: '/auth/admin/categories' },
   { name: 'Otázky', path: '/auth/admin/questions' },
 ]
@@ -171,7 +169,7 @@ const newPaperCount = computed(() => notificationStore.newPaperCount)
 
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .sidebar {
   width: 180px !important;
   top: 0;
@@ -185,7 +183,7 @@ const newPaperCount = computed(() => notificationStore.newPaperCount)
     justify-content: center;
     align-items: center;
     height: 120px;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
 
   .sidebar-logo {
@@ -201,16 +199,10 @@ const newPaperCount = computed(() => notificationStore.newPaperCount)
     border-radius: 5px;
   }
 
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
   .v-list-subheader__text {
     padding-left: 5px;
-    font-weight: 600;
-    font-size: 1.1rem;
+    font-weight: 800;
+    font-size: 1.3rem;
     color: #2c3531;
   }
 }

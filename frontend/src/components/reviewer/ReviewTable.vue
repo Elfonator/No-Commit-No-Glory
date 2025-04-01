@@ -67,8 +67,8 @@ export default defineComponent({
     const headers = [
       { title: '', key: 'view', sortable: false },
       { title: 'Odporúčanie', key: 'recommendation', width: '30px' },
-      { title: 'ŠVK', key: 'conference', width: '140px'},
-      { title: 'Dátum', key: 'created_at', width: '100px' },
+      { title: 'ŠVK', key: 'conference'},
+      { title: 'Dátum', key: 'created_at' },
       { title: 'Názov práce', key: 'title', sortable: false },
       { title: '', key: 'actions', sortable: false },
     ];
@@ -494,21 +494,18 @@ export default defineComponent({
             <td>{{ formatDate(review.created_at) }}</td>
             <td class="truncate-cell">{{ review.paper.title }}</td>
             <td class="d-flex justify-end align-center">
-              <!-- :disabled="!review.isDraft" -->
               <v-btn
                 color="#FFCD16"
                 @click="editReview(review)"
                 :disabled="!canEditReview(review)">
                 <v-icon size="20">mdi-pencil</v-icon>
               </v-btn>
-              <!-- :disabled="!review.isDraft" -->
               <v-btn
                 color="primary"
                 @click="sendReview(review)"
                 :disabled="!canEditReview(review)">
                 <v-icon size="20">mdi-send</v-icon>
               </v-btn>
-              <!-- :disabled="!review.isDraft" -->
               <v-btn
                 color="#BC463A"
                 @click="confirmDeleteReview(review)"
@@ -526,6 +523,15 @@ export default defineComponent({
     <v-card>
       <v-card-title>{{ isViewMode ? 'Zobraziť recenziu' : 'Upraviť recenziu' }}</v-card-title>
       <v-card-text>
+        <v-btn
+          v-if="isViewMode"
+          color="primary"
+          @click="openPaperDetailsDialog(selectedReview.paper)"
+          variant="elevated"
+        >
+          <v-icon size="20">mdi-file-eye</v-icon>
+          Detaily práce
+        </v-btn>
         <!-- Rating Questions -->
         <v-row
           v-for="question in ratingQuestions"
@@ -629,27 +635,18 @@ export default defineComponent({
       </v-card-text>
       <v-card-actions>
         <v-btn
-          variant="outlined"
+          variant="tonal"
           color="#BC463A"
           :loading="isLoading"
           @click="reviewDialog = false"
         >{{ isViewMode ? 'Zavrieť' : 'Zrušiť' }}</v-btn>
         <v-btn
-          v-if="isViewMode"
-          color="success"
-          @click="openPaperDetailsDialog(selectedReview.paper)"
-          variant="outlined"
-        >
-          <v-icon size="20">mdi-file-eye</v-icon>
-          Práca
-        </v-btn>
-        <v-btn
-          variant="outlined"
+          variant="tonal"
           v-if="!isViewMode"
-          color="tertiary"
+          color="primary-shadow"
           @click="saveDraft">Uložiť</v-btn>
         <v-btn
-          variant="outlined"
+          variant="tonal"
           v-if="!isViewMode"
           color="primary"
           :loading="isLoading"

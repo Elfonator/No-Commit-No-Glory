@@ -121,6 +121,8 @@ export default defineComponent({
             size="large"
             @click="toggleEditMode"
             v-if="!editMode"
+            variant="flat"
+            rounded
             >Upraviť</v-btn
           >
         </v-col>
@@ -128,8 +130,8 @@ export default defineComponent({
 
       <!-- Edit Profile Form -->
       <v-form v-if="editMode">
-        <v-row>
-          <v-col cols="12" md="6">
+        <v-row dense>
+          <v-col cols="6">
             <v-text-field
               v-model="profileData.first_name"
               label="Meno"
@@ -137,7 +139,7 @@ export default defineComponent({
               :rules="[v => !!v || 'Meno je povinné']"
             ></v-text-field>
           </v-col>
-          <v-col cols="12" md="6">
+          <v-col cols="6">
             <v-text-field
               v-model="profileData.last_name"
               label="Priezvisko"
@@ -145,7 +147,7 @@ export default defineComponent({
               :rules="[v => !!v || 'Priezvisko je povinné']"
             ></v-text-field>
           </v-col>
-          <v-col cols="12" md="6">
+          <v-col cols="12">
             <v-text-field
               v-model="profileData.university"
               label="Univerzita"
@@ -153,7 +155,7 @@ export default defineComponent({
               :rules="[v => !!v || 'Univerzita je povinná']"
             ></v-text-field>
           </v-col>
-          <v-col cols="12" md="6">
+          <v-col cols="12">
             <v-text-field
               v-model="profileData.faculty"
               label="Fakulta"
@@ -167,7 +169,8 @@ export default defineComponent({
               outlined
             ></v-textarea>
           </v-col>
-          <v-col cols="12" md="6">
+          <v-divider color="primary-shadow"></v-divider>
+          <v-col cols="6">
             <v-text-field
               v-model="profileData.currentPassword"
               label="Aktuálne heslo"
@@ -181,7 +184,7 @@ export default defineComponent({
               ]"
             ></v-text-field>
           </v-col>
-          <v-col cols="12" md="6">
+          <v-col cols="6">
             <v-text-field
               v-model="profileData.newPassword"
               label="Nové heslo"
@@ -195,6 +198,7 @@ export default defineComponent({
               ]"
             ></v-text-field>
           </v-col>
+          <v-divider></v-divider>
           <v-col cols="12">
             <v-file-input
               label="Upload Avatar"
@@ -209,8 +213,8 @@ export default defineComponent({
         <!-- Form Actions -->
         <v-row>
           <v-col cols="12" class="d-flex justify-end">
-            <v-btn color="tertiary" @click="toggleEditMode" variant="outlined">Zrušiť</v-btn>
-            <v-btn color="primary" @click="saveProfile" variant="outlined">Uložiť</v-btn>
+            <v-btn color="#BC463A" @click="toggleEditMode" variant="tonal">Zrušiť</v-btn>
+            <v-btn color="primary" @click="saveProfile" variant="tonal">Uložiť</v-btn>
           </v-col>
         </v-row>
       </v-form>
