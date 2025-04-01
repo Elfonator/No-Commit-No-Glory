@@ -21,21 +21,20 @@ export const useHomepageStore = defineStore("homepage", () => {
     error.value = null;
     try {
       const response = await axiosInstance.get("/homepage");
-
       console.log("Full API Response:", response.data);
-      // Check if homepage exists in the response
-      if (!response.data.homepage) {
-        console.error("Homepage data is missing from API response!");
-        return;
-      }
-      committees.value = response.data.homepage.committees || response.data.committees || [];
+
+      committees.value = response.data.homepage?.committees || response.data.committees || [];
       program.value = response.data.homepage?.program || { items: [], fileLink: "" };
       activeCategories.value = [...(response.data.activeCategories || [])];
       programDocumentUrl.value = response.data.homepage?.program?.fileLink || "";
-      ongoingConference.value = response.data.ongoingConference ? { ...response.data.ongoingConference } : null;
+
+      if (response.data.ongoingConference) {
+        ongoingConference.value = { ...response.data.ongoingConference };
+      } else {
+        ongoingConference.value = null;
+      }
 
       return response.data;
-
     } catch (err) {
       error.value = "Nepodarilo sa načítať údaje domovskej stránky.";
       console.error("Error fetching homepage data:", err);
@@ -184,4 +183,3 @@ export const useHomepageStore = defineStore("homepage", () => {
     deadlines,
   };
 });
-

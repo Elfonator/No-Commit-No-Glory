@@ -883,9 +883,8 @@ export default defineComponent({
               outlined
               dense
               :rules="[() => !currentPaper.isFinal || !!currentPaper.abstract || 'Abstrakt je povinný pre finálnu verziu']"
-              class="large-text-field pt-3 pb-3"
-              :rows="4"
-              auto-grow
+              class="resizable-textarea mt-2"
+              :rows="5"
             />
               </v-col>
             </v-row>
@@ -992,7 +991,7 @@ export default defineComponent({
             variant="outlined"
             color="primary"
             @click="downloadPaper(currentPaper)">
-            <v-icon size="36">mdi-download-box</v-icon>
+            <v-icon size="25">mdi-download-box</v-icon>
             Stiahnuť
           </v-btn>
         </v-card-actions>
@@ -1106,7 +1105,7 @@ export default defineComponent({
   </v-card>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .author {
   margin-top: -20px;
   margin-bottom: 10px;
@@ -1114,5 +1113,16 @@ export default defineComponent({
 
 .row_height {
   margin-bottom: -30px;
+}
+
+:deep(.resizable-textarea) {
+  .v-field__field {
+    height: auto !important;
+  }
+
+  textarea {
+    min-height: 100px;
+    max-height: 400px;
+  }
 }
 </style>

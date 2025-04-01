@@ -190,7 +190,6 @@ export const editPaper = async (
 
     //Handle file upload if a new file is provided
     if (req.file) {
-      //const newFilePath = path.join(config.uploads, "docs", paper.conference.toString(), req.file.filename);
       const newFilePath = `/docs/${paper.conference.toString()}/${req.file.filename}`;
 
       //Delete the old file if it exists

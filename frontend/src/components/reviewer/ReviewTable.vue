@@ -25,15 +25,15 @@ export default defineComponent({
 
     const isReviewDeadlinePassed = (review: Review): boolean => {
       if (!review.paper?.conference?.deadline_review) {
-        return false; // If no deadline is set, allow editing
+        return false;
       }
       const deadline = new Date(review.paper.conference.deadline_review);
       return new Date() > deadline;
     };
 
     const canEditReview = (review: Review): boolean => {
-      // Can only edit if it's a draft AND review deadline hasn't passed
-      return review.isDraft && !isReviewDeadlinePassed(review);
+      //return review.isDraft && !isReviewDeadlinePassed(review);
+      return !isReviewDeadlinePassed(review);
     };
 
     const reviewStore = useReviewStore();
@@ -46,6 +46,7 @@ export default defineComponent({
     const attemptedSubmission = ref(false);
     const recommendation = ref<'Publikovať' | 'Publikovať so zmenami' | 'Odmietnuť'>('Publikovať');
     const isLoading = ref(false);
+    const comments = ref<string>('');
 
     const selectedReview = reactive<Review>({
       _id: '',
@@ -157,6 +158,14 @@ export default defineComponent({
       }
       await nextTick();
       reviewDialog.value = true;
+    };
+
+    const paperDetailsDialog = ref(false);
+    const selectedPaper = ref<any>(null);
+
+    const openPaperDetailsDialog = (paper: any) => {
+      selectedPaper.value = paper;
+      paperDetailsDialog.value = true;
     };
 
     // Helper function to get question ID
@@ -356,6 +365,7 @@ export default defineComponent({
       grades,
       questions,
       headers,
+      comments,
       submittedReviews,
       viewReviewDialog,
       selectedReview,
@@ -372,6 +382,10 @@ export default defineComponent({
       isViewMode,
       attemptedSubmission,
       isLoading,
+      selectedPaper,
+      paperDetailsDialog,
+      paperStore,
+      openPaperDetailsDialog,
       isReviewDeadlinePassed,
       canEditReview,
       closeDeleteDialog,
@@ -498,7 +512,7 @@ export default defineComponent({
               <v-btn
                 color="#BC463A"
                 @click="confirmDeleteReview(review)"
-                :disabled="!canEditReview(review)">
+                :disabled="!review.isDraft">
                 <v-icon size="20" color="white">mdi-delete</v-icon>
               </v-btn>
             </td>
@@ -570,23 +584,24 @@ export default defineComponent({
         <!-- Text Questions -->
         <v-row :class="{ 'missing-answer': attemptedSubmission && !reviewResponses[question._id] }"
                v-for="question in textQuestions"
-               :key="question._id" no-gutters>
+               :key="question._id"
+               class="pt-4"
+               align="start">
           <v-col cols="5" class="pt-4"><p>{{ question.text }}</p></v-col>
           <v-col cols="7">
             <v-textarea
               v-model="reviewResponses[question._id]"
               placeholder="Vložte odpoveď"
-              auto-grow
               outlined
-              required
-              class="mt-3 pt-2 pb-0 mb-0"
-              :rows="2"
+              class="resizable-textarea mt-2"
+              :rows="5"
             />
           </v-col>
           <v-divider v-if="question !== yesNoQuestions[yesNoQuestions.length - 1]"></v-divider>
         </v-row>
 
         <div class="double-divider" v-if="ratingQuestions.length"></div>
+
         <v-row>
           <v-col cols="12">
         <v-select
@@ -595,21 +610,20 @@ export default defineComponent({
           label="Odporúčanie"
           dense
           outlined
-          required
           class="large-text-field"
           :disabled="isViewMode"/>
         </v-col>
         </v-row>
-        <v-row v-if="['Publikovať so zmenami', 'Odmietnuť'].includes(recommendation)">
+        <!-- Conditional Comments -->
+        <v-row v-if="['Publikovať so zmenami', 'Odmietnuť'].includes(selectedReview.recommendation)">
           <v-col cols="12">
-        <v-textarea
-          v-model="selectedReview.comments"
-          placeholder="Pridajte komentáre, aby ste odôvodnili svoje odporúčanie"
-          outlined
-          dense
-          auto-grow
-          :rows="3"
-          :disabled="isViewMode"/>
+            <v-textarea
+              v-model="selectedReview.comments"
+              placeholder="Pridajte komentáre, aby ste odôvodnili svoje odporúčanie"
+              outlined
+              class="resizable-textarea mt-2"
+              :disabled="isViewMode"
+            />
           </v-col>
         </v-row>
       </v-card-text>
@@ -617,8 +631,18 @@ export default defineComponent({
         <v-btn
           variant="outlined"
           color="#BC463A"
+          :loading="isLoading"
           @click="reviewDialog = false"
         >{{ isViewMode ? 'Zavrieť' : 'Zrušiť' }}</v-btn>
+        <v-btn
+          v-if="isViewMode"
+          color="success"
+          @click="openPaperDetailsDialog(selectedReview.paper)"
+          variant="outlined"
+        >
+          <v-icon size="20">mdi-file-eye</v-icon>
+          Práca
+        </v-btn>
         <v-btn
           variant="outlined"
           v-if="!isViewMode"
@@ -628,7 +652,57 @@ export default defineComponent({
           variant="outlined"
           v-if="!isViewMode"
           color="primary"
+          :loading="isLoading"
           @click="sendReview(selectedReview)">Odoslať</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Show paper details-->
+  <v-dialog v-model="paperDetailsDialog" max-width="800px">
+    <v-card>
+      <v-card-title>Detaily práce</v-card-title>
+      <v-card-text>
+        <v-table>
+          <tbody>
+          <tr>
+            <td><strong>Názov:</strong></td>
+            <td>{{ selectedPaper?.title }}</td>
+          </tr>
+          <tr>
+            <td><strong>Konferencia:</strong></td>
+            <td>
+              {{ selectedPaper?.conference?.year }} -
+              {{ formatDate(selectedPaper?.conference?.date) }}
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Sekcia:</strong></td>
+            <td>{{ selectedPaper?.category?.name }}</td>
+          </tr>
+          <tr>
+            <td><strong>Kľúčové slová:</strong></td>
+            <td>{{ selectedPaper?.keywords?.join(', ') }}</td>
+          </tr>
+          <tr>
+            <td><strong>Abstrakt:</strong></td>
+            <td><em>{{ selectedPaper?.abstract }}</em></td>
+          </tr>
+          </tbody>
+        </v-table>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn variant="outlined" color="#BC463A" @click="paperDetailsDialog = false">
+          Zavrieť
+        </v-btn>
+        <v-btn
+          variant="outlined"
+          color="primary"
+          @click="paperStore.downloadPaperReviewer(selectedPaper?.conference?._id, selectedPaper?._id)"
+        >
+          <v-icon size="22">mdi-download-box</v-icon>
+          Stiahnuť
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -650,11 +724,48 @@ export default defineComponent({
   </v-dialog>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .truncate-cell {
   max-width: 160px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+
+.v-divider {
+  color: #116466;
+}
+.double-divider {
+  border-top: 2px solid #116466;
+  margin: 16px 0;
+}
+
+.questions {
+  font-size: 0.8rem;
+  color: #2c3531;
+}
+
+.wrap-title {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.missing-answer {
+  background-color: #ffe6e6;
+  border-left: 4px solid #bc4639;
+}
+
+:deep(.resizable-textarea) {
+  .v-field__field {
+    height: auto !important;
+  }
+
+  textarea {
+    min-height: 100px;
+    max-height: 400px;
+  }
+}
+
 </style>

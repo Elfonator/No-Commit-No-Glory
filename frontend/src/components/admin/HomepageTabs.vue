@@ -25,6 +25,11 @@ export default defineComponent({
     const localProgramItems = ref<ProgramItem[]>([]);
 
     const programFile = ref<File | null>(null);
+    const programFileLink = computed(() => {
+      return homepageStore.program?.fileLink || ''
+    })
+
+    const backendBaseUrl = import.meta.env.VITE_API_URL;
 
     onMounted(async () => {
       try {
@@ -75,7 +80,6 @@ export default defineComponent({
         let fileLink = homepageStore.program?.fileLink || "";
 
         if (programFile.value) {
-          // Create FormData and append the file
           const formData = new FormData();
           formData.append("file_link", programFile.value);
 
@@ -84,6 +88,8 @@ export default defineComponent({
           });
 
           fileLink = response.data.program.fileLink;
+
+          homepageStore.programDocumentUrl = fileLink;
         }
 
         await homepageStore.updateProgram({
@@ -104,13 +110,26 @@ export default defineComponent({
       }
     };
 
+    const getFileName = (file: string | File | undefined) => {
+      if (!file) return "No file selected";
+
+      if (file instanceof File) {
+        return file.name; // Extract filename from File object
+      }
+
+      return file.split("/").pop(); // Extract filename from string path
+    };
+
     return {
       programItems,
       localProgramItems,
       programFile,
+      programFileLink,
+      backendBaseUrl,
       addEvent,
       removeEvent,
       saveProgram,
+      getFileName,
     };
   },
 });
@@ -169,6 +188,10 @@ export default defineComponent({
           outlined
         />
       </v-col>
+      <p v-if="programFileLink">
+        Aktuálny súbor:
+        <a :href="backendBaseUrl + programFileLink" target="_blank">{{ getFileName(programFileLink) }}</a>
+      </p>
     </v-row>
 
     <!-- Save Button -->

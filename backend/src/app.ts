@@ -48,12 +48,15 @@ initializeDatabase().catch((error) => {
 });
 
 // API Routes
+app.use("/avatars", express.static(path.join(config.uploads, "avatars")));
+app.use("/docs", express.static(path.join(config.uploads, "docs")));
+app.use("/programs", express.static(path.join(config.uploads, "programs")));
+app.use("/old", express.static(path.join(config.uploads, "old")));
 app.use("/api", commonRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/auth/admin", adminRoutes);
 app.use("/api/auth/participant", participantRoutes);
 app.use("/api/auth/reviewer", reviewerRoutes);
-app.use("/avatars", express.static(path.join(config.uploads, "avatars")));
-app.use("/docs", express.static(path.join(config.uploads, "docs")));
+
 
 export default app;

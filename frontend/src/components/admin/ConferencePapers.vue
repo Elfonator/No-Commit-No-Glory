@@ -15,6 +15,7 @@ import {type AdminPaper, PaperStatus} from '@/types/paper'
 import axios from 'axios'
 import type {ActiveCategory} from "@/types/conference.ts";
 import {useCategoryStore} from "@/stores/categoryStore.ts";
+import type { ReviewResponse } from '@/types/review.ts'
 
 export default defineComponent({
   name: 'ConferencePapers',
@@ -35,6 +36,8 @@ export default defineComponent({
     const selectedReviewer = ref<any>(null)
     const menuCatOpen = ref(false)
     const isLoading = ref(false);
+    const isReviewDialogOpen = ref(false)
+    const selectedReview = ref<any>(null)
 
     //Table headers for papers
     const tableHeaders = [
@@ -251,6 +254,21 @@ export default defineComponent({
       }
     }
 
+    const openReviewDialog = async (paper: AdminPaper) => {
+      try {
+        if (!paper.review) {
+          showSnackbar?.({ message: 'Pre túto prácu nie je recenzia.', color: 'warning' });
+          return;
+        }
+
+        selectedReview.value = paper.review;
+        isReviewDialogOpen.value = true;
+      } catch (error) {
+        console.error('Chyba pri načítaní recenzie:', error);
+        showSnackbar?.({ message: 'Nepodarilo sa načítať recenziu.', color: 'error' });
+      }
+    };
+
     /** Deadline changes **/
     const isDeadlineDialogOpen = ref(false)
     const newDeadline = ref<Date | null>(null)
@@ -465,6 +483,32 @@ export default defineComponent({
       isAssignReviewerDialogOpen.value = false
     }
 
+    /** Show review for paper **/
+    const ratingResponses = computed(() => {
+      return (selectedReview.value?.responses || []).filter((r: ReviewResponse) => {
+        return typeof r.question === 'object' && r.question.type === 'rating';
+      });
+    });
+
+    const yesNoResponses = computed(() => {
+      return (selectedReview.value?.responses || []).filter((r: ReviewResponse) => {
+        return typeof r.question === 'object' && r.question.type === 'yes_no';
+      });
+    });
+
+    const textResponses = computed(() => {
+      return (selectedReview.value?.responses || []).filter((r: ReviewResponse) => {
+        return typeof r.question === 'object' && r.question.type === 'text';
+      });
+    });
+
+
+    const getRatingColor = (score: number) => {
+      if (score >= 5) return 'green';
+      if (score >= 3) return 'orange';
+      return 'red';
+    };
+
     //Format dates as dd.MM.yyyy
     const formatDate = (date: string | Date | null): string => {
       if (!date) return 'N/A'
@@ -564,6 +608,12 @@ export default defineComponent({
       selectedCategory,
       reviewerSearch,
       isLoading,
+      isReviewDialogOpen,
+      selectedReview,
+      ratingResponses,
+      yesNoResponses,
+      textResponses,
+      getRatingColor,
       customReviewerFilter,
       addAuthor,
       removeAuthor,
@@ -580,6 +630,7 @@ export default defineComponent({
       resetConferenceFilters,
       resetFilters,
       viewPaper,
+      openReviewDialog,
       openAssignReviewerDialog,
       closeAssignReviewerDialog,
       assignReviewer,
@@ -917,11 +968,172 @@ export default defineComponent({
                 >Zrušiť</v-btn
                 >
                 <v-btn
+                  color="tertiary"
+                  @click="openReviewDialog(selectedPaper!)"
+                  :disabled="!selectedPaper?.review"
+                  variant="outlined"
+                >
+                  <v-icon size="20">mdi-account-alert</v-icon>
+                  Recenzia
+                </v-btn>
+                <v-btn
                   variant="outlined"
                   color="primary"
                   @click="downloadPaper(selectedPaper?.conference?._id, selectedPaper?._id)">
                   <v-icon size="22">mdi-download-box</v-icon>
                   Stiahnuť
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+
+          <!-- Review dialog -->
+          <v-dialog v-model="isReviewDialogOpen" max-width="800px">
+            <v-card>
+              <v-card-title>
+                Recenzia
+                <v-spacer></v-spacer>
+                <v-chip
+                  :color="selectedReview?.recommendation === 'Publikovať' ? 'green'
+                : selectedReview?.recommendation === 'Odmietnuť' ? 'red'
+                : 'orange'">
+                  {{ selectedReview?.recommendation }}
+                </v-chip>
+              </v-card-title>
+
+              <v-divider></v-divider>
+
+              <v-card-text>
+                <div v-if="selectedReview?.comments">
+                  <h4>Komentár recenzenta</h4>
+                  <p>{{ selectedReview.comments }}</p>
+                </div>
+
+                <div v-if="selectedReview?.responses?.length">
+                  <h4 class="mt-4">Otázky a odpovede</h4>
+                  <v-list dense>
+                    <v-list-item
+                      v-for="(resp, index) in selectedReview.responses"
+                      :key="index"
+                    >
+                      <v-list-item>
+                        <v-list-item-title><strong>Otázka:</strong> {{ resp.question?.text || resp.question }}</v-list-item-title>
+                        <v-list-item-subtitle><strong>Odpoveď:</strong> {{ resp.answer }}</v-list-item-subtitle>
+                      </v-list-item>
+                    </v-list-item>
+                  </v-list>
+                </div>
+              </v-card-text>
+
+              <v-card-actions>
+                <v-spacer />
+                <v-btn variant="outlined" color="primary" @click="isReviewDialogOpen = false">
+                  Zavrieť
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+
+          <v-dialog v-model="isReviewDialogOpen" max-width="800px">
+            <v-card>
+              <v-card-title class="d-flex align-center">
+                <span class="text-h5">Recenzia práce</span>
+                <v-spacer></v-spacer>
+                <v-chip
+                  :color="selectedReview.recommendation === 'Publikovať' ? 'green' :
+                selectedReview.recommendation === 'Odmietnuť' ? 'red' : 'orange'"
+                  class="ml-2">
+                  {{ selectedReview.recommendation }}
+                </v-chip>
+              </v-card-title>
+
+              <v-divider></v-divider>
+
+              <v-card-text>
+                <!-- Comments section -->
+                <div v-if="selectedReview.comments" class="my-4">
+                  <h3 class="text-h6 mb-2">Komentáre recenzenta</h3>
+                  <v-card variant="outlined" class="pa-3 bg-grey-lighten-4">
+                    <p>{{ selectedReview.comments }}</p>
+                  </v-card>
+                </div>
+
+                <!-- Rating questions -->
+                <div v-if="ratingResponses.length" class="my-4">
+                  <h3 class="text-h6 mb-2">Bodové hodnotenie</h3>
+                  <v-table density="compact">
+                    <thead>
+                    <tr>
+                      <th>Kritérium</th>
+                      <th class="text-center">Hodnotenie</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="response in ratingResponses" :key="response._id">
+                      <td>{{ response.question.text }}</td>
+                      <td class="text-center">
+                        <v-chip
+                          :color="getRatingColor(Number(response.answer))"
+                          size="small"
+                          class="font-weight-bold">
+                          {{ response.answer }} / {{ response.question.options.max }}
+                        </v-chip>
+                      </td>
+                    </tr>
+                    </tbody>
+                  </v-table>
+                </div>
+
+                <!-- Yes/No questions -->
+                <div v-if="yesNoResponses.length" class="my-4">
+                  <h3 class="text-h6 mb-2">Kontrolné otázky</h3>
+                  <v-table density="compact">
+                    <thead>
+                    <tr>
+                      <th>Otázka</th>
+                      <th class="text-center">Odpoveď</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="response in yesNoResponses" :key="response._id">
+                      <td>{{ response.question.text }}</td>
+                      <td class="text-center">
+                        <v-chip
+                          :color="response.answer === 'yes' ? 'green' : 'red'"
+                          size="small">
+                          {{ response.answer === 'yes' ? 'Áno' : 'Nie' }}
+                        </v-chip>
+                      </td>
+                    </tr>
+                    </tbody>
+                  </v-table>
+                </div>
+
+                <!-- Text questions -->
+                <div v-if="textResponses.length" class="my-4">
+                  <h3 class="text-h6 mb-2">Slovné hodnotenie</h3>
+                  <v-expansion-panels variant="accordion">
+                    <v-expansion-panel
+                      v-for="response in textResponses"
+                      :key="response._id">
+                      <v-expansion-panel-title>
+                        {{ response.question.text }}
+                      </v-expansion-panel-title>
+                      <v-expansion-panel-text>
+                        {{ response.answer || 'Žiadna odpoveď' }}
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
+                </div>
+              </v-card-text>
+
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn
+                  variant="outlined"
+                  color="primary"
+                  @click="isReviewDialogOpen = false">
+                  Zatvoriť
                 </v-btn>
               </v-card-actions>
             </v-card>

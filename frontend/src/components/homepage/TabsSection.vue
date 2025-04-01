@@ -1,24 +1,42 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted, computed } from 'vue'
 import { useHomepageStore } from "@/stores/homepageStore";
+import { storeToRefs } from 'pinia'
+import type { ActiveCategory } from '@/types/conference.ts'
 
 export default defineComponent({
   name: "TabSection",
   setup() {
     const activeTab = ref("benefits");
     const store = useHomepageStore();
+    const {
+      deadlines,
+      activeCategories,
+      program,
+      programDocumentUrl
+    } = storeToRefs(store); // <- first get references from store
+
+    const plainCategories = ref<ActiveCategory[]>([]);
+
+    const categories = computed(() => activeCategories.value || []);
+
+    const backendBaseUrl = import.meta.env.VITE_API_URL;
 
     // Load data on component mount
     onMounted(async () => {
-      await store.fetchHomepageData();
+      await Promise.all([
+        store.fetchHomepageData(),
+      ]);
+      plainCategories.value = activeCategories.value;
     });
 
     return {
       activeTab,
-      categories: store.activeCategories,
-      deadlines: store.deadlines,
-      programItems: computed(() => store.program?.items || []),
-      programDocumentUrl: store.programDocumentUrl,
+      categories,
+      deadlines,
+      programItems: computed(() => program.value?.items || []),
+      programDocumentUrl,
+      backendBaseUrl,
     };
   },
 });
@@ -38,11 +56,11 @@ export default defineComponent({
       <v-tabs-window-item value="benefits">
         <div class="tab-content">
           <ul>
-            <li>Je zadarmo: účasť na konferencii je bez konferenčného poplatku</li>
-            <li>Výstupom je publikácia: prezentovaný príspevok bude publikovaný v zborníku recenzovaných prác</li>
-            <li>Možnosť získať ocenenie: najlepšie práce budú ocenené diplomom a mimoriadnym štipendiom či vecnou cenou</li>
-            <li>Výhody pre ďalšiu kariéru: skúsenosti s vystúpením na konferenciách a publikácie zvyšujú napríklad šancu prijatia na doktorandské štúdium</li>
-            <li>Šanca pre nové kontakty: na konferencii je možnosť spoznať nových ľudí v odbore a nadviazať nové spolupráce</li>
+            <li><strong>Je zadarmo</strong>: účasť na konferencii je bez konferenčného poplatku</li>
+            <li><strong>Výstupom je publikácia</strong>: prezentovaný príspevok bude publikovaný v zborníku recenzovaných prác</li>
+            <li><strong>Možnosť získať ocenenie</strong>: najlepšie práce budú ocenené diplomom a mimoriadnym štipendiom či vecnou cenou</li>
+            <li><strong>Výhody pre ďalšiu kariéru</strong>: skúsenosti s vystúpením na konferenciách a publikácie zvyšujú napríklad šancu prijatia na doktorandské štúdium</li>
+            <li><strong>Šanca pre nové kontakty</strong>: na konferencii je možnosť spoznať nových ľudí v odbore a nadviazať nové spolupráce</li>
           </ul>
         </div>
       </v-tabs-window-item>
@@ -87,7 +105,7 @@ export default defineComponent({
 
           <p v-if="programDocumentUrl" class="note">
             Detailný program je možné pozrieť
-            <a :href="programDocumentUrl" target="_blank">TU</a>
+            <a :href="backendBaseUrl + programDocumentUrl" target="_blank">TU</a>
           </p>
         </div>
       </v-tabs-window-item>
@@ -123,19 +141,28 @@ export default defineComponent({
 
       li {
         margin-bottom: 10px;
-        line-height: 1.3;
         font-size: 1rem;
         color: #444;
-        display: flex;
-        align-items: center;
+        text-align: justify;
+        line-height: 1.6;
+        position: relative;
+        padding-left: 2rem;
 
         &::before {
           content: "⫸";
+          position: absolute;
+          left: 0;
+          top: 0;
+          font-size: 1.5rem;
           color: #116466;
-          font-size: 2rem;
-          margin-right: 10px;
+          line-height: 1;
         }
-        text-align: justify;
+
+        strong {
+          font-weight: bold;
+          white-space: nowrap;
+          margin-right: 0.3rem;
+        }
       }
     }
   }
@@ -184,4 +211,16 @@ export default defineComponent({
     }
   }
 }
+
+.text-item {
+  display: block;
+  line-height: 1.6;
+  text-align: justify;
+
+  strong {
+    font-weight: bold;
+    white-space: normal;
+  }
+}
+
 </style>
