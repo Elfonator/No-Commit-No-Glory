@@ -496,13 +496,13 @@ export default defineComponent({
             color="#BC463A"
             @click="reviewDialog = false">Zrušiť</v-btn>
           <v-btn
-            variant="outlined"
-            color="tertiary"
+            variant="tonal"
+            color="#3c888c"
             :loading="isLoading"
             @click="saveDraft"
             :disabled="!isReviewDeadlineActive || selectedReview?.isDraft === false">Uložiť</v-btn>
           <v-btn
-            variant="outlined"
+            variant="tonal"
             color="primary"
             :loading="isLoading"
             @click="submitReviewConfirmation"
@@ -548,13 +548,13 @@ export default defineComponent({
           <v-btn
             color="#BC463A"
             @click="paperDetailsDialog = false"
-            variant="outlined"
+            variant="tonal"
           >Zrušiť</v-btn
           >
           <v-btn
             color="primary"
             @click="downloadPaper(selectedPaper)"
-            variant="outlined">
+            variant="tonal">
             <v-icon size="25">mdi-download-box</v-icon>
             Stiahnuť
           </v-btn>
@@ -571,8 +571,8 @@ export default defineComponent({
           Naozaj chcete odoslať túto recenziu? Po odoslaní ju nie je možné opravovať.
         </v-card-text>
         <v-card-actions>
-          <v-btn color="#bc4639" @click="confirmationDialog = false" variant="outlined">Zrušiť</v-btn>
-          <v-btn color="primary" @click="confirmSubmission" variant="outlined" :loading="isLoading">Odoslať</v-btn>
+          <v-btn color="#bc4639" @click="confirmationDialog = false" variant="tonal">Zrušiť</v-btn>
+          <v-btn color="primary" @click="confirmSubmission" variant="tonal" :loading="isLoading">Odoslať</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

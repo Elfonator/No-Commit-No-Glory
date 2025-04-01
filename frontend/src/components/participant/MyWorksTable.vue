@@ -656,7 +656,7 @@ export default defineComponent({
             color="primary"
             @click="resetFilters"
             title="Zrušiť filter"
-            variant="outlined">
+            variant="tonal">
             <v-icon>mdi-filter-remove</v-icon>
           </v-btn>
         </v-col>
@@ -866,9 +866,9 @@ export default defineComponent({
                 </v-row>
               </v-col>
               <v-col cols="12" class="d-flex justify-start author">
-                <v-btn color="primary" @click="addAuthor">
-                  <v-icon icon="mdi-plus-circle" start></v-icon>Ďalší
-                  autor</v-btn
+                <v-btn color="#3c888c" @click="addAuthor">
+                  <v-icon icon="mdi-plus-circle" start></v-icon>
+                  Ďalší autor</v-btn
                 >
               </v-col>
             </v-row>
@@ -915,18 +915,18 @@ export default defineComponent({
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn @click="closeDialog" color="#BC463A" variant="outlined">Zrušiť</v-btn>
+          <v-btn @click="closeDialog" color="#BC463A" variant="tonal">Zrušiť</v-btn>
           <v-btn
             v-if="!currentPaper.isFinal"
             @click="savePaper"
-            color="tertiary"
-            variant="outlined"
+            color="primary-shadow"
+            variant="tonal"
             >Uložiť</v-btn>
           <v-btn
             v-if="currentPaper.isFinal"
             @click="submitPaper"
             color="primary"
-            variant="outlined"
+            variant="tonal"
             :disabled="!isFormValid">Odoslať</v-btn
           >
         </v-card-actions>
@@ -942,10 +942,10 @@ export default defineComponent({
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn variant="outlined" color="primary" @click="isDeleteDialogOpen = false"
+          <v-btn variant="tonal" color="primary" @click="isDeleteDialogOpen = false"
             >Zrušiť</v-btn
           >
-          <v-btn variant="outlined" color="#BC463A" @click="deletePaper">Vymazať</v-btn>
+          <v-btn variant="tonal" color="#BC463A" @click="deletePaper">Vymazať</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -1092,12 +1092,11 @@ export default defineComponent({
         </v-card-text>
 
         <v-card-actions>
-          <v-spacer></v-spacer>
           <v-btn
-            variant="outlined"
-            color="primary"
+            variant="tonal"
+            color="#bc4639"
             @click="reviewDialog = false">
-            Zatvoriť
+            Zrušiť
           </v-btn>
         </v-card-actions>
       </v-card>
