@@ -17,9 +17,11 @@ backend/dist
 # dotenv environment variables file
 .env
 
-# TypeScript cache
+# TypeScript cache/vite cache
 .tsbuildinfo
+.vite/
 
 # IDE settings (for example, IntelliJ or VSCode)
 .idea/
 .vscode/
+
