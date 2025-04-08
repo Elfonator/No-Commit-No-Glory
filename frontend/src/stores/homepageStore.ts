@@ -4,7 +4,7 @@ import axiosInstance from "@/config/axiosConfig";
 import type { ActiveCategory } from '@/types/conference.ts'
 import { format } from 'date-fns'
 import { sk } from 'date-fns/locale'
-import type { ProgramItem } from '@/types/homepage.ts'
+import type { ConferenceFile, ProgramItem } from '@/types/homepage.ts'
 
 export const useHomepageStore = defineStore("homepage", () => {
   const program = ref<{ items: ProgramItem[]; fileLink: string } | null>(null);
@@ -12,6 +12,10 @@ export const useHomepageStore = defineStore("homepage", () => {
   const ongoingConference = ref<any>(null);
   const programDocumentUrl = ref<string | null>(null);
   const committees = ref<{ _id: string; fullName: string; university: string }[]>([]);
+  const acceptedPapers = ref<Record<string, { title: string; authors: string[] }[]>>({});
+  const awardedPapers = ref<Record<string, { title: string; authors: string[] }[]>> ({});
+  const conferenceDocsAdmin = ref<ConferenceFile[]>([]);
+  const pastConferenceFiles = ref<ConferenceFile[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -27,6 +31,9 @@ export const useHomepageStore = defineStore("homepage", () => {
       program.value = response.data.homepage?.program || { items: [], fileLink: "" };
       activeCategories.value = [...(response.data.activeCategories || [])];
       programDocumentUrl.value = response.data.homepage?.program?.fileLink || "";
+      acceptedPapers.value = response.data.acceptedPapers || {};
+      awardedPapers.value = response.data.awardedPapers || {};
+      pastConferenceFiles.value = response.data.homepage?.conferenceFiles || [];
 
       if (response.data.ongoingConference) {
         ongoingConference.value = { ...response.data.ongoingConference };
@@ -162,12 +169,44 @@ export const useHomepageStore = defineStore("homepage", () => {
     }
   };
 
+  // Fetch all conference documents
+  const fetchConferenceDocuments = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await axiosInstance.get("/auth/admin/documents");
+      conferenceDocsAdmin.value = response.data.documents || [];
+    } catch (err) {
+      console.error("Error loading documents:", err);
+      error.value = "Nepodarilo sa načítať dokumenty.";
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  //Upload documents for past conferences
+  const uploadConferenceDocuments = async (formData: FormData) => {
+    try {
+      const response = await axiosInstance.post('/auth/admin/documents', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      throw error;
+    }
+  }
+
   return {
     program,
     activeCategories,
     ongoingConference,
     programDocumentUrl,
     committees,
+    acceptedPapers,
+    awardedPapers,
+    conferenceDocsAdmin,
+    pastConferenceFiles,
     loading,
     error,
 
@@ -179,6 +218,8 @@ export const useHomepageStore = defineStore("homepage", () => {
     fetchProgram,
     updateProgram,
     deleteProgramItem,
+    uploadConferenceDocuments,
+    fetchConferenceDocuments,
 
     deadlines,
   };

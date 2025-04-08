@@ -21,11 +21,11 @@ interface ICommittee {
 }
 
 interface IConferenceFile {
-  name: string;
-  conference: mongoose.Schema.Types.ObjectId;
-  awarded: string;
-  submitted: string;
-  works: string;
+  conference: string;
+  awarded?: string;
+  published?: string;
+  collection?: string;
+  isbn?: string;
 }
 
 export interface IHomepage extends Document {
@@ -57,11 +57,11 @@ const HomepageSchema: Schema = new Schema({
   ],
   conferenceFiles: [
     {
-      name: { type: String, default: "ŠVK" },
-      conference: { type: Schema.Types.ObjectId, ref: 'Conference', required: false },
+      conference: { type: String, required: true },
+      isbn: { type: String, required: false },
       awarded: { type: String, required: false },
-      submitted: { type: String, required: false },
-      works: { type: String, required: false },
+      published: { type: String, required: false },
+      collection: { type: String, required: false },
     },
   ],
 },

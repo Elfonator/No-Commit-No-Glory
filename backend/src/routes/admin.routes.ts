@@ -36,10 +36,14 @@ import {
   deleteProgramItem,
   uploadProgramFile,
   updateProgram,
-  adminUpdatePaper, exportPapersToExcel, uploadProgram
+  adminUpdatePaper,
+  exportPapersToExcel,
+  uploadProgram,
+  uploadConferenceDocs,
+  uploadDocs,
+  getConferenceDocuments
 } from '../controllers/admin.controller'
 import { authenticateToken } from "../middleware/authenticateToken";
-import { upload } from '../controllers/user.controller'
 
 const router = Router();
 
@@ -98,6 +102,8 @@ router.delete("/program/:itemId",  deleteProgramItem);
 router.post("/program/upload", uploadProgram.single("file_link"), uploadProgramFile);
 
 //Homepage - Documents
+router.get('/documents', getConferenceDocuments);
+router.post('/documents', uploadDocs, uploadConferenceDocs );
 
 //Homepage - Templates
 

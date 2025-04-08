@@ -93,20 +93,40 @@ export default defineComponent({
     })
 
     const canEditPaper = (paper: Paper) => {
-      //Allow editing only if the paper is in Draft status
-      return paper.status === PaperStatus.Draft || paper.status === PaperStatus.AcceptedWithChanges || paper.status === PaperStatus.Rejected
-    }
+      const editableStatuses = [
+        PaperStatus.Draft,
+        PaperStatus.AcceptedWithChanges,
+        PaperStatus.Rejected,
+        PaperStatus.Accepted,
+        PaperStatus.SubmittedAfterReview
+      ];
+
+      const deadline = paper.deadline_date ? new Date(paper.deadline_date) : null;
+      const now = new Date();
+
+      if (
+        [PaperStatus.Accepted, PaperStatus.SubmittedAfterReview].includes(paper.status as PaperStatus) &&
+        deadline !== null &&
+        now > deadline
+      ) {
+        return false;
+      }
+
+      return editableStatuses.includes(paper.status as PaperStatus);
+    };
 
     const canViewReview = (paper: Paper) => {
       //Allow viewing review only if the paper has a review and is not in Draft
       return !!paper.review && paper.status !== PaperStatus.Draft
     }
 
-    const isDeadlineEditable = (conference: ParticipantConference) => {
+    const isDeadlineEditable = (paper: Paper) => {
       //Disable the deadline edit button if the conference end_date has passed
-      const now = new Date()
-      const conferenceEndDate = new Date(conference.end_date || now) // Assuming conference.end_date exists
-      return conferenceEndDate > now
+      if (!paper.deadline_date) return false;
+
+      const now = new Date();
+      const deadline = new Date(paper.deadline_date);
+      return deadline > now;
     }
 
     const conferences = computed(() => {
@@ -631,7 +651,7 @@ export default defineComponent({
     <!-- Filters Section -->
     <v-card-subtitle class="filters-section">
       <v-row no-gutters>
-        <v-col cols="10" md="3">
+        <v-col md="3">
           <v-text-field
             v-model="conferenceStore.filters.year"
             label="Rok"
@@ -640,7 +660,7 @@ export default defineComponent({
             density="compact"
           />
         </v-col>
-        <v-col cols="10" md="4">
+        <v-col md="4">
           <v-select
             v-model="filters.selectedStatus"
             label="Status"
@@ -650,7 +670,7 @@ export default defineComponent({
             density="compact"
           />
         </v-col>
-        <v-col cols="4" md="3">
+        <v-col md="3">
           <v-btn
             class="filter-btn"
             color="primary"
@@ -907,6 +927,7 @@ export default defineComponent({
             </p>
             <v-checkbox
               v-model="currentPaper.isFinal"
+              :disabled="!!currentPaper.review"
               color="red"
               label="Je toto finálna verzia? (Pre odovzdanie práce by malo byť zaškrtnuté)"
             />

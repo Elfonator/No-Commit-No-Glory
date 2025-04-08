@@ -9,7 +9,7 @@ import path from "path";
 import fs from "fs";
 import {config} from "../config";
 import Review from '../models/Review'
-import { setEndOfDay } from '../utils/dateUtils'
+import { normalizeDate } from '../utils/dateUtils'
 
 // Submit a new paper
 export const createPaper = async (
@@ -48,13 +48,11 @@ export const createPaper = async (
     }
 
     //Validate submission deadline
-    if (new Date() > setEndOfDay(new Date(selectedConference.deadline_submission))) {
-      res
-        .status(400)
-        .json({
-          message:
-            "Deadline na odoslanie prác pre túto konferenciu už vypršal",
-        });
+    const today = normalizeDate(new Date());
+    const deadline = normalizeDate(selectedConference.deadline_submission);
+
+    if (today > deadline) {
+      res.status(400).json({ message: "Deadline na odoslanie prác pre túto konferenciu už vypršal" });
       return;
     }
 
@@ -172,6 +170,36 @@ export const editPaper = async (
       return;
     }
 
+    // Check if paper is editable based on status and deadline
+    const editableStatuses = [
+      PaperStatus.Draft,
+      PaperStatus.AcceptedWithChanges,
+      PaperStatus.Rejected,
+      PaperStatus.Accepted,
+      PaperStatus.SubmittedAfterReview,
+    ];
+
+    if (!editableStatuses.includes(paper.status)) {
+      res.status(403).json({
+        message: "Túto prácu nie je možné upravovať.",
+      });
+      return;
+    }
+
+    // Check deadline
+    const now = normalizeDate(new Date());
+    const deadlineDate = normalizeDate(new Date(paper.deadline_date));
+
+    const editingDeadlineStatuses = [
+      PaperStatus.Accepted,
+      PaperStatus.SubmittedAfterReview,
+    ];
+
+    if (editingDeadlineStatuses.includes(paper.status) && now > deadlineDate) {
+      res.status(403).json({ message: "Termín na úpravu tejto práce už vypršal." });
+      return;
+    }
+
     // Remove restricted fields from updates
     delete updates.user;
     delete updates.deadline_date;
@@ -200,10 +228,18 @@ export const editPaper = async (
           await fs.promises.unlink(oldFilePath);
           console.log(`Old document deleted: ${oldFilePath}`);
         } catch (err) {
-          console.warn("Failed to delete old file!", err);
+          console.warn("Failed to delete old file", err);
         }
       }
       paper.file_link = newFilePath;
+    }
+
+    // Validate file presence
+    if (updates.isFinal && !req.file && !paper.file_link) {
+      res.status(400).json({
+        message: "Súbor je povinný pri finálnom odoslaní práce.",
+      });
+      return;
     }
 
     Object.assign(paper, updates);
@@ -217,14 +253,18 @@ export const editPaper = async (
 
     // Check if the participant is submitting a final version after review
     if (paper.isFinal) {
-      const hasPreviousReview =
-        paper.review &&
-        [PaperStatus.AcceptedWithChanges, PaperStatus.Rejected].includes(paper.status);
+      const alreadyFinal = [
+        PaperStatus.Accepted,
+        PaperStatus.SubmittedAfterReview,
+      ];
 
-      if (hasPreviousReview) {
-        paper.status = PaperStatus.SubmittedAfterReview;
-      } else {
-        paper.status = PaperStatus.Submitted;
+      if (!alreadyFinal.includes(paper.status)) {
+        // If there is a review object present, consider it a resubmission
+        const isResubmission = !!paper.review;
+
+        paper.status = isResubmission
+          ? PaperStatus.SubmittedAfterReview
+          : PaperStatus.Submitted;
       }
     }
 

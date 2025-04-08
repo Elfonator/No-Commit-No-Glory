@@ -1,113 +1,95 @@
 <script lang="ts">
-import { defineComponent, ref, reactive, inject } from 'vue'
-
-// Move the interface outside of setup for better visibility
-export interface HomepageDocument {
-  id: string;
-  name: string;
-  year: string;
-  fileName: string;
-  file: File | null;
-}
+import { defineComponent, ref, reactive, onMounted, inject } from 'vue'
+import { useHomepageStore } from '@/stores/homepageStore'
 
 export default defineComponent({
   name: 'DocumentTable',
   setup() {
-    const showSnackbar = inject('showSnackbar') as (({
-                                                       message,
-                                                       color,
-                                                     }: {
-      message: string
-      color?: string
-    }) => void)
-
-    if (!showSnackbar) {
-      console.error('showSnackbar is not provided')
-    }
-
-    // Temporary data for documents
-    const documents = ref<HomepageDocument[]>([
-      { id: '1', name: 'Dokument 2023', year: '2023', fileName: '', file: null },
-      { id: '2', name: 'Dokument 2022', year: '2022', fileName: '', file: null },
-      { id: '3', name: 'Dokument 2021', year: '2021', fileName: '', file: null },
-    ]);
-
-    // States for handling the modal and form data
+    const homepageStore = useHomepageStore()
+    const documents = ref(homepageStore.conferenceDocsAdmin || [])
     const isDialogOpen = ref(false)
     const dialogMode = ref<'add' | 'edit'>('add')
-    const currentDocument = reactive<HomepageDocument>({
-      id: '',
-      name: '',
-      year: '',
-      fileName: '',
-      file: null
-    });
     const valid = ref(false)
 
-    // Table headers
+    const showSnackbar = inject('showSnackbar') as ({
+                                                      message,
+                                                      color,
+                                                    }: {
+      message: string
+      color?: string
+    }) => void
+
+
     const headers = [
-      { title: 'Názov dokumentu', key: 'name' },
-      { title: 'Rok', key: 'year' },
-      { title: 'Názov súboru', key: 'fileName' },
+      { title: 'Konferencia', key: 'conference' },
+      { title: 'Ocenené', key: 'awarded' },
+      { title: 'Publikované', key: 'published' },
+      { title: 'Zborník', key: 'collection' },
+      { title: 'ISBN', key: 'isbn' },
       { title: '', value: 'actions', sortable: false },
     ]
 
-    // Open the dialog for adding or editing a document
-    const openDialog = (
-      mode: 'add' | 'edit',
-      document = { id: '', name: '', year: '', file: null as File | null, fileName: '' }
-    ) => {
+    const currentDocument = reactive({
+      id: '',
+      conference: '',
+      isbn: '',
+      awarded: null as File | null,
+      published: null as File | null,
+      collection: null as File | null,
+    })
+
+    const openDialog = (mode: 'add' | 'edit', doc: any = null) => {
       dialogMode.value = mode
-      Object.assign(currentDocument, document)
+      if (doc) {
+        Object.assign(currentDocument, {
+          id: doc._id,
+          conference: doc.conference,
+          isbn: doc.isbn,
+          existingAwardedName: doc.awarded?.split("/").pop() || null,
+          existingPublishedName: doc.published?.split("/").pop() || null,
+          existingCollectionName: doc.collection?.split("/").pop() || null,
+        })
+      } else {
+        Object.assign(currentDocument, {
+          id: '',
+          conference: '',
+          isbn: '',
+          awarded: null,
+          published: null,
+          collection: null,
+        })
+      }
       isDialogOpen.value = true
     }
 
-    // Close the dialog
     const closeDialog = () => {
       isDialogOpen.value = false
-      Object.assign(currentDocument, { id: '', name: '', year: '', file: null, fileName: '' })
     }
 
-    // Save the document (add or update)
     const saveDocument = async () => {
       try {
-        if (dialogMode.value === 'add') {
-          // Add new document to the temporary data
-          documents.value.push({
-            id: (documents.value.length + 1).toString(),
-            name: currentDocument.name,
-            year: currentDocument.year,
-            fileName: currentDocument.file ? currentDocument.file.name : '',
-            file: currentDocument.file,
-          })
-          showSnackbar?.({
-            message: 'Dokument bol úspešne pridaný.',
-            color: 'success',
-          })
-        } else {
-          // Update existing document
-          const index = documents.value.findIndex((doc) => doc.id === currentDocument.id)
-          if (index !== -1) {
-            documents.value[index] = {
-              ...documents.value[index],
-              name: currentDocument.name,
-              year: currentDocument.year,
-              fileName: currentDocument.file ? currentDocument.file.name : documents.value[index].fileName,
-              file: currentDocument.file,
-            }
-          }
-          showSnackbar?.({
-            message: 'Dokument bol úspešne aktualizovaný.',
-            color: 'success',
-          })
-        }
+        const formData = new FormData()
+        formData.append('conference', currentDocument.conference)
+        if( currentDocument.isbn) formData.append('isbn', currentDocument.isbn)
+        if (currentDocument.awarded) formData.append('awarded', currentDocument.awarded)
+        if (currentDocument.published) formData.append('published', currentDocument.published)
+        if (currentDocument.collection) formData.append('collection', currentDocument.collection)
+
+        await homepageStore.uploadConferenceDocuments(formData)
+        await homepageStore.fetchConferenceDocuments()
+
+        showSnackbar?.({
+          message: 'Dokumenty boli úspešne uložené.',
+          color: 'success',
+        })
+
         closeDialog()
       } catch (error) {
-        console.error('Error saving document:', error)
         showSnackbar?.({
-          message: 'Nepodarilo sa uložiť dokument.',
+          message: 'Nepodarilo sa uložiť dokumenty.',
           color: 'error',
         })
+        console.error(error)
       }
     }
 
@@ -115,7 +97,7 @@ export default defineComponent({
     const deleteDocument = async (documentId: string) => {
       try {
         // Remove document from the temporary data
-        documents.value = documents.value.filter(doc => doc.id !== documentId)
+        documents.value = documents.value.filter(doc => doc._id !== documentId)
         showSnackbar?.({
           message: 'Dokument bol úspešne odstránený.',
           color: 'success',
@@ -129,11 +111,16 @@ export default defineComponent({
       }
     }
 
+    onMounted(async () => {
+      await homepageStore.fetchConferenceDocuments()
+      documents.value = homepageStore.conferenceDocsAdmin
+    })
+
     return {
       documents,
+      currentDocument,
       isDialogOpen,
       dialogMode,
-      currentDocument,
       valid,
       headers,
       openDialog,
@@ -144,13 +131,15 @@ export default defineComponent({
   },
 })
 </script>
+
 <template>
   <v-card>
     <v-card-title>
       <div class="d-flex justify-space-between align-center w-100">
-        <h3>Správa dokumentov</h3>
+        <h3>Dokumenty starších konferencií</h3>
         <v-btn color="primary" @click="openDialog('add')">
-          <v-icon left>mdi-plus-circle-outline</v-icon>Pridať dokument
+          <v-icon left>mdi-plus-circle-outline</v-icon>
+          Pridať dokument
         </v-btn>
       </div>
     </v-card-title>
@@ -163,15 +152,17 @@ export default defineComponent({
       items-per-page-text="Dokumenty na stránku"
     >
       <template v-slot:body="{ items }">
-        <tr v-for="document in items" :key="document.id">
-          <td>{{ document.name }}</td>
-          <td>{{ document.year }}</td>
-          <td>{{ document.fileName || 'No file uploaded' }}</td>
+        <tr v-for="doc in items" :key="doc.conference">
+          <td>{{ doc.conference }}</td>
+          <td>{{ doc.awarded?.split('/').pop() || '-' }}</td>
+          <td>{{ doc.published?.split('/').pop() || '-' }}</td>
+          <td>{{ doc.collection?.split('/').pop() || '-' }}</td>
+          <td>{{ doc.isbn }}</td>
           <td class="d-flex justify-end align-center">
-            <v-btn color="#FFCD16" @click="openDialog('edit', document)">
+            <v-btn color="#FFCD16" @click="openDialog('edit', doc)">
               <v-icon size="24">mdi-pencil</v-icon>
             </v-btn>
-            <v-btn color="#BC463A" @click="deleteDocument(document.id)">
+            <v-btn color="#BC463A" @click="deleteDocument(doc._id)">
               <v-icon size="24" color="white">mdi-delete</v-icon>
             </v-btn>
           </td>
@@ -179,37 +170,55 @@ export default defineComponent({
       </template>
     </v-data-table>
 
-    <!-- Add/Edit Dialog -->
-    <v-dialog v-model="isDialogOpen" max-width="800px">
+    <!-- Dialog -->
+    <v-dialog v-model="isDialogOpen" max-width="700px">
       <v-card>
-        <v-card-title>{{ dialogMode === 'add' ? 'Pridať dokument' : 'Upraviť dokument' }}</v-card-title>
+        <v-card-title>
+          {{ dialogMode === 'add' ? 'Pridať dokumenty' : 'Upraviť dokumenty' }}
+        </v-card-title>
         <v-card-text>
-          <v-form ref="formRef" v-model="valid">
+          <v-form v-model="valid">
             <v-text-field
-              v-model="currentDocument.name"
-              label="Názov dokumentu"
+              v-model="currentDocument.conference"
+              label="Konferencia (napr. ŠVK 2023)"
               outlined
-              :rules="[v => !!v || 'Názov dokumentu je povinný']"
-            />
-            <v-text-field
-              v-model="currentDocument.year"
-              label="Rok"
-              type="number"
-              outlined
-              :rules="[v => !!v || 'Rok je povinný']"
+              required
+              :rules="[v => !!v || 'Toto pole je povinné']"
             />
             <v-file-input
-              v-model="currentDocument.file"
-              label="Vyberte súbor"
-              accept=".pdf,.docx,.txt"
+              v-model="currentDocument.awarded"
+              label="Ocenené práce"
+              accept=".pdf"
               outlined
+            />
+            <v-file-input
+              v-model="currentDocument.published"
+              label="Publikované práce"
+              accept=".pdf"
+              outlined
+            />
+            <v-file-input
+              v-model="currentDocument.collection"
+              label="Zborník recenzovaných príspevkov"
+              accept=".pdf"
+              outlined
+            />
+            <v-text-field
+              v-model="currentDocument.isbn"
+              label="ISBN"
+              outlined
+              required
+              :rules="[
+    v => !!v || 'ISBN je povinné',
+    v => /^97[89]-\d{2}-\d{3}-\d{4}-\d{1}$/.test(v) || 'Zadajte platné ISBN v tvare 978-XX-XXX-XXXX-X'
+  ]"
             />
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn variant="outlined" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
-          <v-btn variant="outlined" :disabled="!valid" color="primary" @click="saveDocument">
-            {{ dialogMode === 'add' ? 'Pridať' : 'Uložiť' }}
+          <v-btn variant="tonal" color="#BC463A" @click="closeDialog">Zrušiť</v-btn>
+          <v-btn variant="tonal" color="primary" :disabled="!valid" @click="saveDocument">
+            Uložiť
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -217,6 +226,6 @@ export default defineComponent({
   </v-card>
 </template>
 
-<style scoped>
+<style lang="scss">
 
 </style>

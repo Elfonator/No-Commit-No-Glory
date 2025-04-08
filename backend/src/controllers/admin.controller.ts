@@ -14,7 +14,7 @@ import Review from '../models/Review'
 import {config} from "../config";
 import Homepage from '../models/Homepage'
 import multer from 'multer'
-import { setEndOfDay } from '../utils/dateUtils'
+import { normalizeDate } from '../utils/dateUtils'
 
 /** USERS**/
 //Get all users
@@ -323,13 +323,13 @@ export const createConference = async (
       date,
       location,
       university,
-      status: status|| ConferenceStatus.Upcoming,
-      start_date,
-      end_date: setEndOfDay(new Date(end_date)),
-      deadline_submission: setEndOfDay(new Date(deadline_submission)),
-      submission_confirmation: setEndOfDay(new Date(submission_confirmation)),
-      deadline_review: setEndOfDay(new Date(deadline_review)),
-      deadline_correction: setEndOfDay(new Date(deadline_correction)),
+      status: status || ConferenceStatus.Upcoming,
+      start_date: normalizeDate(start_date),
+      end_date: normalizeDate(end_date),
+      deadline_submission: normalizeDate(deadline_submission),
+      submission_confirmation: normalizeDate(submission_confirmation),
+      deadline_review: normalizeDate(deadline_review),
+      deadline_correction: normalizeDate(deadline_correction),
       created_at: new Date(),
     });
 
@@ -383,11 +383,12 @@ export const updateConference = async (
     const { conferenceId } = req.params;
     const updates = req.body;
 
-    ['end_date', 'deadline_submission', 'submission_confirmation', 'deadline_review', 'deadline_correction'].forEach(field => {
-      if (updates[field]) {
-        updates[field] = setEndOfDay(new Date(updates[field]));
-      }
-    });
+    ['date', 'start_date', 'end_date', 'deadline_submission', 'submission_confirmation', 'deadline_review', 'deadline_correction']
+      .forEach((field) => {
+        if (updates[field]) {
+          updates[field] = normalizeDate(updates[field]);
+        }
+      });
 
     const updatedConference = await Conference.findByIdAndUpdate(
         conferenceId,
@@ -565,7 +566,7 @@ export const getAllPapers = async (
     const papers = await Paper.find()
         .populate({
           path: "conference",
-          select: "year location date",
+          select: "year location date end_date",
         })
         .populate({
           path: "user",
@@ -587,7 +588,7 @@ export const getAllPapers = async (
         }
       })
         .select(
-            "status title submission_date abstract keywords authors category conference file_link final_submission deadline_date reviewer review",
+            "status title submission_date abstract keywords authors category conference file_link final_submission deadline_date reviewer review awarded",
         );
 
     res.status(200).json(papers);
@@ -660,7 +661,7 @@ export const changeSubmissionDeadline = async (
     const updatedPaper = await Paper.findByIdAndUpdate(
         paperId, {
           deadline_date: new Date(newDeadline),
-          status: PaperStatus.Draft
+
       },
         { new: true },
     );
@@ -686,11 +687,13 @@ export const changeSubmissionDeadline = async (
 export const adminUpdatePaper = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { paperId } = req.params;
-    const { authors, category } = req.body;
+    const { authors, category, status, awarded } = req.body;
 
     const updates: Partial<IPaper> = {};
     if (authors) updates.authors = authors;
     if (category) updates.category = category;
+    if (status) updates.status = status;
+    if (typeof awarded !== 'undefined') updates.awarded = awarded;
 
     const updatedPaper = await Paper.findByIdAndUpdate(
       paperId,
@@ -948,7 +951,8 @@ export const downloadPapersByConference = async (
     const zip = new AdmZip();
     for (const file of files) {
       const filePath = path.join(conferenceUploadPath, file);
-      zip.addLocalFile(filePath, "", file);
+      zip.addLocalFile(filePath);
+      //zip.addLocalFile(filePath, "", file);
     }
 
     // Headers for downloading the ZIP file
@@ -1128,7 +1132,7 @@ export const deleteProgramItem = async (req: AuthRequest, res: Response): Promis
   }
 };
 
-const storage = multer.diskStorage({
+const programStorage = multer.diskStorage({
   destination: async (_req, _file, cb) => {
     try {
       const uploadPath = path.join(config.uploads, "programs");
@@ -1143,18 +1147,35 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedExtensions = [".pdf"];
-  const ext = path.extname(file.originalname).toLowerCase();
+export const uploadProgram = multer({ storage: programStorage });
 
-  if (allowedExtensions.includes(ext)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Neplatný typ súboru. Povolené sú iba PDF"));
-  }
-};
+// For old documents upload
+const docsStorage = multer.diskStorage({
+  destination: async (req, _file, cb) => {
+    try {
+      const { conference } = req.body;
+      if (!conference) {
+        cb(new Error("Chýba konferencia"), "");
+        return;
+      }
 
-export const uploadProgram = multer({ storage, fileFilter });
+      const uploadPath = path.join(config.uploads, "old", conference);
+      await fs.mkdir(uploadPath, { recursive: true });
+      cb(null, uploadPath);
+    } catch (error) {
+      cb(error instanceof Error ? error : new Error(String(error)), "");
+    }
+  },
+  filename: (_req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+
+export const uploadDocs = multer({ storage: docsStorage }).fields([
+  { name: "awarded", maxCount: 1 },
+  { name: "published", maxCount: 1 },
+  { name: "collection", maxCount: 1 },
+]);
 
 // Upload Program File
 export const uploadProgramFile = async (req: Request, res: Response): Promise<void> => {
@@ -1201,6 +1222,86 @@ export const uploadProgramFile = async (req: Request, res: Response): Promise<vo
   }
 };
 
+/** Previous conferences files upload **/
+
+// Get all uploaded conference documents for admin
+export const getConferenceDocuments = async (_req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const homepage = await Homepage.findOne();
+
+      if (!homepage) {
+        res.status(404).json({ message: "Domovská stránka neexistuje" });
+        return;
+      }
+
+      res.status(200).json({
+        message: "Dokumenty boli načítané",
+        documents: homepage.conferenceFiles,
+      });
+    } catch (error) {
+      console.error("Chyba pri načítaní dokumentov:", error);
+      res.status(500).json({ message: "Nepodarilo sa načítať dokumenty", error });
+    }
+  };
+
+//Upload document for old conferences
+export const uploadConferenceDocs = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { conference, isbn } = req.body;
+
+    if (!conference || !isbn) {
+      res.status(400).json({ message: "Chýbajú údaje: conference alebo ISBN" });
+      return;
+    }
+
+    const files = req.files as {
+      awarded?: Express.Multer.File[];
+      published?: Express.Multer.File[];
+      collection?: Express.Multer.File[];
+    };
+
+    if (!files.awarded && !files.published && !files.collection) {
+      res.status(400).json({ message: "Žiadne súbory neboli nahrané" });
+      return;
+    }
+
+    const homepage = await Homepage.findOne();
+    if (!homepage) {
+      res.status(404).json({ message: "Domovská stránka neexistuje" });
+      return;
+    }
+
+    const folderPath = `/old/${conference}`;
+
+    const newEntry = {
+      conference,
+      isbn,
+      awarded: files.awarded?.[0]?.originalname ? `${folderPath}/${files.awarded[0].originalname}` : undefined,
+      published: files.published?.[0]?.originalname ? `${folderPath}/${files.published[0].originalname}` : undefined,
+      collection: files.collection?.[0]?.originalname ? `${folderPath}/${files.collection[0].originalname}` : undefined,
+    };
+
+    // Replace if same conference exists
+    const index = homepage.conferenceFiles.findIndex((doc) => doc.conference === conference);
+    if (index !== -1) {
+      homepage.conferenceFiles[index] = newEntry;
+    } else {
+      homepage.conferenceFiles.push(newEntry);
+    }
+
+    await homepage.save();
+
+    res.status(200).json({
+      message: "Dokumenty boli úspešne nahrané",
+      documents: homepage.conferenceFiles,
+    });
+  } catch (error) {
+    console.error("Chyba pri nahrávaní dokumentov:", error);
+    res.status(500).json({ message: "Nepodarilo sa nahrať dokumenty", error });
+  }
+};
+
+
 /** Excel output **/
 // Generate Excel for all papers in a specific conference
 export const exportPapersToExcel = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -1241,7 +1342,8 @@ export const exportPapersToExcel = async (req: AuthRequest, res: Response): Prom
       "Meno Recenzenta",
       "Email recenzenta",
       "Komentáre po recenzií",
-      "Poslané na recenziu"
+      "Poslané na recenziu",
+      "Ocenenie"
     ]);
 
     // Add paper data rows
@@ -1265,8 +1367,9 @@ export const exportPapersToExcel = async (req: AuthRequest, res: Response): Prom
         '', // Hľadá recenzenta
         reviewer ? `${reviewer.first_name} ${reviewer.last_name}` : '',
         reviewer?.email || '',
-        review?.comments || '', // Assuming review schema has "comments"
+        review?.comments || '',
         reviewer ? 'Áno' : 'Nie',
+        paper.awarded ? 'Áno' : 'Nie',
       ]);
     }
 
