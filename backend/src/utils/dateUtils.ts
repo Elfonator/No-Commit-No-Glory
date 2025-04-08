@@ -1,5 +1,4 @@
-export const setEndOfDay = (date: Date): Date => {
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-  return endOfDay;
+export const normalizeDate = (input: string | Date): Date => {
+  const date = new Date(input);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()); // 00:00:00
 };

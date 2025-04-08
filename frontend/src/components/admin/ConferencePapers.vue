@@ -42,6 +42,7 @@ export default defineComponent({
     //Table headers for papers
     const tableHeaders = [
       { title: '', value: 'view', width: '10px', sortable: false },
+      { title: '', value: 'award', width: '10px', sortable: false },
       { title: 'Status', value: 'status', width: '50px' },
       { title: 'Autor', value: 'user' },
       { title: 'Recenzent', value: 'reviewer' },
@@ -114,6 +115,11 @@ export default defineComponent({
       const end = start + itemsPerPage
       return filteredConferences.value.slice(start, end)
     })
+
+    const isConferenceCompleted = (conference: any): boolean => {
+      if (!conference?.end_date) return false;
+      return new Date() > new Date(conference.end_date);
+    };
 
     //Toggle visibility of papers for a conference
     const toggleConference = (conferenceId: string | null) => {
@@ -190,7 +196,7 @@ export default defineComponent({
     // Filtered papers for selected conference and user
     const filteredPapers = computed(() => {
       return paperStore.adminPapers
-        .filter(paper => paper.status !== PaperStatus.Draft) // Exclude drafts
+        //.filter(paper => paper.status !== PaperStatus.Draft) // Exclude drafts
         .filter(paper => {
           const belongsToConference =
             expandedConferenceId.value === paper.conference?._id
@@ -212,6 +218,7 @@ export default defineComponent({
           return dateB - dateA
         })
     })
+
 
     const resetFilters = () => {
       paperFilters.selectedStatus = null
@@ -274,11 +281,11 @@ export default defineComponent({
     const newDeadline = ref<Date | null>(null)
 
     const isDeadlineDisabled = (conference: any) => {
-      if (!conference.date) return true // if no date, disable the deadline button
-      const currentDate = new Date()
-      const conferenceEndDate = new Date(conference.date)
-      return currentDate > conferenceEndDate // disable if the conference has ended
-    }
+      if (!conference?.end_date) return true; // disable if end_date is missing
+      const currentDate = new Date();
+      const endDate = new Date(conference.end_date);
+      return currentDate > endDate; // disable only if current time is after end_date
+    };
 
     const openDeadlineDialog = (paper: AdminPaper) => {
       selectedPaper.value = paper
@@ -364,6 +371,7 @@ export default defineComponent({
         const updates = {
           authors: selectedPaper.value.authors,
           category: selectedPaper.value.category?._id,
+          status: selectedPaper.value.status as PaperStatus,
         };
 
         await paperStore.updatePaperAdmin(id, updates);
@@ -509,6 +517,29 @@ export default defineComponent({
       return 'red';
     };
 
+    //
+    const awardPaper = async (paper: AdminPaper) => {
+      try {
+        const updated = await paperStore.updatePaperAdmin(paper._id, {
+          awarded: !paper.awarded,
+        });
+        paper.awarded = updated.awarded;
+
+        showSnackbar?.({
+          message: updated.awarded
+            ? 'Práca bola označená ako ocenená.'
+            : 'Ocenenie bolo zrušené.',
+          color: 'success',
+        });
+      } catch (error) {
+        console.error('Failed to toggle award:', error);
+        showSnackbar?.({
+          message: 'Nepodarilo sa zmeniť stav ocenenia.',
+          color: 'error',
+        });
+      }
+    };
+
     //Format dates as dd.MM.yyyy
     const formatDate = (date: string | Date | null): string => {
       if (!date) return 'N/A'
@@ -613,6 +644,7 @@ export default defineComponent({
       ratingResponses,
       yesNoResponses,
       textResponses,
+      isConferenceCompleted,
       getRatingColor,
       customReviewerFilter,
       addAuthor,
@@ -637,6 +669,7 @@ export default defineComponent({
       changeDeadline,
       openDeadlineDialog,
       toggleConference,
+      awardPaper,
       formatDate,
       downloadAllPapers,
     }
@@ -654,7 +687,7 @@ export default defineComponent({
     <v-card-subtitle class="filters-section">
       <!-- Conference Filters -->
       <v-row no-gutters>
-        <v-col cols="3" md="2">
+        <v-col md="2">
           <v-text-field
             v-model="conferenceFilters.year"
             label="Rok"
@@ -664,7 +697,7 @@ export default defineComponent({
             clearable
           />
         </v-col>
-        <v-col cols="5" md="3">
+        <v-col md="3">
           <v-text-field
             v-model="conferenceFilters.location"
             label="Miesto"
@@ -673,7 +706,7 @@ export default defineComponent({
             clearable
           />
         </v-col>
-        <v-col cols="4" md="2">
+        <v-col md="2">
           <v-btn
             class="filter-btn"
             color="primary"
@@ -812,6 +845,14 @@ export default defineComponent({
                         mdi-eye
                       </v-icon>
                     </td>
+                    <td>
+                      <v-icon
+                        size="30"
+                        :color="paper.awarded ? '#1E90FF' : 'grey lighten-2'"
+                        :title="paper.awarded ? 'Zrušiť ocenenie' : 'Označiť ako ocenené'"
+                        @click="awardPaper(paper)"
+                      >mdi-seal</v-icon>
+                    </td>
                     <!-- Status -->
                     <td>
                       <v-chip
@@ -833,6 +874,7 @@ export default defineComponent({
                     <td class="d-flex justify-end align-center">
                       <!-- Assign Reviewer -->
                       <v-btn
+                        :disabled="isConferenceCompleted(paper.conference)"
                         color="#3C888C"
                         title="Priradiť recenzenta"
                         @click="openAssignReviewerDialog(paper)"
@@ -841,19 +883,21 @@ export default defineComponent({
                       </v-btn>
                       <!-- Edit Paper -->
                       <v-btn
+                        :disabled="isConferenceCompleted(paper.conference)"
                         color="#FFCD16"
                         @click="openEditDialog(paper)"
                         title="Upraviť prácu">
                         <v-icon size="20">mdi-pencil</v-icon>
                       </v-btn>
                       <v-btn
-                        :disabled="isDeadlineDisabled(paper.conference)"
+                        :disabled="isConferenceCompleted(paper.conference)"
                         color="tertiary"
                         @click="openDeadlineDialog(paper)"
                         title="Upraviť termín"
                       >
                         <v-icon size="20" color="black">mdi-timer-edit</v-icon>
                       </v-btn>
+                      <!-- Award toggle -->
                       <v-btn
                         color="#BC463A"
                         @click="confirmDeletePaper(paper)"
@@ -1128,9 +1172,24 @@ export default defineComponent({
             <v-card>
               <v-card-title>Úprava práce</v-card-title>
               <v-card-text>
+                <!-- Status edit -->
                 <v-row>
-                  <!-- Category Edit -->
-                  <v-col cols="12" md="12">
+                  <v-col md="12">
+                    <v-select
+                      v-model="selectedPaper!.status as PaperStatus"
+                      :items="statusOptions"
+                      label="Status práce"
+                      outlined
+                      dense
+                      class="large-text-field"
+                      :rules="[() => !!selectedPaper?.status || 'Zvoľte status']"
+                    />
+                  </v-col>
+                </v-row>
+
+                <!-- Category Edit -->
+                <v-row>
+                  <v-col md="12">
                     <v-menu
                       v-model="menuCatOpen"
                       close-on-content-click
@@ -1155,6 +1214,7 @@ export default defineComponent({
                           v-for="category in categoryStore.participantCategories"
                           :key="category._id"
                           @click="selectCategory(category)"
+                          class="large-text-field"
                         >
                           <v-list-item-title>
                             {{ category.name }}
@@ -1166,7 +1226,7 @@ export default defineComponent({
                 </v-row>
 
                 <v-row class="row_height" v-for="(author, index) in selectedPaper?.authors || []" :key="index">
-                  <v-col cols="5" md="5">
+                  <v-col md="5">
                     <v-text-field
                       v-model="author.firstName"
                       label="Meno"
@@ -1174,7 +1234,7 @@ export default defineComponent({
                       dense
                     />
                   </v-col>
-                  <v-col cols="5" md="6">
+                  <v-col md="6">
                     <v-text-field
                       v-model="author.lastName"
                       label="Priezvisko"
@@ -1182,15 +1242,14 @@ export default defineComponent({
                       dense
                     />
                   </v-col>
-                  <v-col cols="2" md="1" class="d-flex justify-end">
-                    <v-btn @click="removeAuthor(index)" color="#BC463A" variant="flat">
-                      <v-icon>mdi-delete</v-icon>
-                    </v-btn>
+                  <v-col md="1" class="d-flex justify-end">
+                      <v-icon @click="removeAuthor(index)" color="#BC463A" size="30">mdi-delete</v-icon>
                   </v-col>
                 </v-row>
                 <v-btn color="#3c888c" @click="addAuthor">
                   <v-icon icon="mdi-plus-circle" start></v-icon>Ďalší autor
                 </v-btn>
+
               </v-card-text>
 
               <!-- Dialog Actions -->

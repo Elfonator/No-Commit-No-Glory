@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 import type { ActiveCategory } from '@/types/conference.ts'
 
 export default defineComponent({
-  name: "TabSectionPast",
+  name: "TabsSectionPast",
   setup() {
     const activeTab = ref("benefits");
     const store = useHomepageStore();
@@ -13,7 +13,10 @@ export default defineComponent({
       deadlines,
       activeCategories,
       program,
-      programDocumentUrl
+      programDocumentUrl,
+      acceptedPapers,
+      awardedPapers,
+      pastConferenceFiles,
     } = storeToRefs(store); // <- first get references from store
 
     const plainCategories = ref<ActiveCategory[]>([]);
@@ -21,6 +24,15 @@ export default defineComponent({
     const categories = computed(() => activeCategories.value || []);
 
     const backendBaseUrl = import.meta.env.VITE_API_URL;
+
+    const sortedAcceptedPapers = computed(() =>
+      Object.entries(acceptedPapers.value)
+        .sort(([a], [b]) => a.localeCompare(b))
+    );
+
+    const sortedAwardedPapers = computed(() =>
+      Object.entries(awardedPapers.value).sort(([a], [b]) => a.localeCompare(b))
+    );
 
     // Load data on component mount
     onMounted(async () => {
@@ -36,7 +48,11 @@ export default defineComponent({
       deadlines,
       programItems: computed(() => program.value?.items || []),
       programDocumentUrl,
+      acceptedPapers,
       backendBaseUrl,
+      sortedAcceptedPapers,
+      sortedAwardedPapers,
+      pastConferenceFiles,
     };
   },
 });
@@ -56,6 +72,25 @@ export default defineComponent({
       <v-tabs-window-item value="accepted">
         <div class="tab-content">
          <!-- logic to dynamically show accepted papers for the latest conference -->
+          <v-expansion-panels multiple>
+            <v-expansion-panel
+              v-for="([category, papers], index) in sortedAcceptedPapers"
+              :key="index"
+            >
+              <v-expansion-panel-title>{{ category }}</v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-list>
+                  <v-list-item
+                    v-for="(paper, index) in papers"
+                    :key="index"
+                  >
+                      <v-list-item-title>{{ paper.title }}</v-list-item-title>
+                      <v-list-item-subtitle>{{ paper.authors.join(', ') }}</v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </div>
       </v-tabs-window-item>
 
@@ -63,6 +98,25 @@ export default defineComponent({
       <v-tabs-window-item value="awarded">
         <div class="tab-content">
           <!-- logic to dynamically show awarded papers for the latest confernce -->
+          <v-expansion-panels multiple>
+            <v-expansion-panel
+              v-for="([category, papers], index) in sortedAwardedPapers"
+              :key="index"
+            >
+              <v-expansion-panel-title>{{ category }}</v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-list>
+                  <v-list-item
+                    v-for="(paper, index) in papers"
+                    :key="index"
+                  >
+                    <v-list-item-title>{{ paper.title }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ paper.authors.join(', ') }}</v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </div>
       </v-tabs-window-item>
 
@@ -70,6 +124,29 @@ export default defineComponent({
       <v-tabs-window-item value="past">
         <div class="tab-content">
           <!-- logic to show 3 files for past conferences -->
+          <v-expansion-panels multiple>
+            <v-expansion-panel
+              v-for="(file, index) in pastConferenceFiles"
+              :key="file.conference + index"
+            >
+              <v-expansion-panel-title>
+                {{ file.conference }}
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <ul>
+                  <li v-if="file.awarded">
+                    <a :href="backendBaseUrl + file.awarded" target="_blank">Zoznam ocenených prác</a>
+                  </li>
+                  <li v-if="file.published">
+                    <a :href="backendBaseUrl + file.published" target="_blank">Zoznam publikovaných prác</a>
+                  </li>
+                  <li v-if="file.collection">
+                    <span>Zborník recenzovaných príspevkov, ISBN {{ file.isbn }} <a :href="backendBaseUrl + file.collection" target="_blank">(pdf)</a></span>
+                  </li>
+                </ul>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </div>
       </v-tabs-window-item>
 
@@ -83,7 +160,7 @@ export default defineComponent({
   </v-container>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .tabs-container {
   margin-top: 30px;
   margin-bottom: 30px;
@@ -94,7 +171,7 @@ export default defineComponent({
   max-width: 75%;
 
   .tab-content {
-    padding: 20px;
+    padding: 10px;
     font-size: 16px;
 
     h3 {
@@ -105,36 +182,50 @@ export default defineComponent({
       margin-bottom: 20px;
     }
 
-    ul {
-      list-style-type: none;
-      padding-left: 0;
+  }
 
-      li {
-        margin-bottom: 10px;
-        font-size: 1rem;
-        color: #444;
-        text-align: justify;
-        line-height: 1.6;
-        position: relative;
-        padding-left: 2rem;
+  .v-expansion-panels,
+  .v-expansion-panel,
+  .v-expansion-panel-title,
+  .v-expansion-panel-text {
+    width: 100% !important;
+    min-width: 100%;
+  }
 
-        &::before {
-          content: "⫸";
-          position: absolute;
-          left: 0;
-          top: 0;
-          font-size: 1.5rem;
-          color: #116466;
-          line-height: 1;
-        }
+  .v-expansion-panel-title {
+    font-weight: bold;
+    color: #2c3531;
+    font-size: 1.1rem;
+  }
 
-        strong {
-          font-weight: bold;
-          white-space: nowrap;
-          margin-right: 0.3rem;
-        }
-      }
-    }
+  .v-list-item-title {
+    color: #116466;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .v-list-item-subtitle {
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 0.9rem;
+  }
+
+  .v-expansion-panel-text li::before {
+    content: none !important;
+  }
+
+  .v-expansion-panel-text ul {
+    list-style: none;        // removes default bullets
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  .v-expansion-panel-text li {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  .v-expansion-panel-text__wrapper {
+    padding: 0 !important;
   }
 
   p {
@@ -143,17 +234,11 @@ export default defineComponent({
     line-height: 1.5;
   }
 
-  .note {
-    color: #5c2018;
-    font-style: oblique;
-    margin-top: 15px;
-    text-align: center;
-  }
-
   .v-tabs {
     margin-bottom: 20px;
     font-size: 2rem;
   }
+
   .v-tab {
     font-size: 1rem;
     font-weight: bold;
@@ -165,9 +250,8 @@ export default defineComponent({
   }
 
   .tabs-window {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: block;
+
     height: 100%;
   }
 

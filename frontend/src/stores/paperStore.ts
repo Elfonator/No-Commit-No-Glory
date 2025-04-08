@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axiosInstance from '@/config/axiosConfig'
-import type { Paper, ReviewerPaper } from '@/types/paper.ts'
+import { type Paper, PaperStatus, type ReviewerPaper } from '@/types/paper.ts'
 import type { AxiosResponse } from 'axios'
 import { useReviewStore } from '@/stores/reviewStore.ts'
 
@@ -111,10 +111,8 @@ export const usePaperStore = defineStore('papers', () => {
         }
       });
 
-      if (file) {
+      if (file && file instanceof File) {
         formData.append('file_link', file);
-      } else {
-        formData.append('file_link', updates.file_link || '');
       }
 
       const response = await axiosInstance.patch(
@@ -249,7 +247,7 @@ export const usePaperStore = defineStore('papers', () => {
     }
   }
 
-  const updatePaperAdmin = async (paperId: string, updates: { authors?: any[]; category?: string }) => {
+  const updatePaperAdmin = async (paperId: string, updates: { authors?: any[]; category?: string; status?: PaperStatus; awarded?: boolean }) => {
     try {
       const response = await axiosInstance.patch(`/auth/admin/papers/${paperId}`, updates);
       return response.data.paper;
@@ -302,6 +300,7 @@ export const usePaperStore = defineStore('papers', () => {
       const response = await axiosInstance.get(
         `/auth/admin/papers/download/${conferenceId}`,
         {
+          timeout: 50000,
           responseType: 'blob',
         },
       )

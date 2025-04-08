@@ -209,7 +209,6 @@ export default defineComponent({
     .v-card-title {
       color: #116466;
       font-weight: bolder;
-      margin-left: 5px;
       padding-top: 20px;
       text-align: center;
       font-size: 1rem !important;

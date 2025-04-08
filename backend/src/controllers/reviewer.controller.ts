@@ -7,7 +7,7 @@ import User from "../models/User";
 import Question from "../models/Question";
 import path from "path";
 import {config} from "../config";
-import { setEndOfDay } from '../utils/dateUtils'
+import { normalizeDate } from '../utils/dateUtils'
 import { IConference } from '../models/Conference'
 
 //Assigned papers
@@ -110,9 +110,9 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
     const conference = paperDoc?.conference as unknown as IConference;
-    const deadline = setEndOfDay(new Date(conference.deadline_review));
+    const deadline = normalizeDate(new Date(conference.deadline_review));
 
-    if (new Date() > deadline) {
+    if (normalizeDate(new Date()) > deadline) {
       res.status(403).json({ message: 'Termín na vytvorenie recenzie už vypršal' });
       return;
     }
@@ -128,7 +128,6 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
       created_at: new Date(),
     });
 
-    // Save to DB
     await newReview.save();
 
     res.status(201).json({ message: "Recenzia bola úspešne vytvorená", review: newReview });
@@ -172,9 +171,10 @@ export const updateReview = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     const conference = paper.conference as unknown as IConference;
-    const deadline = setEndOfDay(new Date(conference.deadline_review));
-    if (new Date() > deadline) {
+    const deadline = normalizeDate(new Date(conference.deadline_review));
+    if (normalizeDate(new Date()) > deadline) {
       res.status(403).json({ message: 'Termín na úpravu recenzie už vypršal' });
+      return;
     }
 
     // Update review fields

@@ -10,7 +10,7 @@ export const setAuthStore = (store: typeof authStore) => {
 const axiosInstance = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api`,
   withCredentials: true,
-  timeout: 5000,
+  timeout: 20000,
 })
 
 // Axios request interceptor to set the Authorization header
