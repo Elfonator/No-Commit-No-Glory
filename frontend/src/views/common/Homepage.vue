@@ -68,6 +68,14 @@
       </div>
 
       <CardsSection />
+
+      <div class="call-to-action-section">
+        <v-container>
+          <h3 class="cta-title">MINULÉ ROČNÍKY KONFERENCIE</h3>
+        </v-container>
+      </div>
+
+      <TabsSectionPast />
       <Footer />
     </div>
   </v-app>
@@ -76,8 +84,8 @@
 <script lang="ts">
 import { defineComponent, onMounted, onUnmounted, ref } from 'vue'
 import Navbar from '@/components/homepage/Navbar.vue'
-import axios from 'axios'
 import TabsSection from '@/components/homepage/TabsSection.vue'
+import TabsSectionPast from '@/components/homepage/TabsSectionPast.vue'
 import CardsSection from '@/components/homepage/CardSection.vue'
 import Footer from '@/components/homepage/Footer.vue'
 import axiosInstance from '@/config/axiosConfig.ts'
@@ -88,6 +96,7 @@ export default defineComponent({
     Footer,
     CardsSection,
     TabsSection,
+    TabsSectionPast,
     Navbar,
   },
   setup() {
@@ -324,7 +333,7 @@ export default defineComponent({
   text-align: center;
   width: 100%;
   max-height: 80px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 
   .cta-title {
     margin-top: -5px;
